@@ -1,0 +1,10 @@
+# Contexto de la materia (no versionar)
+utils/
+
+# Archivos de contexto .md (excepto README)
+*.md
+!README.md
+!**/README.md
+
+# macOS
+.DS_Store
