@@ -25,6 +25,11 @@ class GameEngine:
         ServiceLocator.init(load_json("assets/cfg/resources.json"))
         self.commands = CommandMap(load_json("assets/cfg/input.json")["keyboard"])
         self.cfg_scenes = load_json("assets/cfg/scenes.json")
+        self.cfg_world = load_json("assets/cfg/world.json")
+        self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
+                                         self.cfg_world["world_size"]["h"])
+        v = self.cfg_world["viewport"]
+        self.viewport = pygame.Rect(v["x"], v["y"], v["w"], v["h"])
 
         self.clock = pygame.time.Clock()
         self.delta_time = 0.0
