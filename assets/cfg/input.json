@@ -1,0 +1,13 @@
+{
+    "keyboard": {
+        "UP": "K_UP",
+        "DOWN": "K_DOWN",
+        "LEFT": "K_LEFT",
+        "RIGHT": "K_RIGHT",
+        "FIRE": "K_z",
+        "SPECIAL": "K_x",
+        "PAUSE": "K_p",
+        "SELECT": "K_RETURN",
+        "CHEAT": "K_F1"
+    }
+}

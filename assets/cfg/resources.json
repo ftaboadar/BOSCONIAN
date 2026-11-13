@@ -1,0 +1,13 @@
+{
+    "images": {
+        "title": "assets/img/titulo.png",
+        "ships": "assets/img/naves.png"
+    },
+    "sounds": {},
+    "music": {
+        "title": "assets/mus/zero2.ogg"
+    },
+    "fonts": {
+        "main": { "path": "assets/fnt/PressStart2P.ttf", "size": 8 }
+    }
+}
