@@ -6,7 +6,7 @@ from src.engine.input.command import CommandMap
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
 from src.engine.scenes.title_scene import TitleScene
-from src.engine.service_locator import ServiceLocator, load_json
+from src.engine.service_locator import ServiceLocator, color_from_cfg, load_json
 
 
 class GameEngine:
@@ -15,8 +15,7 @@ class GameEngine:
     def __init__(self) -> None:
         pygame.init()
         cfg_window = load_json("assets/cfg/window.json")
-        bg = cfg_window["bg_color"]
-        self.bg_color = pygame.Color(bg["r"], bg["g"], bg["b"])
+        self.bg_color = color_from_cfg(cfg_window["bg_color"])
         self.framerate = cfg_window["framerate"]
         self.screen = pygame.display.set_mode(
             (cfg_window["size"]["w"], cfg_window["size"]["h"]), pygame.SCALED)

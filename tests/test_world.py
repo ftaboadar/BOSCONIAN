@@ -19,6 +19,7 @@ from src.ecs.systems.s_star import star_alpha, system_star_fall, system_star_par
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.ecs.components.c_star import CStar
 from src.engine.camera import Camera, wrap_delta
+from src.engine.service_locator import color_from_cfg
 
 WORLD = pygame.Vector2(1000, 800)
 
@@ -96,6 +97,11 @@ class MinimapTests(unittest.TestCase):
         self.assertEqual(minimap_point(pygame.Vector2(0, 0), WORLD, rect), (184, 64))
         self.assertEqual(minimap_point(pygame.Vector2(1000, 800), WORLD, rect), (184, 64))
         self.assertEqual(minimap_point(pygame.Vector2(-1, 0), WORLD, rect)[0], 246)
+
+
+class ColorTests(unittest.TestCase):
+    def test_orden_de_claves_no_altera_el_color(self):
+        self.assertEqual(color_from_cfg({"b": 0, "g": 3, "r": 9}), pygame.Color(9, 3, 0))
 
 
 if __name__ == "__main__":

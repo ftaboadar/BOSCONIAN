@@ -36,5 +36,6 @@ def system_star_fall(world: esper.World, area: pygame.Rect, speed: float, delta_
 
 
 def system_star_rendering(world: esper.World, screen: pygame.Surface) -> None:
+    """Dibuja cada estrella con `pos` como centro y `round`, igual que el resto de entidades."""
     for _, (c_t, c_s) in world.get_components(CTransform, CStar):
-        screen.blit(c_s.surf, (int(c_t.pos.x), int(c_t.pos.y)))
+        screen.blit(c_s.surf, c_s.surf.get_rect(center=(round(c_t.pos.x), round(c_t.pos.y))))

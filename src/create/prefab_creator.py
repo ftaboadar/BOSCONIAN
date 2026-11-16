@@ -12,7 +12,7 @@ from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
-from src.engine.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
 def create_image(world: esper.World, image_name: str, center: pygame.Vector2) -> int:
@@ -35,7 +35,7 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
                              random.uniform(area.top, area.bottom - 1))
         world.create_entity(
             CTransform(pos),
-            CStar(pygame.Color(c["r"], c["g"], c["b"]),
+            CStar(color_from_cfg(c),
                   speed,
                   random.random()),
         )

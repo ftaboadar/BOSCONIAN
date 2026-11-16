@@ -10,6 +10,12 @@ def load_json(path: str) -> dict:
         return json.load(f)
 
 
+def color_from_cfg(cfg: dict) -> pygame.Color:
+    """Convierte {"r","g","b"} del JSON en pygame.Color leyendo cada canal por nombre,
+    así el orden de las claves en el archivo no cambia el color."""
+    return pygame.Color(cfg["r"], cfg["g"], cfg["b"])
+
+
 class _Images:
     def __init__(self, paths: dict) -> None:
         self._paths = paths
