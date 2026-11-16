@@ -9,7 +9,7 @@
     "stars_number": 100,
     "stars_parallax_factor": 0.5,
     "stars_menu_speed": 40,
-    "stars_blink_speed": { "min": 0.25, "max": 0.5 },
+    "stars_blink_speed": 0.4,
     "minimap": {
         "rect": { "x": 184, "y": 64, "w": 64, "h": 64 },
         "bg_color": { "r": 0, "g": 0, "b": 40 },

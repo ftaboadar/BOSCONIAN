@@ -28,7 +28,7 @@ def create_text(world: esper.World, text: str, color: pygame.Color, center: pyga
 
 
 def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
-    speed = cfg["stars_blink_speed"]
+    speed = cfg["stars_blink_speed"]  # fija para todas; solo la fase difiere
     for _ in range(cfg["stars_number"]):
         c = random.choice(cfg["star_colors"])
         pos = pygame.Vector2(random.uniform(area.left, area.right - 1),
@@ -36,7 +36,7 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         world.create_entity(
             CTransform(pos),
             CStar(pygame.Color(c["r"], c["g"], c["b"]),
-                  random.uniform(speed["min"], speed["max"]),
+                  speed,
                   random.random()),
         )
 
