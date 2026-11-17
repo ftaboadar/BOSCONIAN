@@ -10,9 +10,10 @@ from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
+from src.engine.data_loader import load_level
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
-from src.engine.service_locator import ServiceLocator, load_json
+from src.engine.service_locator import ServiceLocator
 
 PLACEHOLDER_SPEED = 80  # provisional: el hito 3 lo reemplaza por aceleración
 
@@ -24,7 +25,7 @@ class PlayScene(Scene):
         eng = self.engine
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
-        level = load_json("assets/cfg/levels/level_01.json")
+        level = load_level(1)
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
         for b in level["bases"]:
