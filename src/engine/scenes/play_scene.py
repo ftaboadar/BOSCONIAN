@@ -35,17 +35,31 @@ class PlayScene(Scene):
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         self.direction = pygame.Vector2(0, -1)
+        # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
+        self.paused = False
+        self.pause_text = ServiceLocator.fonts.get("main").render(
+            "JUEGO PAUSADO", False, pygame.Color(255, 255, 255))
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
             return
+        if action == "PAUSE":
+            self.paused = not self.paused  # P alterna entre jugar y pausar
+            return
+        if self.paused:
+            # Acceso al menú del título desde la pausa (#27 lo convertirá en el menú de opciones).
+            if action == "SELECT":
+                self.engine.switch_scene("TITLE")
+            return
         dirs = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
         if action in dirs:
             self.direction = pygame.Vector2(dirs[action])
-        elif action == "PAUSE":
-            self.engine.switch_scene("TITLE")
 
     def do_update(self, delta_time: float) -> None:
+        if self.paused:
+            # En pausa solo las estrellas siguen brillando, quietas (sin parallax ni movimiento).
+            system_star_blink(self.world, delta_time)
+            return
         self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
@@ -58,6 +72,11 @@ class PlayScene(Scene):
         screen.set_clip(self.engine.viewport)
         system_star_rendering(self.world, screen)
         screen.set_clip(None)
+        if self.paused:
+            # Desaparecen jugador, bases, interfaz y minimapa; queda el fondo y el aviso.
+            screen.blit(self.pause_text, self.pause_text.get_rect(
+                center=self.engine.viewport.center))
+            return
         system_world_rendering(self.world, screen, self.camera)
         system_rendering(self.world, screen)
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
