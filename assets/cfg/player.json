@@ -1,0 +1,14 @@
+{
+    "sprite_rect": {
+        "x": 124,
+        "y": 8,
+        "w": 15,
+        "h": 17
+    },
+    "start_heading": {
+        "x": 0,
+        "y": -1
+    },
+    "max_speed": 80,
+    "acceleration": 30
+}

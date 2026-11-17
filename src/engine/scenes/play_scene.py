@@ -1,11 +1,12 @@
 import pygame
 
-from src.create.prefab_creator import (create_base_placeholder, create_player_placeholder,
+from src.create.prefab_creator import (create_base_placeholder, create_player,
                                        create_stars, create_text)
-from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
+from src.ecs.systems.s_player import HEADING_KEYS, system_player_movement, system_player_sprite
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
@@ -14,8 +15,6 @@ from src.engine.data_loader import load_level
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
-
-PLACEHOLDER_SPEED = 80  # provisional: el hito 3 lo reemplaza por aceleración
 
 
 class PlayScene(Scene):
@@ -27,7 +26,8 @@ class PlayScene(Scene):
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
         start = level["player_start"]
-        self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
+        self.player = create_player(self.world, pygame.Vector2(start["x"], start["y"]),
+                                    load_json("assets/cfg/player.json"))
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
         create_stars(self.world, eng.cfg_world, eng.viewport)
@@ -35,7 +35,6 @@ class PlayScene(Scene):
                     pygame.Vector2(216, 190))
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
-        self.direction = pygame.Vector2(0, -1)
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
         self.paused = False
         self.pause_text = ServiceLocator.fonts.get("main").render(
@@ -49,12 +48,18 @@ class PlayScene(Scene):
             ServiceLocator.sounds.play("blast_off")
 
     def do_action(self, action: str, phase: Phase) -> None:
+        if action in HEADING_KEYS:
+            # Las teclas de dirección se registran siempre (también en pausa) para que
+            # soltar una tecla durante la pausa no deje la nave girando con una tecla fantasma.
+            held = self.world.component_for_entity(self.player, CPlayerShip).held
+            (held.add if phase == Phase.START else held.discard)(action)
+            return
         if phase != Phase.START:
             return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
             return
-        if self.paused:
+        if self.paused and action == "SELECT":
             # Acceso al menú del título desde la pausa (#27 lo convertirá en el menú de opciones).
             if action == "SELECT":
                 self.engine.switch_scene("TITLE")
@@ -76,7 +81,8 @@ class PlayScene(Scene):
             self.blast_left = max(0.0, self.blast_left - delta_time)
             system_star_blink(self.world, delta_time)
             return
-        self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
+        system_player_movement(self.world, delta_time)
+        system_player_sprite(self.world)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_camera_follow(self.world, self.camera)
