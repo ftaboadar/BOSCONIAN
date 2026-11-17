@@ -10,5 +10,31 @@
         "y": -1
     },
     "max_speed": 80,
-    "acceleration": 30
+    "acceleration": 30,
+    "weapon": {
+        "cooldown": 0.15,
+        "bullet_speed": 220,
+        "muzzle_offset": 9,
+        "offscreen_margin": 8,
+        "bullet_sprites": {
+            "vertical": {
+                "x": 4,
+                "y": 75,
+                "w": 4,
+                "h": 6
+            },
+            "horizontal": {
+                "x": 13,
+                "y": 76,
+                "w": 6,
+                "h": 4
+            },
+            "diagonal": {
+                "x": 23,
+                "y": 75,
+                "w": 7,
+                "h": 6
+            }
+        }
+    }
 }

@@ -3,12 +3,14 @@ import pygame
 from src.create.prefab_creator import (create_base_placeholder, create_player,
                                        create_stars, create_text)
 from src.ecs.components.c_player_ship import CPlayerShip
+from src.ecs.components.c_weapon import CWeapon
 from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_player import HEADING_KEYS, system_player_movement, system_player_sprite
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
+from src.ecs.systems.s_weapon import system_bullet_cleanup, system_player_fire
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
 from src.engine.data_loader import load_level
@@ -26,8 +28,9 @@ class PlayScene(Scene):
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
         start = level["player_start"]
+        self.player_cfg = load_json("assets/cfg/player.json")
         self.player = create_player(self.world, pygame.Vector2(start["x"], start["y"]),
-                                    load_json("assets/cfg/player.json"))
+                                    self.player_cfg)
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
         create_stars(self.world, eng.cfg_world, eng.viewport)
@@ -53,6 +56,13 @@ class PlayScene(Scene):
             # soltar una tecla durante la pausa no deje la nave girando con una tecla fantasma.
             held = self.world.component_for_entity(self.player, CPlayerShip).held
             (held.add if phase == Phase.START else held.discard)(action)
+            return
+        if action == "FIRE":
+            # Como las direcciones, se registra también en pausa para no perder el soltar la tecla.
+            weapon = self.world.component_for_entity(self.player, CWeapon)
+            weapon.held = phase == Phase.START
+            if weapon.held and not self.paused:
+                weapon.trigger = True
             return
         if phase != Phase.START:
             return
@@ -83,9 +93,11 @@ class PlayScene(Scene):
             return
         system_player_movement(self.world, delta_time)
         system_player_sprite(self.world)
+        system_player_fire(self.world, delta_time)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_camera_follow(self.world, self.camera)
+        system_bullet_cleanup(self.world, self.camera, self.player_cfg["weapon"]["offscreen_margin"])
         system_star_blink(self.world, delta_time)
         system_star_parallax(self.world, self.engine.viewport, self.camera.delta,
                              self.engine.cfg_world["stars_parallax_factor"])
