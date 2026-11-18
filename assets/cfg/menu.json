@@ -1,0 +1,39 @@
+{
+    "colors": {
+        "normal": { "r": 255, "g": 255, "b": 255 },
+        "selected": { "r": 255, "g": 220, "b": 0 },
+        "title": { "r": 118, "g": 255, "b": 3 }
+    },
+    "line_height": 14,
+    "title_items": [
+        { "label": "JUGAR", "action": "PLAY" },
+        { "label": "NIVEL", "action": "LEVEL" },
+        { "label": "INSTRUCCIONES", "action": "INSTRUCTIONS" },
+        { "label": "CREDITOS", "action": "CREDITS" }
+    ],
+    "instructions": {
+        "title": "INSTRUCCIONES",
+        "lines": [
+            "FLECHAS: CAMBIAR DIRECCION",
+            "Z: DISPARAR ADELANTE Y ATRAS",
+            "X: HABILIDAD ESPECIAL",
+            "P: PAUSA",
+            "",
+            "DESTRUYE TODAS LAS BASES",
+            "PARA PASAR DE NIVEL.",
+            "EVITA ENEMIGOS Y OBSTACULOS."
+        ]
+    },
+    "credits": {
+        "title": "CREDITOS",
+        "lines": [
+            "BOSCONIAN",
+            "INTRODUCCION AL DESARROLLO",
+            "DE VIDEOJUEGOS 2",
+            "",
+            "IMAGENES: DIANA PACHECO",
+            "MUSICA: CENTURION OF WAR",
+            "FUENTE: CODEMAN38"
+        ]
+    }
+}

@@ -25,7 +25,7 @@ class PlayScene(Scene):
         eng = self.engine
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
-        level = load_level(1)
+        level = load_level(eng.level)
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
         for b in level["bases"]:
