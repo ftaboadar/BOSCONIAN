@@ -2,11 +2,12 @@
 
 import pygame
 
+from src.engine.data_loader import load_json, load_resources
 from src.engine.input.command import CommandMap
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
 from src.engine.scenes.title_scene import TitleScene
-from src.engine.service_locator import ServiceLocator, color_from_cfg, load_json
+from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
 class GameEngine:
@@ -21,7 +22,7 @@ class GameEngine:
             (cfg_window["size"]["w"], cfg_window["size"]["h"]), pygame.SCALED)
         pygame.display.set_caption(cfg_window["title"])
 
-        ServiceLocator.init(load_json("assets/cfg/resources.json"))
+        ServiceLocator.init(load_resources())
         self.commands = CommandMap(load_json("assets/cfg/input.json")["keyboard"])
         self.cfg_scenes = load_json("assets/cfg/scenes.json")
         self.cfg_world = load_json("assets/cfg/world.json")

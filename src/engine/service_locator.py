@@ -1,13 +1,6 @@
 """Service locator: punto único de acceso a recursos y configuración."""
 
-import json
-
 import pygame
-
-
-def load_json(path: str) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def color_from_cfg(cfg: dict) -> pygame.Color:
