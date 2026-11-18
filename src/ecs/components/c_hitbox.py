@@ -2,7 +2,7 @@ import pygame
 
 
 class CHitBox:
-    """Caja de colisión relativa a CTransform.pos, independiente del sprite.
+    """Caja de colisión centrada en CTransform.pos (+ offset), independiente del sprite.
 
     layer: categoría de la entidad (por ejemplo "PLAYER", "ENEMY", "OBSTACLE").
     mask: capas contra las que esta entidad choca. Basta con que una de las

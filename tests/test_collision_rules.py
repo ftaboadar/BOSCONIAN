@@ -2,8 +2,10 @@
 
 import os
 import sys
+import unittest
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 sys.path.insert(0, os.getcwd())
 
 import esper
@@ -19,92 +21,107 @@ from src.ecs.systems.s_destroy import system_destroy
 from src.engine.data_loader import load_json
 
 RULES = load_rules(load_json("assets/cfg/collisions.json"))
-
+WORLD = pygame.Vector2(1000, 800)
 PLAYER_MASK = ("ENEMY", "ENEMY_BULLET")
 ENEMY_MASK = ("ENEMY", "BASE", "PLAYER")
 
 
-def make(world, pos, size, layer, mask=(), vel=None):
-    ent = world.create_entity(CTransform(pygame.Vector2(pos)),
+def make(world, center, size, layer, mask=(), vel=None):
+    ent = world.create_entity(CTransform(pygame.Vector2(center)),
                               CHitBox(pygame.Vector2(size), None, layer, mask))
     if vel is not None:
         world.add_component(ent, CVelocity(pygame.Vector2(vel)))
     return ent
 
 
-def step(world):
-    system_collision_rules(world, system_collision(world), RULES)
+def step(world, world_size=None):
+    system_collision_rules(world, system_collision(world, world_size), RULES, world_size)
     system_destroy(world)
 
 
-def pos(world, ent):
-    return world.component_for_entity(ent, CTransform).pos
+class BounceTests(unittest.TestCase):
+    def setUp(self):
+        self.w = esper.World()
+
+    def pos(self, e):
+        return self.w.component_for_entity(e, CTransform).pos
+
+    def vel(self, e):
+        return self.w.component_for_entity(e, CVelocity).vel
+
+    def test_enemigos_rebotan_en_x(self):
+        e1 = make(self.w, (5, 5), (10, 10), "ENEMY", ENEMY_MASK, vel=(30, 0))
+        e2 = make(self.w, (13, 5), (10, 10), "ENEMY", ENEMY_MASK, vel=(-30, 0))
+        step(self.w)
+        self.assertLess(self.vel(e1).x, 0)
+        self.assertGreater(self.vel(e2).x, 0)
+        self.assertGreaterEqual(self.pos(e2).x - self.pos(e1).x, 10)
+        self.assertEqual(system_collision(self.w), [])
+
+    def test_enemigos_rebotan_en_y(self):
+        e1 = make(self.w, (5, 5), (10, 10), "ENEMY", ENEMY_MASK, vel=(0, 20))
+        e2 = make(self.w, (5, 12), (10, 10), "ENEMY", ENEMY_MASK, vel=(0, -20))
+        step(self.w)
+        self.assertLess(self.vel(e1).y, 0)
+        self.assertGreater(self.vel(e2).y, 0)
+
+    def test_enemigo_rebota_contra_base_fija(self):
+        base = make(self.w, (35, 15), (30, 30), "BASE")
+        enemy = make(self.w, (17, 15), (10, 10), "ENEMY", ENEMY_MASK, vel=(40, 0))
+        step(self.w)
+        self.assertEqual(self.pos(base), pygame.Vector2(35, 15))
+        self.assertLess(self.vel(enemy).x, 0)
+        self.assertLessEqual(self.pos(enemy).x + 5, 20)
+
+    def test_enemigo_que_ya_se_aleja_no_se_invierte(self):
+        make(self.w, (35, 15), (30, 30), "BASE")
+        enemy = make(self.w, (17, 15), (10, 10), "ENEMY", ENEMY_MASK, vel=(-40, 0))
+        step(self.w)
+        self.assertEqual(self.vel(enemy).x, -40)
+
+    def test_rebote_a_traves_del_borde_del_mundo(self):
+        # e1 está a la izquierda del borde derecho, e2 justo después del borde (x pequeña)
+        e1 = make(self.w, (996, 400), (10, 10), "ENEMY", ENEMY_MASK, vel=(30, 0))
+        e2 = make(self.w, (3, 400), (10, 10), "ENEMY", ENEMY_MASK, vel=(-30, 0))
+        step(self.w, WORLD)
+        self.assertLess(self.vel(e1).x, 0)
+        self.assertGreater(self.vel(e2).x, 0)
+        self.assertEqual(system_collision(self.w, WORLD), [])
 
 
-def vel(world, ent):
-    return world.component_for_entity(ent, CVelocity).vel
+class DestroyTests(unittest.TestCase):
+    def setUp(self):
+        self.w = esper.World()
+
+    def test_enemigo_contra_jugador_mueren_ambos(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
+        enemy = make(self.w, (10, 10), (10, 10), "ENEMY", ENEMY_MASK)
+        step(self.w)
+        self.assertFalse(self.w.entity_exists(player))
+        self.assertFalse(self.w.entity_exists(enemy))
+
+    def test_bala_enemiga_contra_jugador_mueren_ambos(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
+        bullet = make(self.w, (5, 5), (2, 2), "ENEMY_BULLET")
+        step(self.w)
+        self.assertFalse(self.w.entity_exists(player))
+        self.assertFalse(self.w.entity_exists(bullet))
+
+    def test_choque_multiple_en_un_frame(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
+        make(self.w, (10, 5), (10, 10), "ENEMY", ENEMY_MASK)
+        make(self.w, (10, 10), (10, 10), "ENEMY", ENEMY_MASK)
+        step(self.w)
+        self.assertFalse(self.w.entity_exists(player))
+
+    def test_pares_sin_regla_se_ignoran(self):
+        a = make(self.w, (5, 5), (10, 10), "PLAYER", ("BASE",))
+        b = make(self.w, (10, 10), (10, 10), "BASE")
+        step(self.w)
+        self.assertTrue(self.w.entity_exists(a))
+        self.assertTrue(self.w.entity_exists(b))
+        self.assertIsNone(self.w.try_component(a, CDestroy))
 
 
-# Dos enemigos que se acercan en X rebotan: se separan y se invierten sus velocidades
-world = esper.World()
-e1 = make(world, (0, 0), (10, 10), "ENEMY", ENEMY_MASK, vel=(30, 0))
-e2 = make(world, (8, 0), (10, 10), "ENEMY", ENEMY_MASK, vel=(-30, 0))
-step(world)
-assert vel(world, e1).x < 0 and vel(world, e2).x > 0, (vel(world, e1), vel(world, e2))
-assert pos(world, e1).x + 10 <= pos(world, e2).x, (pos(world, e1), pos(world, e2))
-assert system_collision(world) == []
-
-# Rebote en Y entre enemigos
-world = esper.World()
-e1 = make(world, (0, 0), (10, 10), "ENEMY", ENEMY_MASK, vel=(0, 20))
-e2 = make(world, (0, 7), (10, 10), "ENEMY", ENEMY_MASK, vel=(0, -20))
-step(world)
-assert vel(world, e1).y < 0 and vel(world, e2).y > 0
-
-# Enemigo contra base: solo el enemigo se mueve y rebota, la base queda fija
-world = esper.World()
-base = make(world, (20, 0), (30, 30), "BASE")
-enemy = make(world, (12, 10), (10, 10), "ENEMY", ENEMY_MASK, vel=(40, 0))
-step(world)
-assert pos(world, base) == pygame.Vector2(20, 0)
-assert vel(world, enemy).x < 0
-assert pos(world, enemy).x + 10 <= 20
-
-# Un enemigo que ya se aleja no se invierte (no queda "pegado")
-world = esper.World()
-base = make(world, (20, 0), (30, 30), "BASE")
-enemy = make(world, (12, 10), (10, 10), "ENEMY", ENEMY_MASK, vel=(-40, 0))
-step(world)
-assert vel(world, enemy).x == -40
-
-# Enemigo contra jugador: mueren ambos
-world = esper.World()
-player = make(world, (0, 0), (10, 10), "PLAYER", PLAYER_MASK)
-enemy = make(world, (5, 5), (10, 10), "ENEMY", ENEMY_MASK)
-step(world)
-assert not world.entity_exists(player) and not world.entity_exists(enemy)
-
-# Bala enemiga contra jugador: mueren ambos
-world = esper.World()
-player = make(world, (0, 0), (10, 10), "PLAYER", PLAYER_MASK)
-bullet = make(world, (4, 4), (2, 2), "ENEMY_BULLET")
-step(world)
-assert not world.entity_exists(player) and not world.entity_exists(bullet)
-
-# Un enemigo que toca a dos cosas en el mismo frame no rompe nada
-world = esper.World()
-player = make(world, (0, 0), (10, 10), "PLAYER", PLAYER_MASK)
-e1 = make(world, (5, 0), (10, 10), "ENEMY", ENEMY_MASK)
-e2 = make(world, (5, 5), (10, 10), "ENEMY", ENEMY_MASK)
-step(world)
-assert not world.entity_exists(player)
-
-# Pares sin regla se ignoran
-world = esper.World()
-a = make(world, (0, 0), (10, 10), "PLAYER", ("BASE",))
-b = make(world, (5, 5), (10, 10), "BASE")
-step(world)
-assert world.entity_exists(a) and world.entity_exists(b)
-assert world.try_component(a, CDestroy) is None
-
-print("COLLISION RULES OK")
+if __name__ == "__main__":
+    unittest.main()

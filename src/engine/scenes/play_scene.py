@@ -83,8 +83,9 @@ class PlayScene(Scene):
         self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
-        collisions = system_collision(self.world)
-        system_collision_rules(self.world, collisions, self.collision_rules)
+        collisions = system_collision(self.world, self.engine.world_size)
+        system_collision_rules(self.world, collisions, self.collision_rules,
+                               self.engine.world_size)
         system_destroy(self.world)
         system_camera_follow(self.world, self.camera)
         system_star_blink(self.world, delta_time)
