@@ -25,7 +25,7 @@ class PlayScene(Scene):
         eng = self.engine
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
-        level = load_level(1)
+        level = load_level(eng.level)
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
         for b in level["bases"]:
@@ -40,6 +40,13 @@ class PlayScene(Scene):
         self.paused = False
         self.pause_text = ServiceLocator.fonts.get("main").render(
             "JUEGO PAUSADO", False, pygame.Color(255, 255, 255))
+        # BLAST OFF!: al empezar el nivel el jugador no se mueve hasta que acaba la cuenta.
+        blast = eng.cfg_world["blast_off"]
+        self.blast_left = blast["seconds"]
+        self.blast_text = ServiceLocator.fonts.get("main").render(
+            blast["text"], False, pygame.Color(255, 255, 255))
+        if ServiceLocator.sounds.has("blast_off"):
+            ServiceLocator.sounds.play("blast_off")
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
@@ -52,13 +59,21 @@ class PlayScene(Scene):
             if action == "SELECT":
                 self.engine.switch_scene("TITLE")
             return
+        if self.blast_left > 0:
+            # Durante BLAST OFF! el jugador no controla la nave (ni guarda la dirección para después).
+            return
         dirs = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
         if action in dirs:
             self.direction = pygame.Vector2(dirs[action])
 
     def do_update(self, delta_time: float) -> None:
+        # La pausa va primero: congela también la cuenta de BLAST OFF!.
         if self.paused:
             # En pausa solo las estrellas siguen brillando, quietas (sin parallax ni movimiento).
+            system_star_blink(self.world, delta_time)
+            return
+        if self.blast_left > 0:
+            self.blast_left = max(0.0, self.blast_left - delta_time)
             system_star_blink(self.world, delta_time)
             return
         self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
@@ -82,3 +97,6 @@ class PlayScene(Scene):
         system_rendering(self.world, screen)
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
+        if self.blast_left > 0:
+            screen.blit(self.blast_text, self.blast_text.get_rect(
+                center=self.engine.viewport.center))

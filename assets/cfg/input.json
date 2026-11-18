@@ -8,6 +8,7 @@
         "SPECIAL": "K_x",
         "PAUSE": "K_p",
         "SELECT": "K_RETURN",
+        "BACK": "K_ESCAPE",
         "CHEAT": "K_F1"
     }
 }

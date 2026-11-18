@@ -25,6 +25,9 @@ class _Sounds:
         self._paths = paths
         self._cache: dict[str, pygame.mixer.Sound] = {}
 
+    def has(self, name: str) -> bool:
+        return name in self._paths
+
     def play(self, name: str) -> None:
         if name not in self._cache:
             self._cache[name] = pygame.mixer.Sound(self._paths[name])

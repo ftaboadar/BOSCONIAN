@@ -17,6 +17,9 @@ class Scene:
     def do_action(self, action: str, phase: Phase) -> None:
         """Recibe una acción lógica del input."""
 
+    def do_any_key(self) -> None:
+        """Se llama con cualquier tecla pulsada, esté o no mapeada a una acción."""
+
     def do_update(self, delta_time: float) -> None:
         """Ejecuta los sistemas de la escena."""
 

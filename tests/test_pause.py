@@ -16,9 +16,26 @@ class TestPause(unittest.TestCase):
         self.engine = GameEngine()
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
+        # Sin BLAST OFF!: si no, la cuenta inicial ya impide moverse y las pruebas de pausa
+        # pasarían aunque la pausa no congelara nada.
+        self.scene.blast_left = 0
 
     def tearDown(self) -> None:
         self.engine._clean()
+
+    def test_player_moves_when_not_paused(self) -> None:
+        """Control: sin pausa el jugador sí se mueve, así la prueba de abajo tiene sentido."""
+        before = self.scene.world.component_for_entity(self.scene.player, CTransform).pos.copy()
+        self.scene.do_update(0.5)
+        after = self.scene.world.component_for_entity(self.scene.player, CTransform).pos
+        self.assertNotEqual(before, after)
+
+    def test_pause_freezes_blast_off_countdown(self) -> None:
+        self.scene.blast_left = 2.0
+        self.scene.do_action("PAUSE", Phase.START)
+        for _ in range(30):
+            self.scene.do_update(0.1)
+        self.assertEqual(self.scene.blast_left, 2.0)
 
     def test_pause_toggles_with_pause_action(self) -> None:
         self.scene.do_action("PAUSE", Phase.START)
