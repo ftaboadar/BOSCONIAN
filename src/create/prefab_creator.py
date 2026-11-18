@@ -5,6 +5,8 @@ import random
 import esper
 import pygame
 
+from src.ecs.components.c_base import CBase
+from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_camera_target import CCameraTarget
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
@@ -99,10 +101,35 @@ def create_enemy_spawner(world: esper.World, cfg: dict, difficulty: float) -> in
         difficulty))
 
 
-def create_base_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
-    """Base provisional (hito 4 la reemplaza): cuadro rojo de 24x24."""
-    surf = pygame.Surface((24, 24))
-    surf.fill((200, 40, 40))
-    return world.create_entity(
-        CTransform(pygame.Vector2(pos)), CSurface(surf), CWorld(), CMinimapTrack("base"),
+def _sprite(cfg: dict, rect: dict, quarter_turns: int) -> pygame.Surface:
+    """Recorte de la hoja de sprites de las bases, con el colorkey transparente y girado."""
+    sheet = ServiceLocator.images.get(cfg["image"])
+    surf = sheet.subsurface(pygame.Rect(rect["x"], rect["y"], rect["w"], rect["h"])).copy()
+    key = color_from_cfg(cfg["colorkey"])
+    pixels = pygame.PixelArray(surf)
+    pixels.replace(key, pygame.Color(0, 0, 0, 0))
+    pixels.close()
+    return pygame.transform.rotate(surf, 90 * quarter_turns)
+
+
+def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: dict) -> int:
+    """Base enemiga quieta en `pos`: una entidad con el sprite completo más una entidad
+    por cada una de sus seis torretas y otra por el núcleo (sin sprite propio).
+
+    bases.json describe la base vertical (abierta arriba y abajo, así que el núcleo
+    se alcanza con un disparo vertical); la horizontal es la misma girada 90 grados.
+    """
+    turns = 0 if orientation == "vertical" else 1
+    turret = cfg["turret"]
+    base = world.create_entity(
+        CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
+        CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"]),
     )
+    for off in turret["offsets"]:
+        offset = pygame.Vector2(off["x"], off["y"]).rotate(-90 * turns)
+        world.create_entity(CTransform(pos + offset), CWorld(),
+                            CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]))
+    world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
+                        CBasePart(base, "core", pygame.Vector2()))
+    return base

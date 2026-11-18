@@ -18,7 +18,7 @@ El proyecto avanza por hitos (ver el tablero del repositorio).
 | 6 Bonos | Intro, atractor, cutscene, gamepad, jefe, formaciones, espía, editor | En curso |
 | 7 Entrega | Publicación, documentos y video | Pendiente |
 
-Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO"), un jugador y unas bases provisionales sobre un mundo toroidal con cámara y minimapa, y enemigos I, P y E (cuadros de color provisionales) que salen alrededor del jugador.
+Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO"), un jugador provisional y las bases enemigas (seis torretas y núcleo, horizontales o verticales según el nivel) sobre un mundo toroidal con cámara y minimapa, y enemigos I, P y E (cuadros de color provisionales) que salen alrededor del jugador.
 
 ## Requisitos y ejecución
 

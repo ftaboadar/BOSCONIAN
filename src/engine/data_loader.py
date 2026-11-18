@@ -8,6 +8,7 @@ CFG_DIR = "assets/cfg"
 LEVELS_DIR = os.path.join(CFG_DIR, "levels")
 LEVEL_FILE = re.compile(r"^level_(\d{2})\.json$")
 ORIENTATIONS = ("horizontal", "vertical")
+TURRETS_PER_BASE = 6
 RESOURCE_SECTIONS = ("images", "sounds", "music", "fonts")
 
 
@@ -115,6 +116,23 @@ def load_enemies() -> dict:
         raise ConfigError(f"{path} types: spawn_weight no puede ser negativo ni todos cero")
     require_keys(cfg["types"]["P"]["wander"], ("distance", "radius", "jitter"),
                  f"{path} types.P.wander")
+    return cfg
+
+
+def load_bases() -> dict:
+    """Carga bases.json: puntos, sprite de la base y sus seis torretas."""
+    path = os.path.join(CFG_DIR, "bases.json")
+    cfg = load_entity_cfg("bases", ("points", "image", "colorkey", "rect", "turret"))
+    require_keys(cfg["points"], ("base", "turret"), f"{path} points")
+    require_keys(cfg["colorkey"], ("r", "g", "b"), f"{path} colorkey")
+    require_keys(cfg["rect"], ("x", "y", "w", "h"), f"{path} rect")
+    turret = cfg["turret"]
+    require_keys(turret, ("radius", "wreck_rect", "offsets"), f"{path} turret")
+    require_keys(turret["wreck_rect"], ("x", "y", "w", "h"), f"{path} turret.wreck_rect")
+    if not isinstance(turret["offsets"], list) or len(turret["offsets"]) != TURRETS_PER_BASE:
+        raise ConfigError(f"{path} turret.offsets: deben ser {TURRETS_PER_BASE} torretas")
+    for i, offset in enumerate(turret["offsets"]):
+        require_keys(offset, ("x", "y"), f"{path} turret.offsets[{i}]")
     return cfg
 
 

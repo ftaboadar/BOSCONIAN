@@ -1,6 +1,6 @@
 import pygame
 
-from src.create.prefab_creator import (create_base_placeholder, create_enemy_spawner,
+from src.create.prefab_creator import (create_base, create_enemy_spawner,
                                        create_player_placeholder, create_stars, create_text)
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -13,14 +13,14 @@ from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
-from src.engine.data_loader import load_enemies, load_entity_cfg, load_level
+from src.engine.data_loader import load_bases, load_enemies, load_entity_cfg, load_level
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
 
 
 class PlayScene(Scene):
-    """Escena de nivel: mundo, cámara, estrellas, minimapa y enemigos (jugador y bases provisionales)."""
+    """Escena de nivel: mundo, cámara, estrellas, minimapa, bases y enemigos (jugador provisional)."""
 
     def do_create(self) -> None:
         eng = self.engine
@@ -31,8 +31,9 @@ class PlayScene(Scene):
         self.player_speed = load_entity_cfg("player", ("max_speed",))["max_speed"]
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
+        cfg_bases = load_bases()
         for b in level["bases"]:
-            create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
+            create_base(self.world, pygame.Vector2(b["x"], b["y"]), b["orientation"], cfg_bases)
         # Enemigos I, P y E: salen alrededor del jugador a un ritmo que sube con la dificultad.
         self.cfg_enemies = load_enemies()
         create_enemy_spawner(self.world, self.cfg_enemies, level["difficulty"])
