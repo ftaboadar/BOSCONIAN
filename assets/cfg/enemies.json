@@ -1,0 +1,25 @@
+{
+    "deviation_degrees": { "easy": 50, "hard": 5 },
+    "types": {
+        "I": {
+            "speed_factor": 1.15,
+            "turn_rate": 120,
+            "chase_seconds": 6.0,
+            "size": 8,
+            "color": { "r": 255, "g": 220, "b": 0 }
+        },
+        "P": {
+            "speed_factor": 1.15,
+            "turn_rate": 120,
+            "chase_seconds": 1.5,
+            "wander": { "distance": 30, "radius": 20, "jitter": 720 },
+            "size": 8,
+            "color": { "r": 0, "g": 220, "b": 255 }
+        },
+        "E": {
+            "speed_factor": 1.6,
+            "size": 8,
+            "color": { "r": 255, "g": 64, "b": 255 }
+        }
+    }
+}

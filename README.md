@@ -69,7 +69,8 @@ Patrones usados:
 - **Service locator**: acceso único a imágenes, sonidos, música y fuentes.
 - **Escena**: título, instrucciones, créditos, nivel y modo atractor.
 - **Archivos de configuración**: leídos y validados por `src/engine/data_loader.py`.
-- **State**: pendiente, llega con la IA de los enemigos (tarea #20).
+- **State**: IA de los enemigos (`s_enemy_state.py`). Cada tipo tiene su máquina de estados: I persigue y luego se va (CHASE → LEAVE), P persigue y pronto deambula (CHASE → WANDER) y E va derecho (STRAIGHT).
+- **Steering behaviours**: cada estado usa seek, flee o wander (`src/engine/steering.py`) con velocidad constante, siempre mayor que la del jugador (`speed_factor` > 1 en `enemies.json`). La `difficulty` del nivel (0 a 1) define cuánto se desvían al perseguir. Los enemigos aparecerán en el juego cuando esté el spawn (tarea #21).
 
 ## Pruebas
 

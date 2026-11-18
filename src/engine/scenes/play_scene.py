@@ -2,20 +2,20 @@ import pygame
 
 from src.create.prefab_creator import (create_base_placeholder, create_player_placeholder,
                                        create_stars, create_text)
+from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_camera import system_camera_follow
+from src.ecs.systems.s_enemy_state import system_enemy_state
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
-from src.engine.data_loader import load_level
+from src.engine.data_loader import load_entity_cfg, load_level
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
-
-PLACEHOLDER_SPEED = 80  # provisional: el hito 3 lo reemplaza por aceleración
 
 
 class PlayScene(Scene):
@@ -26,6 +26,8 @@ class PlayScene(Scene):
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
+        # Velocidad del jugador (el hito 3 añade la aceleración); los enemigos van algo más rápido.
+        self.player_speed = load_entity_cfg("player", ("max_speed",))["max_speed"]
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
         for b in level["bases"]:
@@ -76,7 +78,9 @@ class PlayScene(Scene):
             self.blast_left = max(0.0, self.blast_left - delta_time)
             system_star_blink(self.world, delta_time)
             return
-        self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
+        self.world.component_for_entity(self.player, CVelocity).vel = self.direction * self.player_speed
+        player_pos = self.world.component_for_entity(self.player, CTransform).pos
+        system_enemy_state(self.world, player_pos, self.engine.world_size, delta_time)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_camera_follow(self.world, self.camera)

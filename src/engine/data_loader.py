@@ -59,6 +59,10 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    # Dificultad de la IA enemiga: 0 = se desvían más, 1 = se acercan más. Opcional.
+    level.setdefault("difficulty", 0.0)
+    if not 0 <= level["difficulty"] <= 1:
+        raise ConfigError(f"{path}: difficulty debe estar entre 0 y 1")
     return level
 
 
@@ -67,6 +71,29 @@ def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:
     path = os.path.join(CFG_DIR, f"{name}.json")
     cfg = load_json(path)
     require_keys(cfg, required, path)
+    return cfg
+
+
+ENEMY_TYPE_KEYS = {
+    "I": ("speed_factor", "turn_rate", "chase_seconds", "size", "color"),
+    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "size", "color"),
+    "E": ("speed_factor", "size", "color"),
+}
+
+
+def load_enemies() -> dict:
+    """Carga enemies.json. Cada tipo debe ir más rápido que el jugador (speed_factor > 1)."""
+    path = os.path.join(CFG_DIR, "enemies.json")
+    cfg = load_entity_cfg("enemies", ("deviation_degrees", "types"))
+    require_keys(cfg["deviation_degrees"], ("easy", "hard"), f"{path} deviation_degrees")
+    require_keys(cfg["types"], tuple(ENEMY_TYPE_KEYS), f"{path} types")
+    for kind, keys in ENEMY_TYPE_KEYS.items():
+        where = f"{path} types.{kind}"
+        require_keys(cfg["types"][kind], keys, where)
+        if cfg["types"][kind]["speed_factor"] <= 1:
+            raise ConfigError(f"{where}: speed_factor debe ser mayor que 1")
+    require_keys(cfg["types"]["P"]["wander"], ("distance", "radius", "jitter"),
+                 f"{path} types.P.wander")
     return cfg
 
 
