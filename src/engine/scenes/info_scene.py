@@ -11,6 +11,7 @@ class InfoScene(Scene):
     """Página de texto del menú. Las subclases fijan la sección de menu.json que muestran."""
 
     CFG_KEY = ""
+    HINT = "ENTER: VOLVER"
 
     def do_create(self) -> None:
         self.area = self.engine.screen.get_rect()
@@ -23,7 +24,10 @@ class InfoScene(Scene):
         self.lines.append((font.render(page["title"], False, color_from_cfg(cfg["colors"]["title"])), 24))
         for i, text in enumerate(page["lines"]):
             self.lines.append((font.render(text, False, white), 52 + i * cfg["line_height"]))
-        self.hint = font.render("ENTER: VOLVER", False, color_from_cfg(cfg["colors"]["selected"]))
+        self.hint = font.render(self.hint_text(), False, color_from_cfg(cfg["colors"]["selected"]))
+
+    def hint_text(self) -> str:
+        return self.HINT
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase == Phase.START and action in ("SELECT", "BACK"):
