@@ -6,7 +6,7 @@ import re
 
 CFG_DIR = "assets/cfg"
 LEVELS_DIR = os.path.join(CFG_DIR, "levels")
-LEVEL_FILE = re.compile(r"^level_(\d+)\.json$")
+LEVEL_FILE = re.compile(r"^level_(\d{2})\.json$")
 ORIENTATIONS = ("horizontal", "vertical")
 RESOURCE_SECTIONS = ("images", "sounds", "music", "fonts")
 
@@ -56,7 +56,9 @@ def load_level(number: int) -> dict:
         where = f"{path} bases[{i}]"
         require_keys(base, ("x", "y", "orientation"), where)
         if base["orientation"] not in ORIENTATIONS:
-            raise ConfigError(f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}")
+            raise ConfigError(
+                f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
+            )
     return level
 
 
