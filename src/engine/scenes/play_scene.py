@@ -4,13 +4,16 @@ from src.create.prefab_creator import (create_base_placeholder, create_player_pl
                                        create_stars, create_text)
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_camera import system_camera_follow
+from src.ecs.systems.s_collision import system_collision
+from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
+from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
-from src.engine.data_loader import load_level
+from src.engine.data_loader import load_json, load_level
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
@@ -23,6 +26,7 @@ class PlayScene(Scene):
 
     def do_create(self) -> None:
         eng = self.engine
+        self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
@@ -79,6 +83,9 @@ class PlayScene(Scene):
         self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
+        collisions = system_collision(self.world)
+        system_collision_rules(self.world, collisions, self.collision_rules)
+        system_destroy(self.world)
         system_camera_follow(self.world, self.camera)
         system_star_blink(self.world, delta_time)
         system_star_parallax(self.world, self.engine.viewport, self.camera.delta,
