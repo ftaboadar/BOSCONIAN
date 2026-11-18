@@ -6,8 +6,10 @@ import esper
 import pygame
 
 from src.ecs.components.c_base import CBase
+from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_camera_target import CCameraTarget
+from src.ecs.components.c_enemy_bullet import CEnemyBullet
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_minimap_track import CMinimapTrack
@@ -16,6 +18,7 @@ from src.ecs.components.c_star import CStar
 from src.ecs.components.c_steering import CSteering
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
+from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
 from src.ecs.systems.s_enemy_state import INITIAL_STATE
@@ -101,35 +104,77 @@ def create_enemy_spawner(world: esper.World, cfg: dict, difficulty: float) -> in
         difficulty))
 
 
-def _sprite(cfg: dict, rect: dict, quarter_turns: int) -> pygame.Surface:
-    """Recorte de la hoja de sprites de las bases, con el colorkey transparente y girado."""
+def _sprite(cfg: dict, rect: dict, quarter_turns: int,
+            flip_x: bool = False, flip_y: bool = False) -> pygame.Surface:
+    """Recorte de la hoja de sprites de las bases, con el colorkey transparente, espejado
+    (si se pide) y girado."""
     sheet = ServiceLocator.images.get(cfg["image"])
     surf = sheet.subsurface(pygame.Rect(rect["x"], rect["y"], rect["w"], rect["h"])).copy()
     key = color_from_cfg(cfg["colorkey"])
     pixels = pygame.PixelArray(surf)
     pixels.replace(key, pygame.Color(0, 0, 0, 0))
     pixels.close()
-    return pygame.transform.rotate(surf, 90 * quarter_turns)
+    return pygame.transform.rotate(pygame.transform.flip(surf, flip_x, flip_y), 90 * quarter_turns)
 
 
-def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: dict) -> int:
+def _turret_frames(cfg: dict, off: dict, turns: int) -> list[pygame.Surface]:
+    """Cuadros de la torreta que está en `off`: cerrada, abierta y a punto de disparar.
+
+    Cerrada es tal cual viene dibujada en el sprite de la base; los otros cuadros de la
+    hoja son los de la torreta de arriba a la izquierda, espejados para las demás.
+    """
+    closed, *others = cfg["turret"]["frames"]
+    center = pygame.Rect(cfg["rect"]["x"], cfg["rect"]["y"], cfg["rect"]["w"], cfg["rect"]["h"]).center
+    in_base = {"x": center[0] + off["x"] - closed["w"] // 2,
+               "y": center[1] + off["y"] - closed["h"] // 2, "w": closed["w"], "h": closed["h"]}
+    return [_sprite(cfg, in_base, turns)] + [
+        _sprite(cfg, r, turns, off["x"] > 0, off["y"] > 0) for r in others]
+
+
+def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: dict,
+                core_mode: str = "open", difficulty: float = 0.0,
+                rng: random.Random | None = None) -> int:
     """Base enemiga quieta en `pos`: una entidad con el sprite completo más una entidad
     por cada una de sus seis torretas y otra por el núcleo (sin sprite propio).
 
     bases.json describe la base vertical (abierta arriba y abajo, así que el núcleo
     se alcanza con un disparo vertical); la horizontal es la misma girada 90 grados.
+    Cada torreta dispara a un intervalo propio, al azar dentro de `turret.fire_interval`.
+    Con `core_mode` "cycle" el núcleo se abre y se cierra (pasa menos tiempo cerrado
+    con más `difficulty`, 0..1); con "open" queda siempre abierto.
     """
+    rng = rng or random.Random()
     turns = 0 if orientation == "vertical" else 1
-    turret = cfg["turret"]
+    turret, core = cfg["turret"], cfg["core"]
+    core_frames = [_sprite(cfg, r, turns) for r in core["frames"]]
     base = world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
         CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
-        CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"]),
+        CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
+              core_frames, core["radius"]),
     )
     for off in turret["offsets"]:
         offset = pygame.Vector2(off["x"], off["y"]).rotate(-90 * turns)
+        interval = rng.uniform(turret["fire_interval"]["min"], turret["fire_interval"]["max"])
         world.create_entity(CTransform(pos + offset), CWorld(),
-                            CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]))
-    world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
-                        CBasePart(base, "core", pygame.Vector2()))
+                            CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]),
+                            CTurret(interval, _turret_frames(cfg, off, turns)))
+    core_ent = world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
+                                   CBasePart(base, "core", pygame.Vector2()))
+    if core_mode == "cycle":
+        # El sprite de la base trae el núcleo abierto: empieza en el último cuadro.
+        world.add_component(core_ent, CBaseCore(
+            _by_difficulty(core["closed_seconds"], difficulty), core["open_seconds"],
+            core["frame_seconds"], len(core_frames) - 1))
     return base
+
+
+def create_enemy_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                        cfg: dict) -> int:
+    """Bala pequeña de torreta (cuadro de color) que dura `seconds`."""
+    surf = pygame.Surface((cfg["size"], cfg["size"]))
+    surf.fill(color_from_cfg(cfg["color"]))
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
+        CWorld(), CEnemyBullet(cfg["seconds"]),
+    )

@@ -4,7 +4,9 @@ from src.create.prefab_creator import (create_base, create_enemy_spawner,
                                        create_player_placeholder, create_stars, create_text)
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_camera import system_camera_follow
+from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.ecs.systems.s_enemy_state import system_enemy_state
 from src.ecs.systems.s_minimap import system_minimap_rendering
@@ -31,9 +33,11 @@ class PlayScene(Scene):
         self.player_speed = load_entity_cfg("player", ("max_speed",))["max_speed"]
         start = level["player_start"]
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
-        cfg_bases = load_bases()
+        # Bases: las torretas disparan de cerca; el núcleo queda abierto o tiene ciclo según el nivel.
+        self.cfg_bases = load_bases()
         for b in level["bases"]:
-            create_base(self.world, pygame.Vector2(b["x"], b["y"]), b["orientation"], cfg_bases)
+            create_base(self.world, pygame.Vector2(b["x"], b["y"]), b["orientation"],
+                        self.cfg_bases, level["core_mode"], level["difficulty"])
         # Enemigos I, P y E: salen alrededor del jugador a un ritmo que sube con la dificultad.
         self.cfg_enemies = load_enemies()
         create_enemy_spawner(self.world, self.cfg_enemies, level["difficulty"])
@@ -88,8 +92,12 @@ class PlayScene(Scene):
         system_enemy_spawner(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
                              self.player_speed, delta_time)
         system_enemy_state(self.world, player_pos, self.engine.world_size, delta_time)
+        system_turrets(self.world, player_pos, self.engine.world_size, self.cfg_bases, delta_time)
+        system_base_cores(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
+                          self.player_speed, delta_time)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
+        system_enemy_bullets(self.world, self.engine.world_size, delta_time)
         system_enemy_despawn(self.world, player_pos, self.engine.world_size,
                              self.cfg_enemies["spawn"]["despawn_distance"])
         system_camera_follow(self.world, self.camera)

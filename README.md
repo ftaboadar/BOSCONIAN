@@ -18,7 +18,7 @@ El proyecto avanza por hitos (ver el tablero del repositorio).
 | 6 Bonos | Intro, atractor, cutscene, gamepad, jefe, formaciones, espía, editor | En curso |
 | 7 Entrega | Publicación, documentos y video | Pendiente |
 
-Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO"), un jugador provisional y las bases enemigas (seis torretas y núcleo, horizontales o verticales según el nivel) sobre un mundo toroidal con cámara y minimapa, y enemigos I, P y E (cuadros de color provisionales) que salen alrededor del jugador.
+Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO"), un jugador provisional y las bases enemigas (seis torretas y núcleo, horizontales o verticales según el nivel) sobre un mundo toroidal con cámara y minimapa, y enemigos I, P y E (cuadros de color provisionales) que salen alrededor del jugador. Las torretas de las bases se abren y disparan balas pequeñas cuando el jugador está cerca, cada una a su propio intervalo; esas balas también destruyen a los enemigos que se cruzan. Según el nivel (`"core_mode"` en `assets/cfg/levels/level_NN.json`) el núcleo queda siempre abierto (`"open"`) o se abre y se cierra lanzando un enemigo E cada vez que se abre (`"cycle"`); cerrado no recibe daño. Los tiempos, el alcance y las balas están en `assets/cfg/bases.json`.
 
 ## Requisitos y ejecución
 

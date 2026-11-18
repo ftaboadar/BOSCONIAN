@@ -9,6 +9,8 @@ LEVELS_DIR = os.path.join(CFG_DIR, "levels")
 LEVEL_FILE = re.compile(r"^level_(\d{2})\.json$")
 ORIENTATIONS = ("horizontal", "vertical")
 TURRETS_PER_BASE = 6
+TURRET_FRAMES = 3  # cerrada, abierta y a punto de disparar
+CORE_MODES = ("open", "cycle")  # siempre abierto sin disparar, o se abre y cierra
 RESOURCE_SECTIONS = ("images", "sounds", "music", "fonts")
 
 
@@ -64,6 +66,10 @@ def load_level(number: int) -> dict:
     level.setdefault("difficulty", 0.0)
     if not 0 <= level["difficulty"] <= 1:
         raise ConfigError(f"{path}: difficulty debe estar entre 0 y 1")
+    # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
+    level.setdefault("core_mode", "open")
+    if level["core_mode"] not in CORE_MODES:
+        raise ConfigError(f"{path}: core_mode debe ser {' o '.join(CORE_MODES)}")
     return level
 
 
@@ -119,20 +125,47 @@ def load_enemies() -> dict:
     return cfg
 
 
+def _require_rects(rects: list, source: str) -> None:
+    for i, rect in enumerate(rects):
+        require_keys(rect, ("x", "y", "w", "h"), f"{source}[{i}]")
+
+
 def load_bases() -> dict:
-    """Carga bases.json: puntos, sprite de la base y sus seis torretas."""
+    """Carga bases.json: puntos, sprite de la base, sus seis torretas (con sus cuadros y
+    su disparo), las balas y el núcleo (cuadros y ciclo de apertura)."""
     path = os.path.join(CFG_DIR, "bases.json")
-    cfg = load_entity_cfg("bases", ("points", "image", "colorkey", "rect", "turret"))
+    cfg = load_entity_cfg("bases", ("points", "image", "colorkey", "rect", "turret",
+                                    "bullet", "core"))
     require_keys(cfg["points"], ("base", "turret"), f"{path} points")
     require_keys(cfg["colorkey"], ("r", "g", "b"), f"{path} colorkey")
     require_keys(cfg["rect"], ("x", "y", "w", "h"), f"{path} rect")
     turret = cfg["turret"]
-    require_keys(turret, ("radius", "wreck_rect", "offsets"), f"{path} turret")
+    require_keys(turret, ("radius", "wreck_rect", "offsets", "frames", "range",
+                          "fire_interval", "warn_seconds"), f"{path} turret")
     require_keys(turret["wreck_rect"], ("x", "y", "w", "h"), f"{path} turret.wreck_rect")
     if not isinstance(turret["offsets"], list) or len(turret["offsets"]) != TURRETS_PER_BASE:
         raise ConfigError(f"{path} turret.offsets: deben ser {TURRETS_PER_BASE} torretas")
     for i, offset in enumerate(turret["offsets"]):
         require_keys(offset, ("x", "y"), f"{path} turret.offsets[{i}]")
+    if not isinstance(turret["frames"], list) or len(turret["frames"]) != TURRET_FRAMES:
+        raise ConfigError(f"{path} turret.frames: deben ser {TURRET_FRAMES} cuadros")
+    _require_rects(turret["frames"], f"{path} turret.frames")
+    require_keys(turret["fire_interval"], ("min", "max"), f"{path} turret.fire_interval")
+    if not 0 < turret["fire_interval"]["min"] <= turret["fire_interval"]["max"]:
+        raise ConfigError(f"{path} turret.fire_interval: debe cumplirse 0 < min <= max")
+    require_keys(cfg["bullet"], ("speed", "seconds", "size", "color"), f"{path} bullet")
+    require_keys(cfg["bullet"]["color"], ("r", "g", "b"), f"{path} bullet.color")
+    core = cfg["core"]
+    require_keys(core, ("radius", "frames", "closed_seconds", "open_seconds", "frame_seconds"),
+                 f"{path} core")
+    if not isinstance(core["frames"], list) or len(core["frames"]) < 2:
+        raise ConfigError(f"{path} core.frames: al menos 2 cuadros (cerrado y abierto)")
+    _require_rects(core["frames"], f"{path} core.frames")
+    require_keys(core["closed_seconds"], ("easy", "hard"), f"{path} core.closed_seconds")
+    if min(core["frame_seconds"], core["open_seconds"]) <= 0:
+        raise ConfigError(f"{path} core: frame_seconds y open_seconds deben ser mayores que 0")
+    if min(core["closed_seconds"]["easy"], core["closed_seconds"]["hard"]) < 0:
+        raise ConfigError(f"{path} core: closed_seconds no puede ser negativo")
     return cfg
 
 
