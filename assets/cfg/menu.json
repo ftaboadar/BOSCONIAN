@@ -5,6 +5,13 @@
         "title": { "r": 118, "g": 255, "b": 3 }
     },
     "line_height": 14,
+    "attract": {
+        "idle_seconds": 15,
+        "demo_seconds": 12,
+        "instructions_seconds": 8,
+        "turn_every": 1.5,
+        "hint": "PULSA UNA TECLA"
+    },
     "title_items": [
         { "label": "JUGAR", "action": "PLAY" },
         { "label": "NIVEL", "action": "LEVEL" },

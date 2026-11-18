@@ -4,6 +4,7 @@ import pygame
 
 from src.engine.data_loader import load_json, load_resources
 from src.engine.input.command import CommandMap
+from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
@@ -13,7 +14,8 @@ from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
-              "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene}
+              "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
+              "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene}
 
     def __init__(self) -> None:
         pygame.init()
@@ -76,6 +78,8 @@ class GameEngine:
             if event.type == pygame.QUIT:
                 self.is_running = False
                 continue
+            if event.type == pygame.KEYDOWN:
+                self._current_scene.do_any_key()
             command = self.commands.translate(event)
             if command is not None:
                 self._current_scene.do_action(*command)
