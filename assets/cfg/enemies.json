@@ -1,10 +1,18 @@
 {
     "deviation_degrees": { "easy": 50, "hard": 5 },
+    "spawn": {
+        "interval_seconds": { "easy": 5.0, "hard": 1.0 },
+        "max_alive": { "easy": 4, "hard": 12 },
+        "distance": 150,
+        "despawn_distance": 320
+    },
     "types": {
         "I": {
             "speed_factor": 1.15,
             "turn_rate": 120,
             "chase_seconds": 6.0,
+            "points": 50,
+            "spawn_weight": 3,
             "size": 8,
             "color": { "r": 255, "g": 220, "b": 0 }
         },
@@ -12,12 +20,16 @@
             "speed_factor": 1.15,
             "turn_rate": 120,
             "chase_seconds": 1.5,
+            "points": 60,
+            "spawn_weight": 2,
             "wander": { "distance": 30, "radius": 20, "jitter": 720 },
             "size": 8,
             "color": { "r": 0, "g": 220, "b": 255 }
         },
         "E": {
             "speed_factor": 1.6,
+            "points": 70,
+            "spawn_weight": 1,
             "size": 8,
             "color": { "r": 255, "g": 64, "b": 255 }
         }

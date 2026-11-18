@@ -75,23 +75,44 @@ def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:
 
 
 ENEMY_TYPE_KEYS = {
-    "I": ("speed_factor", "turn_rate", "chase_seconds", "size", "color"),
-    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "size", "color"),
-    "E": ("speed_factor", "size", "color"),
+    "I": ("speed_factor", "turn_rate", "chase_seconds", "points", "spawn_weight", "size", "color"),
+    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "points", "spawn_weight", "size", "color"),
+    "E": ("speed_factor", "points", "spawn_weight", "size", "color"),
 }
 
 
 def load_enemies() -> dict:
-    """Carga enemies.json. Cada tipo debe ir más rápido que el jugador (speed_factor > 1)."""
+    """Carga enemies.json: tipos I, P y E y la sección `spawn`.
+
+    Cada tipo debe ir más rápido que el jugador (speed_factor > 1) y tener un peso de
+    spawn no negativo; al menos uno debe ser positivo para que pueda salir algún enemigo.
+    """
     path = os.path.join(CFG_DIR, "enemies.json")
-    cfg = load_entity_cfg("enemies", ("deviation_degrees", "types"))
+    cfg = load_entity_cfg("enemies", ("deviation_degrees", "spawn", "types"))
     require_keys(cfg["deviation_degrees"], ("easy", "hard"), f"{path} deviation_degrees")
+    spawn = cfg["spawn"]
+    require_keys(spawn, ("interval_seconds", "max_alive", "distance", "despawn_distance"),
+                 f"{path} spawn")
+    for key in ("interval_seconds", "max_alive"):
+        require_keys(spawn[key], ("easy", "hard"), f"{path} spawn.{key}")
+    if min(spawn["interval_seconds"]["easy"], spawn["interval_seconds"]["hard"]) <= 0:
+        raise ConfigError(f"{path} spawn: interval_seconds debe ser mayor que 0")
+    if min(spawn["max_alive"]["easy"], spawn["max_alive"]["hard"]) < 1:
+        raise ConfigError(f"{path} spawn: max_alive debe ser al menos 1")
+    if spawn["despawn_distance"] <= spawn["distance"]:
+        raise ConfigError(f"{path} spawn: despawn_distance debe ser mayor que distance")
     require_keys(cfg["types"], tuple(ENEMY_TYPE_KEYS), f"{path} types")
+    unknown = [k for k in cfg["types"] if k not in ENEMY_TYPE_KEYS]
+    if unknown:
+        raise ConfigError(f"{path} types: tipos desconocidos {', '.join(unknown)}")
     for kind, keys in ENEMY_TYPE_KEYS.items():
         where = f"{path} types.{kind}"
         require_keys(cfg["types"][kind], keys, where)
         if cfg["types"][kind]["speed_factor"] <= 1:
             raise ConfigError(f"{where}: speed_factor debe ser mayor que 1")
+    weights = [t["spawn_weight"] for t in cfg["types"].values()]
+    if min(weights) < 0 or sum(weights) <= 0:
+        raise ConfigError(f"{path} types: spawn_weight no puede ser negativo ni todos cero")
     require_keys(cfg["types"]["P"]["wander"], ("distance", "radius", "jitter"),
                  f"{path} types.P.wander")
     return cfg

@@ -18,7 +18,7 @@ El proyecto avanza por hitos (ver el tablero del repositorio).
 | 6 Bonos | Intro, atractor, cutscene, gamepad, jefe, formaciones, espía, editor | En curso |
 | 7 Entrega | Publicación, documentos y video | Pendiente |
 
-Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO") y un jugador y unas bases provisionales sobre un mundo toroidal con cámara y minimapa.
+Lo que ya se puede ver: menú del título (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, escena de nivel con "BLAST OFF!", pausa con P ("JUEGO PAUSADO"), un jugador y unas bases provisionales sobre un mundo toroidal con cámara y minimapa, y enemigos I, P y E (cuadros de color provisionales) que salen alrededor del jugador.
 
 ## Requisitos y ejecución
 
@@ -70,7 +70,8 @@ Patrones usados:
 - **Escena**: título, instrucciones, créditos, nivel y modo atractor.
 - **Archivos de configuración**: leídos y validados por `src/engine/data_loader.py`.
 - **State**: IA de los enemigos (`s_enemy_state.py`). Cada tipo tiene su máquina de estados: I persigue y luego se va (CHASE → LEAVE), P persigue y pronto deambula (CHASE → WANDER) y E va derecho (STRAIGHT).
-- **Steering behaviours**: cada estado usa seek, flee o wander (`src/engine/steering.py`) con velocidad constante, siempre mayor que la del jugador (`speed_factor` > 1 en `enemies.json`). La `difficulty` del nivel (0 a 1) define cuánto se desvían al perseguir. Los enemigos aparecerán en el juego cuando esté el spawn (tarea #21).
+- **Steering behaviours**: cada estado usa seek, flee o wander (`src/engine/steering.py`) con velocidad constante, siempre mayor que la del jugador (`speed_factor` > 1 en `enemies.json`). La `difficulty` del nivel (0 a 1) define cuánto se desvían al perseguir.
+- **Enemigos I, P y E** (`s_enemy_spawner.py`): salen al azar desde cualquier dirección, fuera de la pantalla y rumbo al jugador. Valen 50, 60 y 70 puntos (`CPoints`). Con más `difficulty` salen más seguido y se permiten más a la vez; los que se alejan demasiado desaparecen. Ritmo, tope, distancias, puntos y proporción de cada tipo están en la sección `spawn` y en cada tipo de `enemies.json`.
 
 ## Pruebas
 

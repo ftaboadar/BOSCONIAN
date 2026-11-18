@@ -29,12 +29,12 @@ DT = 1 / 60
 CFG = {
     "deviation_degrees": {"easy": 60, "hard": 0},
     "types": {
-        "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0,
+        "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
               "size": 8, "color": {"r": 255, "g": 255, "b": 0}},
-        "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0,
+        "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0, "points": 60,
               "wander": {"distance": 30, "radius": 20, "jitter": 720},
               "size": 8, "color": {"r": 0, "g": 255, "b": 255}},
-        "E": {"speed_factor": 2.0, "size": 8, "color": {"r": 255, "g": 0, "b": 255}},
+        "E": {"speed_factor": 2.0, "points": 70, "size": 8, "color": {"r": 255, "g": 0, "b": 255}},
     },
 }
 

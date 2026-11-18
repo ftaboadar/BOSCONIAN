@@ -6,8 +6,10 @@ import esper
 import pygame
 
 from src.ecs.components.c_camera_target import CCameraTarget
+from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_minimap_track import CMinimapTrack
+from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_star import CStar
 from src.ecs.components.c_steering import CSteering
 from src.ecs.components.c_surface import CSurface
@@ -54,6 +56,11 @@ def create_player_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
     )
 
 
+def _by_difficulty(span: dict, difficulty: float) -> float:
+    """Valor entre `easy` (dificultad 0) y `hard` (dificultad 1)."""
+    return span["easy"] * (1 - difficulty) + span["hard"] * difficulty
+
+
 def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: pygame.Vector2,
                  cfg: dict, player_speed: float, difficulty: float,
                  rng: random.Random | None = None) -> int:
@@ -67,8 +74,7 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
     speed = player_speed * type_cfg["speed_factor"]
     surf = pygame.Surface((type_cfg["size"], type_cfg["size"]))
     surf.fill(color_from_cfg(type_cfg["color"]))
-    dev = cfg["deviation_degrees"]
-    max_dev = dev["easy"] * (1 - difficulty) + dev["hard"] * difficulty
+    max_dev = _by_difficulty(cfg["deviation_degrees"], difficulty)
     deviation = rng.choice((-1, 1)) * rng.uniform(max_dev / 2, max_dev)
     heading = pygame.Vector2(direction)
     if heading.length_squared() == 0:
@@ -79,7 +85,18 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
         CSurface(surf), CWorld(),
         CSteering(type_cfg.get("turn_rate", 0), deviation, type_cfg.get("wander")),
         CEnemyState(kind, INITIAL_STATE[kind], type_cfg.get("chase_seconds", 0)),
+        CPoints(type_cfg["points"]),
     )
+
+
+def create_enemy_spawner(world: esper.World, cfg: dict, difficulty: float) -> int:
+    """Generador de enemigos del nivel. Con más `difficulty` (0..1) salen más seguido
+    y se permiten más enemigos vivos a la vez."""
+    spawn = cfg["spawn"]
+    return world.create_entity(CEnemySpawner(
+        _by_difficulty(spawn["interval_seconds"], difficulty),
+        round(_by_difficulty(spawn["max_alive"], difficulty)),
+        difficulty))
 
 
 def create_base_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
