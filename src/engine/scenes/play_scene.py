@@ -36,6 +36,13 @@ class PlayScene(Scene):
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         self.direction = pygame.Vector2(0, -1)
+        # BLAST OFF!: al empezar el nivel el jugador no se mueve hasta que acaba la cuenta.
+        blast = eng.cfg_world["blast_off"]
+        self.blast_left = blast["seconds"]
+        self.blast_text = ServiceLocator.fonts.get("main").render(
+            blast["text"], False, pygame.Color(255, 255, 255))
+        if ServiceLocator.sounds.has("blast_off"):
+            ServiceLocator.sounds.play("blast_off")
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
@@ -47,6 +54,10 @@ class PlayScene(Scene):
             self.engine.switch_scene("TITLE")
 
     def do_update(self, delta_time: float) -> None:
+        if self.blast_left > 0:
+            self.blast_left = max(0.0, self.blast_left - delta_time)
+            system_star_blink(self.world, delta_time)
+            return
         self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
@@ -63,3 +74,6 @@ class PlayScene(Scene):
         system_rendering(self.world, screen)
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
+        if self.blast_left > 0:
+            screen.blit(self.blast_text, self.blast_text.get_rect(
+                center=self.engine.viewport.center))
