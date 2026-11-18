@@ -91,13 +91,13 @@ class TurretTests(BehaviorTestCase):
     def test_cerca_del_jugador_se_abren_y_disparan_balas_hacia_el(self):
         base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
         closed = self.image(base)
-        player = POS + pygame.Vector2(0, 30)
+        player = POS + pygame.Vector2(0, 90)
         self.run_turrets(0.5, player)
         self.assertNotEqual(self.image(base), closed)  # abiertas
         self.assertEqual(self.bullets(), [])           # aún no les toca disparar
         self.run_turrets(1.6, player)
         bullets = self.bullets()
-        self.assertGreaterEqual(len(bullets), 6)       # cada torreta ya disparó
+        self.assertGreaterEqual(len(bullets), 2)       # las dos de ese lado ya dispararon
         turret_pos = [tuple(self.world.component_for_entity(t, CTransform).pos)
                       for t in self.parts(base, "turret")]
         for c_t, c_v in bullets:
@@ -109,37 +109,47 @@ class TurretTests(BehaviorTestCase):
 
     def test_cada_torreta_dispara_a_su_propio_intervalo(self):
         base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
-        player = POS + pygame.Vector2(0, 30)
+        player = POS + pygame.Vector2(70, 70)  # del lado de tres torretas
         counts = []
         for _ in range(round(2.1 / DT)):
             system_turrets(self.world, player, WORLD, self.cfg, DT)
             counts.append(len(self.bullets()))
-        # No salen las seis a la vez: la cuenta sube en varios momentos distintos.
-        self.assertGreaterEqual(len(set(counts)), 6)
+        # No salen las tres a la vez: la cuenta sube de una en una, en momentos distintos.
+        self.assertTrue({0, 1, 2, 3} <= set(counts))
+        self.assertEqual(len(self.parts(base, "turret")), 6)
+
+    def test_solo_disparan_hacia_afuera_nunca_a_traves_de_la_base(self):
+        base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
+        self.run_turrets(2.1, POS + pygame.Vector2(0, 90))  # el jugador está abajo
+        self.assertGreaterEqual(len(self.bullets()), 2)
+        for c_t, _ in self.bullets():
+            # Todas salieron de las dos torretas de abajo (a 24 px del centro) y bajan.
+            self.assertGreaterEqual(c_t.pos.y, POS.y + 24)
         self.assertEqual(len(self.parts(base, "turret")), 6)
 
     def test_al_alejarse_el_jugador_se_vuelven_a_cerrar(self):
         base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
         closed = self.image(base)
-        self.run_turrets(0.5, POS + pygame.Vector2(0, 30))
+        self.run_turrets(0.5, POS + pygame.Vector2(0, 90))
+        self.assertNotEqual(self.image(base), closed)
         self.run_turrets(DT, FAR)
         self.assertEqual(self.image(base), closed)
 
     def test_el_alcance_cruza_el_borde_del_mundo(self):
         create_base(self.world, pygame.Vector2(1000, 500), "vertical", self.cfg, rng=self.rng)
-        self.run_turrets(2.1, pygame.Vector2(10, 500))  # a 34 px cruzando el borde
-        self.assertGreaterEqual(len(self.bullets()), 4)
+        self.run_turrets(2.1, pygame.Vector2(60, 500))  # a 84 px cruzando el borde
+        self.assertGreaterEqual(len(self.bullets()), 3)
 
     def test_una_torreta_destruida_no_dispara_ni_tapa_sus_restos(self):
         base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
         for turret in self.parts(base, "turret")[1:]:
             damage_base_part(self.world, turret, pygame.Vector2(0, -1))
-        self.run_turrets(2.1, POS + pygame.Vector2(0, 30))
-        self.assertIn(len(self.bullets()), (1, 2, 3))  # solo la torreta que queda
+        self.run_turrets(2.1, POS + pygame.Vector2(-30, -80))  # del lado de la que queda
+        self.assertIn(len(self.bullets()), (1, 2, 3))  # solo dispara esa
 
     def test_los_restos_de_una_torreta_abierta_son_iguales_a_los_de_una_cerrada(self):
         images = []
-        for player in (FAR, POS + pygame.Vector2(0, 30)):
+        for player in (FAR, POS + pygame.Vector2(0, 90)):
             self.world = esper.World()
             base = create_base(self.world, POS, "vertical", self.cfg, rng=random.Random(7))
             self.run_turrets(0.5, player)
@@ -383,10 +393,10 @@ class PlaySceneBehaviorTests(unittest.TestCase):
         world = self.start("cycle")
         self.put_player((300, 470))
         seen = set()
-        for _ in range(round(12.0 / DT)):  # cuadro a cuadro: una bala de torreta puede matarlo
-            self.scene.do_update(DT)
+        for _ in range(12):
+            self.run_for(1.0)
             seen.update(c_e.kind for _, c_e in world.get_component(CEnemyState))
-        self.assertEqual(seen, {"E"})
+        self.assertEqual(seen, {"E"})  # las balas de su propia base no lo alcanzan al salir
 
     def test_en_pausa_las_bases_no_disparan(self):
         world = self.start("cycle")

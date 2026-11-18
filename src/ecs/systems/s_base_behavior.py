@@ -19,14 +19,17 @@ TURRET_CLOSED, TURRET_OPEN, TURRET_WARN = 0, 1, 2
 
 def system_turrets(world: esper.World, player_pos: pygame.Vector2, world_size: pygame.Vector2,
                    cfg: dict, delta_time: float) -> None:
-    """Con el jugador a menos de `turret.range` px la torreta se abre y le dispara una
-    bala cada vez que cumple su intervalo; `warn_seconds` antes se ve a punto de disparar.
-    Fuera de alcance se cierra y su cuenta queda en pausa."""
+    """Con el jugador a menos de `turret.range` px y de su lado de la base, la torreta se
+    abre y le dispara una bala cada vez que cumple su intervalo; `warn_seconds` antes se ve
+    a punto de disparar. Si no, se cierra y su cuenta queda en pausa.
+
+    Solo dispara hacia afuera: una bala nunca cruza la base ni alcanza al enemigo E que
+    sale del núcleo."""
     turret = cfg["turret"]
     for _, (c_t, c_part, c_tur) in world.get_components(CTransform, CBasePart, CTurret):
         to_player = wrap_delta(player_pos - c_t.pos, world_size)
         frame = TURRET_CLOSED
-        if to_player.length() <= turret["range"]:
+        if to_player.length() <= turret["range"] and to_player.dot(c_part.offset) >= 0:
             c_tur.timer += delta_time
             if c_tur.timer >= c_tur.interval and to_player.length_squared() > 0:
                 c_tur.timer = 0.0  # un disparo por intervalo, aunque el frame haya sido largo
