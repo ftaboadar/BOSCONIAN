@@ -150,7 +150,10 @@ class BaseDestructionTests(BaseTestCase):
         self.assertEqual(self.destroyed, [(base, (300, 400))])
 
     def test_se_destruye_con_un_unico_disparo_al_nucleo(self):
-        for orientation, shots in (("vertical", (UP, DOWN)), ("horizontal", (LEFT, RIGHT))):
+        # El jugador dispara en 8 direcciones: las diagonales también entran al núcleo.
+        diagonals = tuple(pygame.Vector2(v) for v in ((1, 1), (1, -1), (-1, 1), (-1, -1)))
+        for orientation, shots in (("vertical", (UP, DOWN) + diagonals),
+                                   ("horizontal", (LEFT, RIGHT) + diagonals)):
             for shot in shots:
                 with self.subTest(orientation=orientation, shot=tuple(shot)):
                     self.world = esper.World()

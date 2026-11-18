@@ -18,8 +18,8 @@ def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) ->
     y devuelve los puntos ganados.
 
     Una torreta siempre se destruye; al caer la sexta cae la base entera. El núcleo solo
-    es vulnerable a disparos en la dirección de la orientación de la base (un único
-    disparo la destruye); en la otra dirección el disparo no hace nada. Al destruirse
+    es vulnerable a disparos en la dirección de la orientación de la base o en diagonal
+    (un único disparo la destruye); en la dirección perpendicular no le pasa nada. Al destruirse
     la base se emite el evento BASE_DESTROYED. Una parte ya destruida (dos balas en el
     mismo frame) no da puntos.
     """
@@ -31,7 +31,7 @@ def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) ->
     if c_part.kind == "core":
         along = abs(shot_dir.y) if c_base.orientation == "vertical" else abs(shot_dir.x)
         across = abs(shot_dir.x) if c_base.orientation == "vertical" else abs(shot_dir.y)
-        return _destroy_base(world, base) if along > across else 0
+        return _destroy_base(world, base) if along > 0 and along >= across else 0
     points = world.component_for_entity(part, CPoints).points
     _draw_turret_wreck(world, base, c_base, c_part.offset)
     world.delete_entity(part, immediate=True)
