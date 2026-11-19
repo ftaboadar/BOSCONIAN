@@ -2,6 +2,7 @@ import random
 
 import pygame
 
+from src.ecs.components.c_player_ship import CPlayerShip
 from src.engine.input.command import Phase
 from src.engine.scenes.info_scene import InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
@@ -20,6 +21,7 @@ class AttractScene(PlayScene):
         self.elapsed = 0.0
         self.since_turn = 0.0
         self.cfg = cfg
+        self.direction = pygame.Vector2(0, -1)  # la nave arranca hacia arriba
         self.hint = ServiceLocator.fonts.get("main").render(
             cfg["hint"], False, pygame.Color(255, 220, 0))
 
@@ -38,7 +40,10 @@ class AttractScene(PlayScene):
         if self.since_turn >= self.cfg["turn_every"]:
             self.since_turn = 0.0
             dirs = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
-            self.direction = pygame.Vector2(dirs[random.choice(DIRECTIONS)])
+            key = random.choice(DIRECTIONS)
+            self.direction = pygame.Vector2(dirs[key])
+            # La demo "pulsa" la tecla por el jugador: la nave se gobierna con `held`.
+            self.world.component_for_entity(self.player, CPlayerShip).held = {key}
         super().do_update(delta_time)
 
     def do_draw(self, screen: pygame.Surface) -> None:

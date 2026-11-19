@@ -69,6 +69,7 @@ class PlaySceneInputTests(unittest.TestCase):
         self.engine = GameEngine()
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
+        self.scene.blast_left = 0.0  # sin cuenta regresiva
         self.ship = self.scene.world.component_for_entity(self.scene.player, CPlayerShip)
 
     def tearDown(self):

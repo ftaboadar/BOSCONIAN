@@ -91,7 +91,11 @@ class PlayScene(Scene):
             # Las teclas de dirección se registran siempre (también en pausa) para que
             # soltar una tecla durante la pausa no deje la nave girando con una tecla fantasma.
             held = self.world.component_for_entity(self.player, CPlayerShip).held
-            (held.add if phase == Phase.START else held.discard)(action)
+            if phase == Phase.START:
+                if self.blast_left <= 0:  # durante BLAST OFF! no se guarda la dirección
+                    held.add(action)
+            else:
+                held.discard(action)
             return
         if action == "FIRE":
             # Como las direcciones, se registra también en pausa para no perder el soltar la tecla.
@@ -116,12 +120,6 @@ class PlayScene(Scene):
             if action == "SELECT":
                 self.engine.switch_scene("TITLE")
             return
-        if self.blast_left > 0:
-            # Durante BLAST OFF! el jugador no controla la nave (ni guarda la dirección para después).
-            return
-        dirs = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
-        if action in dirs:
-            self.direction = pygame.Vector2(dirs[action])
 
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
