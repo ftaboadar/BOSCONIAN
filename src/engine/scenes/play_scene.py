@@ -1,8 +1,12 @@
 import pygame
 
-from src.create.prefab_creator import (create_base_placeholder, create_player,
-                                       create_special_shot_message, create_stars,
-                                       create_text)
+from src.create.prefab_creator import (
+    create_base_placeholder,
+    create_player,
+    create_special_shot_message,
+    create_stars,
+    create_text,
+)
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_minimap_track import CMinimapTrack
@@ -11,13 +15,21 @@ from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_lifetime import system_lifetime
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
-from src.ecs.systems.s_player import HEADING_KEYS, system_player_movement, system_player_sprite
+from src.ecs.systems.s_player import (
+    HEADING_KEYS,
+    system_player_movement,
+    system_player_sprite,
+)
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
-from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
+from src.ecs.systems.s_star import (
+    system_star_blink,
+    system_star_parallax,
+    system_star_rendering,
+)
 from src.ecs.systems.s_weapon import system_bullet_cleanup, system_player_fire
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
-from src.engine.data_loader import level_numbers, load_level
+from src.engine.data_loader import load_json, level_numbers, load_level
 from src.engine.difficulty import difficulty_params
 from src.engine.hud import Hud
 from src.engine.level_flow import after_level_cleared, after_player_died
@@ -36,11 +48,15 @@ class PlayScene(Scene):
         level = load_level(eng.level)
         start = level["player_start"]
         self.player_cfg = load_json("assets/cfg/player.json")
-        self.player = create_player(self.world, pygame.Vector2(start["x"], start["y"]),
-                                    self.player_cfg,
-                                    level["special_shot"])
-        create_special_shot_message(self.world, self.player_cfg, level["special_shot"],
-                                    eng.viewport.centerx)
+        self.player = create_player(
+            self.world,
+            pygame.Vector2(start["x"], start["y"]),
+            self.player_cfg,
+            level["special_shot"],
+        )
+        create_special_shot_message(
+            self.world, self.player_cfg, level["special_shot"], eng.viewport.centerx
+        )
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
         create_stars(self.world, eng.cfg_world, eng.viewport)
@@ -48,17 +64,25 @@ class PlayScene(Scene):
         self.difficulty = difficulty_params(level)  # lo consumen spawn, steering y alertas
         self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
         self.level_total_bases = len(level["bases"])
+        create_text(
+            self.world,
+            f"ROUND {level['round']}",
+            pygame.Color(255, 255, 255),
+            pygame.Vector2(216, 190),
+        )
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
         self.paused = False
         self.pause_text = ServiceLocator.fonts.get("main").render(
-            "JUEGO PAUSADO", False, pygame.Color(255, 255, 255))
+            "JUEGO PAUSADO", False, pygame.Color(255, 255, 255)
+        )
         # BLAST OFF!: al empezar el nivel el jugador no se mueve hasta que acaba la cuenta.
         blast = eng.cfg_world["blast_off"]
         self.blast_left = blast["seconds"]
         self.blast_text = ServiceLocator.fonts.get("main").render(
-            blast["text"], False, pygame.Color(255, 255, 255))
+            blast["text"], False, pygame.Color(255, 255, 255)
+        )
         if ServiceLocator.sounds.has("blast_off"):
             ServiceLocator.sounds.play("blast_off")
 
@@ -75,6 +99,12 @@ class PlayScene(Scene):
             weapon.held = phase == Phase.START
             if weapon.held and not self.paused:
                 weapon.trigger = True
+            return
+        if action == "SPECIAL":
+            weapon = self.world.component_for_entity(self.player, CWeapon)
+            weapon.special_held = phase == Phase.START
+            if weapon.special_held and not self.paused:
+                weapon.special_trigger = True
             return
         if phase != Phase.START:
             return
@@ -126,8 +156,12 @@ class PlayScene(Scene):
             self.level_cleared()
             return
         system_star_blink(self.world, delta_time)
-        system_star_parallax(self.world, self.engine.viewport, self.camera.delta,
-                             self.engine.cfg_world["stars_parallax_factor"])
+        system_star_parallax(
+            self.world,
+            self.engine.viewport,
+            self.camera.delta,
+            self.engine.cfg_world["stars_parallax_factor"],
+        )
 
     def do_draw(self, screen: pygame.Surface) -> None:
         screen.set_clip(self.engine.viewport)
@@ -135,8 +169,10 @@ class PlayScene(Scene):
         screen.set_clip(None)
         if self.paused:
             # Desaparecen jugador, bases, interfaz y minimapa; queda el fondo y el aviso.
-            screen.blit(self.pause_text, self.pause_text.get_rect(
-                center=self.engine.viewport.center))
+            screen.blit(
+                self.pause_text,
+                self.pause_text.get_rect(center=self.engine.viewport.center),
+            )
             return
         system_world_rendering(self.world, screen, self.camera)
         system_rendering(self.world, screen)
@@ -144,5 +180,7 @@ class PlayScene(Scene):
                                  self.engine.world_size)
         self.hud.draw(screen, self.engine.state, self.round)
         if self.blast_left > 0:
-            screen.blit(self.blast_text, self.blast_text.get_rect(
-                center=self.engine.viewport.center))
+            screen.blit(
+                self.blast_text,
+                self.blast_text.get_rect(center=self.engine.viewport.center),
+            )
