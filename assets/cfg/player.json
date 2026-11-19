@@ -35,6 +35,23 @@
                 "w": 7,
                 "h": 6
             }
+        },
+        "special_spread": 11
+    },
+    "special_message": {
+        "duration": 3,
+        "y": 60,
+        "active_text": "DISPARO ESPECIAL: SI",
+        "inactive_text": "DISPARO ESPECIAL: NO",
+        "active_color": {
+            "r": 118,
+            "g": 255,
+            "b": 3
+        },
+        "inactive_color": {
+            "r": 160,
+            "g": 160,
+            "b": 160
         }
     }
 }

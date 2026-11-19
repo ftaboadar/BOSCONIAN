@@ -8,9 +8,11 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
+from src.ecs.components.c_lifetime import CLifetime
 from src.ecs.components.c_player_bullet import CPlayerBullet
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
 from src.ecs.systems.s_weapon import bullet_offscreen
 from src.engine.game_engine import GameEngine
@@ -32,6 +34,8 @@ class WeaponSceneTests(unittest.TestCase):
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
         self.world = self.scene.world
+        # Estas pruebas cubren el disparo básico; el especial tiene su propia clase.
+        self.world.component_for_entity(self.scene.player, CWeapon).special = False
 
     def tearDown(self):
         self.engine._clean()
@@ -104,6 +108,54 @@ class WeaponSceneTests(unittest.TestCase):
         self.scene.do_action("PAUSE", Phase.START)
         self.scene.do_update(1 / 60)
         self.assertEqual(self.bullets(), [])
+
+
+class SpecialShotTests(unittest.TestCase):
+    def setUp(self):
+        self.engine = GameEngine()
+        self.engine._apply_scene_change("PLAY")
+        self.scene = self.engine._current_scene
+        self.world = self.scene.world
+
+    def tearDown(self):
+        self.engine._clean()
+
+    def bullets(self):
+        return [(t, v) for _, (t, v, _b) in
+                self.world.get_components(CTransform, CVelocity, CPlayerBullet)]
+
+    def texts(self):
+        return [e for e, _ in self.world.get_component(CLifetime)]
+
+    def test_disparo_especial_tres_al_frente_y_una_atras(self):
+        self.world.component_for_entity(self.scene.player, CWeapon).special = True
+        self.scene.do_action("FIRE", Phase.START)
+        self.scene.do_update(1 / 60)
+        bs = self.bullets()
+        self.assertEqual(len(bs), 4)
+        self.assertEqual(sorted(round(t.pos.x) - 512 for t, v in bs if v.vel.y < 0), [-11, 0, 11])
+        self.assertEqual([round(t.pos.x) for t, v in bs if v.vel.y > 0], [512])
+
+    def test_sin_habilidad_solo_dos_balas(self):
+        self.world.component_for_entity(self.scene.player, CWeapon).special = False
+        self.scene.do_action("FIRE", Phase.START)
+        self.scene.do_update(1 / 60)
+        self.assertEqual(len(self.bullets()), 2)
+
+    def test_nivel_activa_la_habilidad_y_avisa(self):
+        self.assertTrue(self.world.component_for_entity(self.scene.player, CWeapon).special)
+        self.assertEqual(len(self.texts()), 1)
+
+    def test_aviso_desaparece_tras_su_duracion(self):
+        for _ in range(60 * 4):  # el aviso dura 3 s
+            self.scene.do_update(1 / 60)
+        self.assertEqual(self.texts(), [])
+
+    def test_aviso_no_corre_en_pausa(self):
+        self.scene.do_action("PAUSE", Phase.START)
+        for _ in range(60 * 4):
+            self.scene.do_update(1 / 60)
+        self.assertEqual(len(self.texts()), 1)
 
 
 if __name__ == "__main__":

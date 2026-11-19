@@ -1,10 +1,12 @@
 import pygame
 
 from src.create.prefab_creator import (create_base_placeholder, create_player,
-                                       create_stars, create_text)
+                                       create_special_shot_message, create_stars,
+                                       create_text)
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.systems.s_camera import system_camera_follow
+from src.ecs.systems.s_lifetime import system_lifetime
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_player import HEADING_KEYS, system_player_movement, system_player_sprite
@@ -30,7 +32,10 @@ class PlayScene(Scene):
         start = level["player_start"]
         self.player_cfg = load_json("assets/cfg/player.json")
         self.player = create_player(self.world, pygame.Vector2(start["x"], start["y"]),
-                                    self.player_cfg)
+                                    self.player_cfg,
+                                    level["special_shot"])
+        create_special_shot_message(self.world, self.player_cfg, level["special_shot"],
+                                    eng.viewport.centerx)
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
         create_stars(self.world, eng.cfg_world, eng.viewport)
@@ -91,6 +96,7 @@ class PlayScene(Scene):
             self.blast_left = max(0.0, self.blast_left - delta_time)
             system_star_blink(self.world, delta_time)
             return
+        system_lifetime(self.world, delta_time)
         system_player_movement(self.world, delta_time)
         system_player_sprite(self.world)
         system_player_fire(self.world, delta_time)

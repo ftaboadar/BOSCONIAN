@@ -7,6 +7,7 @@ import esper
 import pygame
 
 from src.ecs.components.c_camera_target import CCameraTarget
+from src.ecs.components.c_lifetime import CLifetime
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_player_bullet import CPlayerBullet
 from src.ecs.components.c_player_ship import CHeadingSprites, CPlayerShip
@@ -31,6 +32,16 @@ def create_text(world: esper.World, text: str, color: pygame.Color, center: pyga
     return world.create_entity(CTransform(center), CSurface(surf))
 
 
+def create_special_shot_message(world: esper.World, cfg: dict, active: bool, center_x: float) -> int:
+    """Aviso temporal al inicio del nivel que indica si el disparo especial está activo."""
+    m = cfg["special_message"]
+    key = "active" if active else "inactive"
+    entity = create_text(world, m[f"{key}_text"], color_from_cfg(m[f"{key}_color"]),
+                         pygame.Vector2(center_x, m["y"]))
+    world.add_component(entity, CLifetime(m["duration"]))
+    return entity
+
+
 def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
     speed = cfg["stars_blink_speed"]  # fija para todas; solo la fase difiere
     for _ in range(cfg["stars_number"]):
@@ -45,8 +56,10 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         )
 
 
-def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict) -> int:
-    """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados."""
+def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
+    """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados.
+
+    `special` activa el disparo especial (lo define el nivel)."""
     r = cfg["sprite_rect"]
     base = ServiceLocator.images.get("ships").subsurface(
         pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
@@ -61,7 +74,8 @@ def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict) -> int:
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(sprites[heading]),
         CWorld(), CCameraTarget(), CMinimapTrack("player"),
         CPlayerShip(heading, cfg["max_speed"], cfg["acceleration"]), CHeadingSprites(sprites),
-        CWeapon(w["cooldown"], w["bullet_speed"], w["muzzle_offset"], _bullet_sprites(w)),
+        CWeapon(w["cooldown"], w["bullet_speed"], w["muzzle_offset"], _bullet_sprites(w),
+                 special, w["special_spread"]),
     )
 
 

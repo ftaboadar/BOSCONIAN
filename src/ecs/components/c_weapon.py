@@ -2,10 +2,16 @@ import pygame
 
 
 class CWeapon:
-    """Arma de la nave: dispara una bala hacia adelante y otra hacia atrás; mantener FIRE repite el disparo."""
+    """Arma de la nave: una bala hacia adelante y otra hacia atrás; mantener FIRE repite el disparo.
+
+    Con `special` (definido por el nivel) salen tres balas al frente, separadas `special_spread` px, y una atrás.
+    """
 
     def __init__(self, cooldown: float, bullet_speed: float, muzzle_offset: float,
-                 sprites: dict[tuple[int, int], pygame.Surface]) -> None:
+                 sprites: dict[tuple[int, int], pygame.Surface],
+                 special: bool = False, special_spread: float = 0.0) -> None:
+        self.special = special
+        self.special_spread = special_spread
         self.cooldown = cooldown
         self.timer = 0.0  # segundos que faltan para poder volver a disparar
         self.bullet_speed = bullet_speed

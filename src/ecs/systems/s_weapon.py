@@ -10,7 +10,10 @@ from src.engine.camera import Camera, wrap_delta
 
 
 def system_player_fire(world: esper.World, delta_time: float) -> None:
-    """Con FIRE (o manteniéndola) sale una bala hacia adelante y otra hacia atrás, respetando el enfriamiento."""
+    """Con FIRE (o manteniéndola) sale una bala hacia adelante y otra hacia atrás, respetando el enfriamiento.
+
+    Con el disparo especial del nivel salen tres balas paralelas al frente (centro y dos laterales) y una atrás.
+    """
     for _, (c_p, c_t, c_w) in world.get_components(CPlayerShip, CTransform, CWeapon):
         c_w.timer = max(0.0, c_w.timer - delta_time)
         if not (c_w.held or c_w.trigger) or c_w.timer > 0:
@@ -18,8 +21,12 @@ def system_player_fire(world: esper.World, delta_time: float) -> None:
         c_w.trigger = False
         c_w.timer = c_w.cooldown
         forward = pygame.Vector2(c_p.heading).normalize()
-        for direction, key in ((forward, c_p.heading), (-forward, (-c_p.heading[0], -c_p.heading[1]))):
-            create_player_bullet(world, c_t.pos + direction * c_w.muzzle_offset,
+        side = pygame.Vector2(-forward.y, forward.x)  # perpendicular al rumbo
+        lanes = (-1, 0, 1) if c_w.special else (0,)
+        shots = [(forward, c_p.heading, lane) for lane in lanes]
+        shots.append((-forward, (-c_p.heading[0], -c_p.heading[1]), 0))  # la bala trasera siempre va al centro
+        for direction, key, lane in shots:
+            create_player_bullet(world, c_t.pos + direction * c_w.muzzle_offset + side * (lane * c_w.special_spread),
                                  direction * c_w.bullet_speed, c_w.sprites[key])
 
 
