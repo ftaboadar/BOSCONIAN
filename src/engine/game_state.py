@@ -19,6 +19,7 @@ class GameState:
         self.score = 0
         self.continues_used = 0
         self.next_extra_life = self.cfg["extra_life_first"]
+        self.cheat = False  # modo trampa (F1): invulnerable; se apaga al empezar partida nueva
 
     @property
     def game_over(self) -> bool:

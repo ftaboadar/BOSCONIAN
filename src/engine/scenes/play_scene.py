@@ -57,6 +57,9 @@ class PlayScene(Scene):
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
             return
+        if action == "CHEAT":
+            self.engine.state.cheat = not self.engine.state.cheat  # F1, también en pausa o BLAST OFF!
+            return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
             return
@@ -80,7 +83,12 @@ class PlayScene(Scene):
         self.engine.switch_scene(after_level_cleared(self.engine.state, level_numbers()))
 
     def player_died(self) -> None:
-        """El jugador murió: pierde una vida y repite el nivel, o va a derrota."""
+        """El jugador murió: pierde una vida y repite el nivel, o va a derrota.
+
+        Con el modo trampa activo es invulnerable: la muerte se ignora.
+        """
+        if self.engine.state.cheat:
+            return
         self.engine.switch_scene(after_player_died(self.engine.state))
 
     def do_update(self, delta_time: float) -> None:
@@ -118,6 +126,7 @@ class PlayScene(Scene):
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
         self.hud.draw(screen, self.engine.state, self.round)
+        self.hud.draw_cheat(screen, self.engine.state)
         if self.blast_left > 0:
             screen.blit(self.blast_text, self.blast_text.get_rect(
                 center=self.engine.viewport.center))
