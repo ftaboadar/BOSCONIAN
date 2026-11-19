@@ -42,5 +42,13 @@
             "MUSICA: CENTURION OF WAR",
             "FUENTE: CODEMAN38"
         ]
+    },
+    "victory": {
+        "title": "VICTORIA",
+        "lines": ["HAS COMPLETADO TODOS", "LOS NIVELES"]
+    },
+    "defeat": {
+        "title": "GAME OVER",
+        "lines": ["TE QUEDASTE SIN VIDAS"]
     }
 }
