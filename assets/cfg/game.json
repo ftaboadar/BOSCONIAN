@@ -1,0 +1,8 @@
+{
+    "lives": 4,
+    "hi_score": 20000,
+    "extra_life_first": 50000,
+    "extra_life_step": 100000,
+    "life_icons_max": 4,
+    "continue_seconds": 5
+}

@@ -43,6 +43,8 @@ class TitleScene(Scene):
             self._cycle_level(-1 if action == "LEFT" else 1)
             return
         chosen = self.menu.handle_action(action, phase)
+        if chosen == "PLAY":
+            self.engine.start_game()
         if chosen in SCENE_BY_ACTION:
             self.engine.switch_scene(SCENE_BY_ACTION[chosen])
 
