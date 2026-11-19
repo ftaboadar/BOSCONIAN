@@ -51,6 +51,9 @@ class PlayScene(Scene):
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
             return
+        if action == "BACK":
+            self.engine.switch_scene("TITLE")  # ESC sale al título, jugando o en pausa
+            return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
             return
