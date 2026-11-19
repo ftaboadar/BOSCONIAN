@@ -131,21 +131,20 @@ class SpecialShotTests(unittest.TestCase):
 
     def test_disparo_especial_tres_al_frente_y_una_atras(self):
         self.world.component_for_entity(self.scene.player, CWeapon).special = True
-        self.scene.do_action("SPECIAL", Phase.START)
+        self.scene.do_action("FIRE", Phase.START)
         self.scene.do_update(1 / 60)
         bs = self.bullets()
         self.assertEqual(len(bs), 4)
         self.assertEqual(sorted(round(t.pos.x) - 512 for t, v in bs if v.vel.y < 0), [-11, 0, 11])
         self.assertEqual([round(t.pos.x) for t, v in bs if v.vel.y > 0], [512])
 
-    def test_fire_siempre_dispara_normal(self):
-        self.assertTrue(self.world.component_for_entity(self.scene.player, CWeapon).special)
+    def test_sin_habilidad_solo_dos_balas(self):
+        self.world.component_for_entity(self.scene.player, CWeapon).special = False
         self.scene.do_action("FIRE", Phase.START)
         self.scene.do_update(1 / 60)
         self.assertEqual(len(self.bullets()), 2)
 
-    def test_sin_habilidad_special_no_dispara(self):
-        self.world.component_for_entity(self.scene.player, CWeapon).special = False
+    def test_x_no_dispara_todavia(self):
         self.scene.do_action("SPECIAL", Phase.START)
         self.scene.do_update(1 / 60)
         self.assertEqual(len(self.bullets()), 0)

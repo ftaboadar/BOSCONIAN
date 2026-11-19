@@ -104,12 +104,6 @@ class PlayScene(Scene):
             if weapon.held and not self.paused:
                 weapon.trigger = True
             return
-        if action == "SPECIAL":
-            weapon = self.world.component_for_entity(self.player, CWeapon)
-            weapon.special_held = phase == Phase.START
-            if weapon.special_held and not self.paused:
-                weapon.special_trigger = True
-            return
         if phase != Phase.START:
             return
         if action == "PAUSE":
