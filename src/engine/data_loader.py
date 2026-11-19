@@ -52,6 +52,8 @@ def load_level(number: int) -> dict:
     level = load_json(path)
     require_keys(level, ("round", "player_start", "bases"), path)
     require_keys(level["player_start"], ("x", "y"), f"{path} player_start")
+    if "difficulty" in level and (not isinstance(level["difficulty"], int) or level["difficulty"] < 1):
+        raise ConfigError(f"{path}: difficulty debe ser un entero >= 1")
     for i, base in enumerate(level["bases"]):
         where = f"{path} bases[{i}]"
         require_keys(base, ("x", "y", "orientation"), where)

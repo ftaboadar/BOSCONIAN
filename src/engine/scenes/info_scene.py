@@ -17,7 +17,7 @@ class InfoScene(Scene):
         self.area = self.engine.screen.get_rect()
         create_stars(self.world, self.engine.cfg_world, self.area)
         cfg = self.engine.cfg_menu
-        page = cfg[self.CFG_KEY]
+        page = self.page()
         font = ServiceLocator.fonts.get("main")
         white = color_from_cfg(cfg["colors"]["normal"])
         self.lines: list[tuple[pygame.Surface, int]] = []
@@ -25,6 +25,10 @@ class InfoScene(Scene):
         for i, text in enumerate(page["lines"]):
             self.lines.append((font.render(text, False, white), 52 + i * cfg["line_height"]))
         self.hint = font.render(self.hint_text(), False, color_from_cfg(cfg["colors"]["selected"]))
+
+    def page(self) -> dict:
+        """Título y líneas de la página; las subclases pueden añadir datos de la partida."""
+        return self.engine.cfg_menu[self.CFG_KEY]
 
     def hint_text(self) -> str:
         return self.HINT
