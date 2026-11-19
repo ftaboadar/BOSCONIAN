@@ -1,4 +1,4 @@
-# BOSCONIAN
+# Cosmonian
 
 Recreación del arcade Bosconian (Sharp X68000) hecha con **Pygame (pygame-ce)** y **Esper** (ECS) para la materia Introducción al Desarrollo de Videojuegos.
 
