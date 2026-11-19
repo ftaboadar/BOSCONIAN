@@ -55,6 +55,8 @@ def load_level(number: int) -> dict:
     level = load_json(path)
     require_keys(level, ("round", "player_start", "bases"), path)
     require_keys(level["player_start"], ("x", "y"), f"{path} player_start")
+    if "difficulty" in level and (not isinstance(level["difficulty"], int) or level["difficulty"] < 1):
+        raise ConfigError(f"{path}: difficulty debe ser un entero >= 1")
     for i, base in enumerate(level["bases"]):
         where = f"{path} bases[{i}]"
         require_keys(base, ("x", "y", "orientation"), where)
@@ -62,10 +64,6 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
-    # Dificultad de la IA enemiga: 0 = se desvían más, 1 = se acercan más. Opcional.
-    level.setdefault("difficulty", 0.0)
-    if not 0 <= level["difficulty"] <= 1:
-        raise ConfigError(f"{path}: difficulty debe estar entre 0 y 1")
     # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
     level.setdefault("core_mode", "open")
     if level["core_mode"] not in CORE_MODES:
