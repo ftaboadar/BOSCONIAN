@@ -1,7 +1,8 @@
 import pygame
 
 from src.create.prefab_creator import (create_base_placeholder, create_player_placeholder,
-                                       create_stars, create_text)
+                                       create_stars)
+from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_minimap import system_minimap_rendering
@@ -10,7 +11,10 @@ from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
 from src.ecs.systems.s_star import system_star_blink, system_star_parallax, system_star_rendering
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
-from src.engine.data_loader import load_level
+from src.engine.data_loader import level_numbers, load_level
+from src.engine.difficulty import difficulty_params
+from src.engine.hud import Hud
+from src.engine.level_flow import after_level_cleared, after_player_died
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
@@ -31,8 +35,10 @@ class PlayScene(Scene):
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
         create_stars(self.world, eng.cfg_world, eng.viewport)
-        create_text(self.world, f"ROUND {level['round']}", pygame.Color(255, 255, 255),
-                    pygame.Vector2(216, 190))
+        self.round = level["round"]
+        self.difficulty = difficulty_params(level)  # lo consumen spawn, steering y alertas
+        self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
+        self.level_total_bases = len(level["bases"])
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         self.direction = pygame.Vector2(0, -1)
@@ -80,6 +86,17 @@ class PlayScene(Scene):
         if action in dirs:
             self.direction = pygame.Vector2(dirs[action])
 
+    def bases_remaining(self) -> int:
+        return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
+
+    def level_cleared(self) -> None:
+        """Se destruyeron todas las bases: siguiente nivel o victoria."""
+        self.engine.switch_scene(after_level_cleared(self.engine.state, level_numbers()))
+
+    def player_died(self) -> None:
+        """El jugador murió: pierde una vida y repite el nivel, o va a derrota."""
+        self.engine.switch_scene(after_player_died(self.engine.state))
+
     def do_update(self, delta_time: float) -> None:
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
         if self.paused or self.confirm_exit:
@@ -94,6 +111,9 @@ class PlayScene(Scene):
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_camera_follow(self.world, self.camera)
+        if self.level_total_bases and self.bases_remaining() == 0:
+            self.level_cleared()
+            return
         system_star_blink(self.world, delta_time)
         system_star_parallax(self.world, self.engine.viewport, self.camera.delta,
                              self.engine.cfg_world["stars_parallax_factor"])
@@ -116,6 +136,7 @@ class PlayScene(Scene):
         system_rendering(self.world, screen)
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
+        self.hud.draw(screen, self.engine.state, self.round)
         if self.blast_left > 0:
             screen.blit(self.blast_text, self.blast_text.get_rect(
                 center=self.engine.viewport.center))

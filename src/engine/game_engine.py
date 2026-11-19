@@ -3,8 +3,10 @@
 import pygame
 
 from src.engine.data_loader import load_json, load_resources
+from src.engine.game_state import GameState
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
+from src.engine.scenes.end_scenes import DefeatScene, VictoryScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
@@ -15,7 +17,8 @@ from src.engine.service_locator import ServiceLocator, color_from_cfg
 class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
               "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
-              "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene}
+              "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene,
+              "VICTORY": VictoryScene, "DEFEAT": DefeatScene}
 
     def __init__(self) -> None:
         pygame.init()
@@ -31,7 +34,7 @@ class GameEngine:
         self.cfg_scenes = load_json("assets/cfg/scenes.json")
         self.cfg_world = load_json("assets/cfg/world.json")
         self.cfg_menu = load_json("assets/cfg/menu.json")
-        self.level = 1  # nivel elegido en el menú del título
+        self.state = GameState()  # vidas, puntaje, récord y nivel, compartido entre escenas
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
         v = self.cfg_world["viewport"]
@@ -54,6 +57,19 @@ class GameEngine:
             if self._next_scene is not None:
                 self._apply_scene_change(self._next_scene)
         self._clean()
+
+    @property
+    def level(self) -> int:
+        """Nivel actual; el menú del título lo elige y el flujo de niveles lo avanza."""
+        return self.state.level
+
+    @level.setter
+    def level(self, value: int) -> None:
+        self.state.level = value
+
+    def start_game(self) -> None:
+        """Nueva partida desde el nivel elegido en el título (conserva el récord)."""
+        self.state.reset(self.state.level)
 
     def switch_scene(self, name: str) -> None:
         """Solicita cambiar de escena al final del frame actual."""
