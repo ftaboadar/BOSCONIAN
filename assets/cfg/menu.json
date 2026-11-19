@@ -42,5 +42,6 @@
             "MUSICA: CENTURION OF WAR",
             "FUENTE: CODEMAN38"
         ]
-    }
+    },
+    "exit_confirm": ["SALIR AL TITULO?", "SE PERDERA", "EL PROGRESO", "ENTER: SI", "ESC: NO"]
 }
