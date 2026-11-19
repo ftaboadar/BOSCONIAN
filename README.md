@@ -1,6 +1,6 @@
 # BOSCONIAN
 
-Recreación del arcade Bosconian (Sharp X68000) hecha con **Pygame (pygame-ce)** y **Esper** (ECS) para la materia Introducción al Desarrollo de Videojuegos 2.
+Recreación del arcade Bosconian (Sharp X68000) hecha con **Pygame (pygame-ce)** y **Esper** (ECS) para la materia Introducción al Desarrollo de Videojuegos.
 
 Resolución nativa 256x208, escalada a la ventana.
 
