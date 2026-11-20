@@ -7,12 +7,15 @@ import pygame
 
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_camera_target import CCameraTarget
+from src.ecs.components.c_explosive import CExplosive
+from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_star import CStar
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
+from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
@@ -42,6 +45,15 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         )
 
 
+def create_hitbox(kind: str) -> CHitBox:
+    """Crea la CHitBox de un tipo de entidad según la sección "hitboxes" de collisions.json."""
+    cfg = load_json("assets/cfg/collisions.json")["hitboxes"][kind]
+    offset = cfg.get("offset", {"x": 0, "y": 0})
+    return CHitBox(pygame.Vector2(cfg["size"]["w"], cfg["size"]["h"]),
+                   pygame.Vector2(offset["x"], offset["y"]),
+                   cfg["layer"], tuple(cfg["mask"]))
+
+
 def create_player_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
     """Nave provisional (hito 3 la reemplaza): triángulo blanco de 12x12."""
     surf = pygame.Surface((12, 12), pygame.SRCALPHA)
@@ -49,6 +61,7 @@ def create_player_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(surf),
         CWorld(), CCameraTarget(), CMinimapTrack("player"),
+        create_hitbox("player"), CExplosive("player"),
     )
 
 
@@ -58,6 +71,7 @@ def create_base_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
     surf.fill((200, 40, 40))
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(surf), CWorld(), CMinimapTrack("base"),
+        create_hitbox("base"),
     )
 
 
