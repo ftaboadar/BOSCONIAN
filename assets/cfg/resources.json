@@ -3,7 +3,19 @@
         "title": "assets/img/titulo.png",
         "ships": "assets/img/naves.png"
     },
-    "sounds": {},
+    "sounds": {
+        "alert_red": "assets/snd/alert_red.ogg",
+        "alert_yellow": "assets/snd/alert_yellow.ogg",
+        "base_destroyed": "assets/snd/base_destroyed.ogg",
+        "blast_off": "assets/snd/blast_off.ogg",
+        "enemy_shoot": "assets/snd/enemy_shoot.ogg",
+        "explosion": "assets/snd/explosion.ogg",
+        "extra_life": "assets/snd/extra_life.ogg",
+        "menu_select": "assets/snd/menu_select.ogg",
+        "player_death": "assets/snd/player_death.ogg",
+        "shoot": "assets/snd/shoot.ogg",
+        "turret_hit": "assets/snd/turret_hit.ogg"
+    },
     "music": {
         "title": "assets/mus/zero2.ogg",
         "confrontation": "assets/mus/confrontation.ogg",
