@@ -7,6 +7,9 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_camera import system_camera_follow
+from src.ecs.systems.s_collision import system_collision
+from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
+from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.ecs.systems.s_enemy_state import system_enemy_state
@@ -17,7 +20,7 @@ from src.ecs.systems.s_star import system_star_blink, system_star_parallax, syst
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
 from src.engine.data_loader import (level_numbers, load_bases, load_enemies, load_entity_cfg,
-                                    load_level)
+                                    load_json, load_level)
 from src.engine.difficulty import difficulty_factor, difficulty_params
 from src.engine.hud import Hud
 from src.engine.level_flow import after_level_cleared, after_player_died
@@ -31,6 +34,7 @@ class PlayScene(Scene):
 
     def do_create(self) -> None:
         eng = self.engine
+        self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
@@ -117,6 +121,10 @@ class PlayScene(Scene):
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_enemy_bullets(self.world, self.engine.world_size, delta_time)
+        collisions = system_collision(self.world, self.engine.world_size)
+        system_collision_rules(self.world, collisions, self.collision_rules,
+                               self.engine.world_size)
+        system_destroy(self.world)
         system_enemy_despawn(self.world, player_pos, self.engine.world_size,
                              self.cfg_enemies["spawn"]["despawn_distance"])
         system_camera_follow(self.world, self.camera)
