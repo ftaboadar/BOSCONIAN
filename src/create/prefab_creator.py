@@ -5,6 +5,7 @@ import random
 import esper
 import pygame
 
+from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_camera_target import CCameraTarget
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_star import CStar
@@ -57,4 +58,22 @@ def create_base_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
     surf.fill((200, 40, 40))
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(surf), CWorld(), CMinimapTrack("base"),
+    )
+
+
+def create_explosion(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                     cfg: dict) -> int:
+    """Explosión animada que conserva la velocidad de la entidad destruida.
+
+    cfg es un tipo de explosions.json (por ejemplo cfg["simple"]). La animación
+    no se repite: al terminar, system_animation marca la entidad con CDestroy.
+    """
+    sheet = ServiceLocator.images.get(cfg["image"])
+    frames = [pygame.Rect(f["x"], f["y"], f["w"], f["h"]) for f in cfg["frames"]]
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)),
+        CVelocity(pygame.Vector2(vel)),
+        CSurface(sheet.subsurface(frames[0])),
+        CAnimation(sheet, frames, cfg["framerate"], loop=False),
+        CWorld(),
     )
