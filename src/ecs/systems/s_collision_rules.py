@@ -3,37 +3,47 @@ import pygame
 
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_hitbox import CHitBox
+from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_collision import center_delta, hitbox_center
 
 
-def load_rules(collisions_cfg: dict) -> dict[tuple[str, str], str]:
-    """Convierte la lista del JSON en un diccionario (capa_a, capa_b) -> resultado."""
-    return {(r["a"], r["b"]): r["result"] for r in collisions_cfg["rules"]}
+def load_rules(collisions_cfg: dict) -> dict[tuple[str, str], dict]:
+    """Convierte la lista del JSON en un diccionario (capa_a, capa_b) -> regla."""
+    return {(r["a"], r["b"]): r for r in collisions_cfg["rules"]}
 
 
 def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]],
-                           rules: dict[tuple[str, str], str],
-                           world_size: pygame.Vector2 | None = None) -> None:
+                           rules: dict[tuple[str, str], dict],
+                           world_size: pygame.Vector2 | None = None) -> int:
     """Aplica la regla que corresponde a cada par de entidades que chocan.
 
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
     (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy.
     DESTROY_A: solo se marca la entidad de la capa "a".
+
+    Si la regla tiene "score": "a" o "b", esa entidad da sus CPoints al destruirse.
+    Devuelve los puntos ganados en el frame (una entidad solo puntúa una vez).
     """
+    points = 0
     for ent_a, ent_b in collisions:
         if not (world.entity_exists(ent_a) and world.entity_exists(ent_b)):
             continue
         layer_a = world.component_for_entity(ent_a, CHitBox).layer
         layer_b = world.component_for_entity(ent_b, CHitBox).layer
-        result = rules.get((layer_a, layer_b))
-        if result is None:
-            result = rules.get((layer_b, layer_a))
-            ent_a, ent_b = ent_b, ent_a
-        if result is None:
+        rule = rules.get((layer_a, layer_b))
+        if rule is None:
+            rule = rules.get((layer_b, layer_a))
+            ent_a, ent_b = ent_b, ent_a  # ent_a queda siempre en la capa "a" de la regla
+        if rule is None:
             continue
 
+        scored = {"a": ent_a, "b": ent_b}.get(rule.get("score"))
+        if scored is not None:
+            points += _points_if_new(world, scored)
+
+        result = rule["result"]
         if result == "BOUNCE":
             _bounce(world, ent_a, ent_b, True, world_size)
         elif result == "BOUNCE_A":
@@ -43,6 +53,15 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
             world.add_component(ent_b, CDestroy())
         elif result == "DESTROY_A":
             world.add_component(ent_a, CDestroy())
+    return points
+
+
+def _points_if_new(world: esper.World, ent: int) -> int:
+    """Puntos de la entidad, solo si no estaba ya marcada para destruirse en este frame."""
+    if world.has_component(ent, CDestroy):
+        return 0
+    c_p = world.try_component(ent, CPoints)
+    return c_p.points if c_p is not None else 0
 
 
 def _bounce(world: esper.World, ent_a: int, ent_b: int, move_b: bool,

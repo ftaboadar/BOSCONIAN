@@ -2,6 +2,7 @@ import pygame
 
 from src.create.prefab_creator import (create_base_placeholder, create_player_placeholder,
                                        create_stars)
+from src.create.prefab_obstacles import create_obstacles
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_animation import system_animation
@@ -34,6 +35,7 @@ class PlayScene(Scene):
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
         self.explosions_cfg = load_json("assets/cfg/explosions.json")
+        obstacles_cfg = load_json("assets/cfg/obstacles.json")
         # Segundos que faltan para pasar a la siguiente escena tras morir (None: el jugador vive).
         self.death_left: float | None = None
         ServiceLocator.music.stop()
@@ -43,6 +45,7 @@ class PlayScene(Scene):
         self.player = create_player_placeholder(self.world, pygame.Vector2(start["x"], start["y"]))
         for b in level["bases"]:
             create_base_placeholder(self.world, pygame.Vector2(b["x"], b["y"]))
+        create_obstacles(self.world, level, obstacles_cfg, eng.world_size)
         create_stars(self.world, eng.cfg_world, eng.viewport)
         self.round = level["round"]
         self.difficulty = difficulty_params(level)  # lo consumen spawn, steering y alertas
@@ -123,8 +126,10 @@ class PlayScene(Scene):
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         collisions = system_collision(self.world, self.engine.world_size)
-        system_collision_rules(self.world, collisions, self.collision_rules,
-                               self.engine.world_size)
+        points = system_collision_rules(self.world, collisions, self.collision_rules,
+                                        self.engine.world_size)
+        if points:
+            self.engine.state.add_score(points)
         system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
         system_animation(self.world, delta_time)
         system_destroy(self.world)
