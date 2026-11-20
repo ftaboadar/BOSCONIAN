@@ -9,7 +9,8 @@
             { "x": 64, "y": 133, "w": 16, "h": 16 },
             { "x": 80, "y": 133, "w": 16, "h": 16 }
         ],
-        "framerate": 12
+        "framerate": 12,
+        "sound": "explosion"
     },
     "mine": {
         "image": "ships",
@@ -22,13 +23,15 @@
             { "x": 183, "y": 133, "w": 16, "h": 16 }
         ],
         "framerate": 12,
-        "hitbox": "mine_blast"
+        "hitbox": "mine_blast",
+        "sound": "explosion"
     },
     "player": {
         "explosion": "simple",
         "count": 4,
         "radius": 8,
         "keep_velocity": false,
-        "death_wait": 1.5
+        "death_wait": 1.5,
+        "sound": "player_death"
     }
 }

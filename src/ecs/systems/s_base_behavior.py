@@ -13,6 +13,7 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
 from src.ecs.systems.s_base_damage import draw_base_part, draw_turret
 from src.engine.camera import wrap_delta
+from src.engine.sfx import play_sound
 
 TURRET_CLOSED, TURRET_OPEN, TURRET_WARN = 0, 1, 2
 
@@ -35,6 +36,7 @@ def system_turrets(world: esper.World, player_pos: pygame.Vector2, world_size: p
                 c_tur.timer = 0.0  # un disparo por intervalo, aunque el frame haya sido largo
                 create_enemy_bullet(world, c_t.pos,
                                     to_player.normalize() * cfg["bullet"]["speed"], cfg["bullet"])
+                play_sound("enemy_shoot")
             warn = c_tur.timer >= c_tur.interval - turret["warn_seconds"]
             frame = TURRET_WARN if warn else TURRET_OPEN
         if frame != c_tur.frame:

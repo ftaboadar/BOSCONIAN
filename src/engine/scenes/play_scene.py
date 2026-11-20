@@ -30,6 +30,7 @@ from src.engine.level_flow import after_level_cleared, after_player_died
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
+from src.engine.sfx import play_sound
 
 
 class PlayScene(Scene):
@@ -42,9 +43,14 @@ class PlayScene(Scene):
         obstacles_cfg = load_json("assets/cfg/obstacles.json")
         # Segundos que faltan para pasar a la siguiente escena tras morir (None: el jugador vive).
         self.death_left: float | None = None
-        ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
+        # Música del nivel; si el nivel no define una registrada, silencio.
+        music = level.get("music")
+        if music is not None and ServiceLocator.music.has(music) and pygame.mixer.get_init():
+            ServiceLocator.music.play(music)
+        elif pygame.mixer.get_init():
+            ServiceLocator.music.stop()
         # Velocidad del jugador (el hito 3 añade la aceleración); los enemigos van algo más rápido.
         self.player_speed = load_entity_cfg("player", ("max_speed",))["max_speed"]
         start = level["player_start"]
@@ -79,8 +85,7 @@ class PlayScene(Scene):
         self.blast_left = blast["seconds"]
         self.blast_text = ServiceLocator.fonts.get("main").render(
             blast["text"], False, pygame.Color(255, 255, 255))
-        if ServiceLocator.sounds.has("blast_off"):
-            ServiceLocator.sounds.play("blast_off")
+        play_sound("blast_off")
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
@@ -156,7 +161,10 @@ class PlayScene(Scene):
         points = system_collision_rules(self.world, collisions, self.collision_rules,
                                         self.engine.world_size)
         if points:
+            lives = self.engine.state.lives
             self.engine.state.add_score(points)
+            if self.engine.state.lives > lives:
+                play_sound("extra_life")
         system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
         system_animation(self.world, delta_time)
         system_destroy(self.world)
