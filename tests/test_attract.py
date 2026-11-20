@@ -10,6 +10,8 @@ sys.path.insert(0, os.getcwd())
 
 import pygame
 
+from src.ecs.components.c_destroy import CDestroy
+from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_transform import CTransform
 from src.engine.game_engine import GameEngine
 from src.engine.input.command import Phase
@@ -46,6 +48,8 @@ class AttractTests(unittest.TestCase):
 
     def test_la_demo_cambia_de_direccion(self):
         demo = self.go("ATTRACT")
+        # Sin hitbox la nave no puede chocar: la prueba no depende de dónde caen los obstáculos.
+        demo.world.remove_component(demo.player, CHitBox)
         seen = set()
         for _ in range(60):
             demo.do_update(self.cfg["turn_every"])
@@ -53,6 +57,17 @@ class AttractTests(unittest.TestCase):
                 break
             seen.add((demo.direction.x, demo.direction.y))
         self.assertGreater(len(seen), 1)
+
+    def test_morir_en_la_demo_no_cuesta_vidas(self):
+        demo = self.go("ATTRACT")
+        lives = self.engine.state.lives
+        demo.world.add_component(demo.player, CDestroy())
+        for _ in range(600):
+            demo.do_update(1 / 60)
+            if self.engine._next_scene:
+                break
+        self.assertEqual(self.engine._next_scene, "ATTRACT_INFO")
+        self.assertEqual(self.engine.state.lives, lives)
 
     def test_el_jugador_no_controla_la_demo(self):
         demo = self.go("ATTRACT")
