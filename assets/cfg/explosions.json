@@ -26,6 +26,7 @@
     "player": {
         "explosion": "simple",
         "count": 4,
-        "radius": 8
+        "radius": 8,
+        "keep_velocity": false
     }
 }
