@@ -62,6 +62,10 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    if not isinstance(level.get("special_shot", False), bool):
+        raise ConfigError(f"{path}: special_shot debe ser true o false")
+    if not isinstance(level.get("music", ""), str):
+        raise ConfigError(f"{path}: music debe ser el nombre de una pista de resources.json")
     for kind, count in level.get("obstacles", {}).items():
         if kind not in OBSTACLE_KINDS:
             raise ConfigError(f"{path} obstacles: tipo desconocido {kind}")

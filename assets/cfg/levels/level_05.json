@@ -1,0 +1,15 @@
+{
+    "round": 5,
+    "difficulty": 3,
+    "player_start": { "x": 512, "y": 512 },
+    "bases": [
+        { "x": 780, "y": 730, "orientation": "horizontal" },
+        { "x": 310, "y": 750, "orientation": "vertical" },
+        { "x": 710, "y": 340, "orientation": "horizontal" },
+        { "x": 810, "y": 960, "orientation": "vertical" },
+        { "x": 560, "y": 850, "orientation": "horizontal" }
+    ],
+    "obstacles": { "rock": 14, "mine": 6, "solid_rock": 4 },
+    "special_shot": false,
+    "music": "night_tune"
+}

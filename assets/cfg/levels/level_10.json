@@ -1,0 +1,16 @@
+{
+    "round": 10,
+    "difficulty": 5,
+    "player_start": { "x": 512, "y": 512 },
+    "bases": [
+        { "x": 850, "y": 200, "orientation": "horizontal" },
+        { "x": 960, "y": 790, "orientation": "vertical" },
+        { "x": 350, "y": 930, "orientation": "horizontal" },
+        { "x": 590, "y": 130, "orientation": "vertical" },
+        { "x": 260, "y": 420, "orientation": "horizontal" },
+        { "x": 580, "y": 920, "orientation": "vertical" }
+    ],
+    "obstacles": { "rock": 20, "mine": 10, "solid_rock": 6 },
+    "special_shot": false,
+    "music": "exploring_the_cosmos"
+}

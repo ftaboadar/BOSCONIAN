@@ -1,0 +1,15 @@
+{
+    "round": 6,
+    "difficulty": 3,
+    "player_start": { "x": 512, "y": 512 },
+    "bases": [
+        { "x": 180, "y": 530, "orientation": "horizontal" },
+        { "x": 250, "y": 940, "orientation": "vertical" },
+        { "x": 490, "y": 140, "orientation": "horizontal" },
+        { "x": 760, "y": 560, "orientation": "vertical" },
+        { "x": 860, "y": 890, "orientation": "horizontal" }
+    ],
+    "obstacles": { "rock": 16, "mine": 7, "solid_rock": 4 },
+    "special_shot": true,
+    "music": "starshooter"
+}
