@@ -139,4 +139,83 @@ def _turret_frames(cfg: dict, off: dict, turns: int) -> list[pygame.Surface]:
     """
     closed, *others = cfg["turret"]["frames"]
     center = pygame.Rect(cfg["rect"]["x"], cfg["rect"]["y"], cfg["rect"]["w"], cfg["rect"]["h"]).center
-    in_base = {"x": center[0] + off["x"] - closed["w"] //
+    in_base = {"x": center[0] + off["x"] - closed["w"] // 2,
+               "y": center[1] + off["y"] - closed["h"] // 2, "w": closed["w"], "h": closed["h"]}
+    return [_sprite(cfg, in_base, turns)] + [
+        _sprite(cfg, r, turns, off["x"] > 0, off["y"] > 0) for r in others]
+
+
+def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: dict,
+                core_mode: str = "open", difficulty: float = 0.0,
+                rng: random.Random | None = None) -> int:
+    """Base enemiga quieta en `pos`: una entidad con el sprite completo más una entidad
+    por cada una de sus seis torretas y otra por el núcleo (sin sprite propio).
+
+    bases.json describe la base vertical (abierta arriba y abajo, así que el núcleo
+    se alcanza con un disparo vertical); la horizontal es la misma girada 90 grados.
+    Cada torreta dispara a un intervalo propio, al azar dentro de `turret.fire_interval`.
+    Con `core_mode` "cycle" el núcleo se abre y se cierra (pasa menos tiempo cerrado
+    con más `difficulty`, 0..1); con "open" queda siempre abierto.
+    """
+    rng = rng or random.Random()
+    turns = 0 if orientation == "vertical" else 1
+    turret, core = cfg["turret"], cfg["core"]
+    core_frames = [_sprite(cfg, r, turns) for r in core["frames"]]
+    # La hitbox de collisions.json es la de la base vertical; la horizontal está girada.
+    hitbox = create_hitbox("base")
+    if turns:
+        hitbox.size = pygame.Vector2(hitbox.size.y, hitbox.size.x)
+    base = world.create_entity(
+        CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
+        CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
+              core_frames, core["radius"]),
+        hitbox,
+    )
+    for off in turret["offsets"]:
+        offset = pygame.Vector2(off["x"], off["y"]).rotate(-90 * turns)
+        interval = rng.uniform(turret["fire_interval"]["min"], turret["fire_interval"]["max"])
+        world.create_entity(CTransform(pos + offset), CWorld(),
+                            CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]),
+                            CTurret(interval, _turret_frames(cfg, off, turns)))
+    core_ent = world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
+                                   CBasePart(base, "core", pygame.Vector2()))
+    if core_mode == "cycle":
+        # El sprite de la base trae el núcleo abierto: empieza en el último cuadro.
+        world.add_component(core_ent, CBaseCore(
+            _by_difficulty(core["closed_seconds"], difficulty), core["open_seconds"],
+            core["frame_seconds"], len(core_frames) - 1))
+    return base
+
+
+def create_enemy_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                        cfg: dict) -> int:
+    """Bala pequeña de torreta (cuadro de color) que dura `seconds`."""
+    surf = pygame.Surface((cfg["size"], cfg["size"]))
+    surf.fill(color_from_cfg(cfg["color"]))
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
+        CWorld(), CEnemyBullet(cfg["seconds"]),
+    )
+
+
+def create_explosion(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                     cfg: dict) -> int:
+    """Explosión animada que conserva la velocidad de la entidad destruida.
+
+    cfg es un tipo de explosions.json (por ejemplo cfg["simple"]). La animación
+    no se repite: al terminar, system_animation marca la entidad con CDestroy.
+    Si el tipo tiene "hitbox", la explosión mata lo que toque mientras dura.
+    """
+    sheet = ServiceLocator.images.get(cfg["image"])
+    frames = [pygame.Rect(f["x"], f["y"], f["w"], f["h"]) for f in cfg["frames"]]
+    ent = world.create_entity(
+        CTransform(pygame.Vector2(pos)),
+        CVelocity(pygame.Vector2(vel)),
+        CSurface(sheet.subsurface(frames[0])),
+        CAnimation(sheet, frames, cfg["framerate"], loop=False),
+        CWorld(),
+    )
+    if "hitbox" in cfg:  # explosión letal (por ejemplo, la de las minas)
+        world.add_component(ent, create_hitbox(cfg["hitbox"]))
+    return ent
