@@ -4,10 +4,12 @@ from src.create.prefab_creator import (create_base_placeholder, create_player_pl
                                        create_stars)
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.systems.s_animation import system_animation
 from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_collision import system_collision
 from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
 from src.ecs.systems.s_destroy import system_destroy
+from src.ecs.systems.s_explode import system_explode
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_rendering import system_rendering, system_world_rendering
@@ -31,6 +33,9 @@ class PlayScene(Scene):
     def do_create(self) -> None:
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
+        self.explosions_cfg = load_json("assets/cfg/explosions.json")
+        # Segundos que faltan para pasar a la siguiente escena tras morir (None: el jugador vive).
+        self.death_left: float | None = None
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
@@ -87,6 +92,21 @@ class PlayScene(Scene):
         """El jugador murió: pierde una vida y repite el nivel, o va a derrota."""
         self.engine.switch_scene(after_player_died(self.engine.state))
 
+    def _update_player_death(self, delta_time: float) -> bool:
+        """Si el jugador murió, espera a que se vea su explosión y luego pide la escena.
+
+        Devuelve True cuando ya se pidió el cambio de escena.
+        """
+        if self.death_left is None:
+            if self.world.entity_exists(self.player):
+                return False
+            self.death_left = self.explosions_cfg["player"]["death_wait"]
+        self.death_left -= delta_time
+        if self.death_left <= 0:
+            self.player_died()
+            return True
+        return False
+
     def do_update(self, delta_time: float) -> None:
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
         if self.paused:
@@ -97,14 +117,20 @@ class PlayScene(Scene):
             self.blast_left = max(0.0, self.blast_left - delta_time)
             system_star_blink(self.world, delta_time)
             return
-        self.world.component_for_entity(self.player, CVelocity).vel = self.direction * PLACEHOLDER_SPEED
+        if self.world.entity_exists(self.player):
+            self.world.component_for_entity(self.player, CVelocity).vel = \
+                self.direction * PLACEHOLDER_SPEED
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         collisions = system_collision(self.world, self.engine.world_size)
         system_collision_rules(self.world, collisions, self.collision_rules,
                                self.engine.world_size)
+        system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
+        system_animation(self.world, delta_time)
         system_destroy(self.world)
         system_camera_follow(self.world, self.camera)
+        if self._update_player_death(delta_time):
+            return
         if self.level_total_bases and self.bases_remaining() == 0:
             self.level_cleared()
             return

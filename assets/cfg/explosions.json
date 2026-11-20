@@ -27,6 +27,7 @@
         "explosion": "simple",
         "count": 4,
         "radius": 8,
-        "keep_velocity": false
+        "keep_velocity": false,
+        "death_wait": 1.5
     }
 }
