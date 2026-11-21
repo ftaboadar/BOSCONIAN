@@ -45,12 +45,7 @@ class PlayScene(Scene):
         self.death_left: float | None = None
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
-        # Música del nivel; si el nivel no define una registrada, silencio.
-        music = level.get("music")
-        if music is not None and ServiceLocator.music.has(music) and pygame.mixer.get_init():
-            ServiceLocator.music.play(music)
-        elif pygame.mixer.get_init():
-            ServiceLocator.music.stop()
+        self.play_level_music(level)
         # Velocidad del jugador (el hito 3 añade la aceleración); los enemigos van algo más rápido.
         self.player_speed = load_entity_cfg("player", ("max_speed",))["max_speed"]
         start = level["player_start"]
@@ -86,6 +81,16 @@ class PlayScene(Scene):
         self.blast_text = ServiceLocator.fonts.get("main").render(
             blast["text"], False, pygame.Color(255, 255, 255))
         play_sound("blast_off")
+
+    def play_level_music(self, level: dict) -> None:
+        """Música del nivel; si el nivel no define una registrada (o no hay audio), silencio."""
+        if not pygame.mixer.get_init():
+            return
+        music = level.get("music")
+        if music is not None and ServiceLocator.music.has(music):
+            ServiceLocator.music.play(music)
+        else:
+            ServiceLocator.music.stop()
 
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:

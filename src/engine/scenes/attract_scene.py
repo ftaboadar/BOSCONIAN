@@ -23,6 +23,11 @@ class AttractScene(PlayScene):
         self.hint = ServiceLocator.fonts.get("main").render(
             cfg["hint"], False, pygame.Color(255, 220, 0))
 
+    def play_level_music(self, level: dict) -> None:
+        """La demo va en silencio, como antes de la música por nivel."""
+        if pygame.mixer.get_init():
+            ServiceLocator.music.stop()
+
     def do_any_key(self) -> None:
         self.engine.switch_scene("TITLE")
 

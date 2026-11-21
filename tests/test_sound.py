@@ -150,6 +150,10 @@ class SceneSoundTests(Recorder, unittest.TestCase):
             self.open_level(n)
             self.assertEqual(self.music, [load_level(n)["music"]], f"nivel {n}")
 
+    def test_el_modo_demo_va_en_silencio(self):
+        self.engine._apply_scene_change("ATTRACT")
+        self.assertEqual(self.music, [])
+
     def test_blast_off_suena_al_empezar(self):
         self.open_level(1)
         self.assertIn("blast_off", self.played)

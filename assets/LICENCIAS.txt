@@ -15,3 +15,9 @@
  * Licencia: SIL Open Font license 1.1
  * URL: https://fonts.google.com/specimen/Press+Start+2P
  * URL2: https://www.dafont.com/press-start-2p.font
+
+# Efectos de sonido (assets/snd)
+
+ * Creados para este proyecto por Jacobo Zarruk con sfxr.me (jsfxr)
+ * Licencia: CC0
+ * URL: https://sfxr.me/
