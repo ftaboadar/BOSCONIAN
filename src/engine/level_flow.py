@@ -12,6 +12,11 @@ def after_level_cleared(state: GameState, levels: list[int]) -> str:
     return "PLAY"
 
 
+def after_game_end(state: GameState) -> str:
+    """Tras victoria o derrota definitiva: la felicitación si se superó el HI-SCORE, o el título."""
+    return "RECORD" if state.broke_record else "TITLE"
+
+
 def after_player_died(state: GameState) -> str:
     """Descuenta una vida: con vidas repite el nivel; sin vidas va a DEFEAT."""
     state.lose_life()
