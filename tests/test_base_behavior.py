@@ -25,6 +25,7 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_base_damage import damage_base_part
 from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
@@ -379,6 +380,9 @@ class PlaySceneBehaviorTests(unittest.TestCase):
         ship = self.scene.world.component_for_entity(self.scene.player, CPlayerShip)
         ship.speed = ship.max_speed = 0.0
         self.scene.world.component_for_entity(self.scene.player, CTransform).pos.update(pos)
+        # Estas pruebas miden torretas y núcleos, no la muerte de la nave: las balas de la
+        # base la alcanzarían y, sin nave, la IA de las bases se detiene.
+        self.scene.world.add_component(self.scene.player, CInvulnerable())
 
     def test_las_torretas_disparan_al_jugador_cercano_y_las_balas_avanzan_y_caducan(self):
         world = self.start("open")

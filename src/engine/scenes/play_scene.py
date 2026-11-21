@@ -12,6 +12,7 @@ from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_transform import CTransform
+from src.ecs.systems.s_animation import system_animation
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_camera import system_camera_follow
 from src.ecs.systems.s_lifetime import system_lifetime
@@ -21,6 +22,7 @@ from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.ecs.systems.s_enemy_state import system_enemy_state
+from src.ecs.systems.s_explode import system_explode
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_player import (
@@ -61,6 +63,9 @@ class PlayScene(Scene):
     def do_create(self) -> None:
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
+        self.explosions_cfg = load_json("assets/cfg/explosions.json")
+        # Segundos que faltan para pasar a la siguiente escena tras morir (None: el jugador vive).
+        self.death_left: float | None = None
         ServiceLocator.music.stop()
         self.camera = Camera(eng.world_size, eng.viewport)
         level = load_level(eng.level)
@@ -114,6 +119,8 @@ class PlayScene(Scene):
             ServiceLocator.sounds.play("blast_off")
 
     def do_action(self, action: str, phase: Phase) -> None:
+        if (action in HEADING_KEYS or action == "FIRE") and not self.world.entity_exists(self.player):
+            return  # nave destruida (se ve su explosión): ya no hay a quién dirigir ni disparar
         if action in HEADING_KEYS:
             # Las teclas de dirección se registran siempre (también en pausa) para que
             # soltar una tecla durante la pausa no deje la nave girando con una tecla fantasma.
@@ -179,6 +186,21 @@ class PlayScene(Scene):
         """El jugador murió: pierde una vida y repite el nivel, o va a derrota."""
         self.engine.switch_scene(after_player_died(self.engine.state))
 
+    def _update_player_death(self, delta_time: float) -> bool:
+        """Si el jugador murió, espera a que se vea su explosión y luego pide la escena.
+
+        Devuelve True cuando ya se pidió el cambio de escena.
+        """
+        if self.death_left is None:
+            if self.world.entity_exists(self.player):
+                return False
+            self.death_left = self.explosions_cfg["player"]["death_wait"]
+        self.death_left -= delta_time
+        if self.death_left <= 0:
+            self.player_died()
+            return True
+        return False
+
     def do_update(self, delta_time: float) -> None:
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
         if self.paused or self.confirm_exit:
@@ -193,24 +215,35 @@ class PlayScene(Scene):
         system_player_movement(self.world, delta_time)
         system_player_sprite(self.world)
         system_player_fire(self.world, delta_time)
-        player_pos = self.world.component_for_entity(self.player, CTransform).pos
-        system_enemy_spawner(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
-                             self.player_speed, delta_time)
-        system_enemy_state(self.world, player_pos, self.engine.world_size, delta_time)
-        system_turrets(self.world, player_pos, self.engine.world_size, self.cfg_bases, delta_time)
-        system_base_cores(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
-                          self.player_speed, delta_time)
+        # Con el jugador muerto (esperando su explosión) no hay posición que perseguir ni
+        # a la que apuntar: el resto del mundo sigue, pero sin IA de enemigos ni torretas.
+        player_alive = self.world.entity_exists(self.player)
+        player_pos = None
+        if player_alive:
+            player_pos = self.world.component_for_entity(self.player, CTransform).pos
+            system_enemy_spawner(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
+                                 self.player_speed, delta_time)
+            system_enemy_state(self.world, player_pos, self.engine.world_size, delta_time)
+            system_turrets(self.world, player_pos, self.engine.world_size, self.cfg_bases,
+                           delta_time)
+            system_base_cores(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
+                              self.player_speed, delta_time)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
         system_enemy_bullets(self.world, self.engine.world_size, delta_time)
         collisions = system_collision(self.world, self.engine.world_size)
         system_collision_rules(self.world, collisions, self.collision_rules,
                                self.engine.world_size)
+        system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
+        system_animation(self.world, delta_time)
         system_destroy(self.world)
-        system_enemy_despawn(self.world, player_pos, self.engine.world_size,
-                             self.cfg_enemies["spawn"]["despawn_distance"])
+        if player_alive:
+            system_enemy_despawn(self.world, player_pos, self.engine.world_size,
+                                 self.cfg_enemies["spawn"]["despawn_distance"])
         system_camera_follow(self.world, self.camera)
         system_bullet_cleanup(self.world, self.camera, self.player_cfg["weapon"]["offscreen_margin"])
+        if self._update_player_death(delta_time):
+            return
         if self.level_total_bases and self.bases_remaining() == 0:
             self.level_cleared()
             return

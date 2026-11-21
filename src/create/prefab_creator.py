@@ -6,6 +6,7 @@ import random
 import esper
 import pygame
 
+from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
@@ -13,6 +14,8 @@ from src.ecs.components.c_camera_target import CCameraTarget
 from src.ecs.components.c_enemy_bullet import CEnemyBullet
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
+from src.ecs.components.c_explosive import CExplosive
+from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_lifetime import CLifetime
@@ -27,6 +30,7 @@ from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
 from src.ecs.systems.s_enemy_state import INITIAL_STATE
+from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
@@ -66,6 +70,15 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         )
 
 
+def create_hitbox(kind: str) -> CHitBox:
+    """Crea la CHitBox de un tipo de entidad según la sección "hitboxes" de collisions.json."""
+    cfg = load_json("assets/cfg/collisions.json")["hitboxes"][kind]
+    offset = cfg.get("offset", {"x": 0, "y": 0})
+    return CHitBox(pygame.Vector2(cfg["size"]["w"], cfg["size"]["h"]),
+                   pygame.Vector2(offset["x"], offset["y"]),
+                   cfg["layer"], tuple(cfg["mask"]))
+
+
 def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
     """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados.
 
@@ -83,6 +96,7 @@ def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: b
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(sprites[heading]),
         CWorld(), CCameraTarget(), CMinimapTrack("player"),
+        create_hitbox("player"), CExplosive("player"),
         CPlayerShip(heading, cfg["max_speed"], cfg["acceleration"]), CHeadingSprites(sprites),
         CWeapon(w["cooldown"], w["bullet_speed"], w["muzzle_offset"], _bullet_sprites(w),
                  special, w["special_spread"]),
@@ -208,7 +222,7 @@ def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: 
     core_frames = [_sprite(cfg, r, turns) for r in core["frames"]]
     base = world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
-        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]), create_hitbox("base"),
         CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
               core_frames, core["radius"]),
     )
@@ -236,4 +250,22 @@ def create_enemy_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vec
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
         CWorld(), CEnemyBullet(cfg["seconds"]),
+    )
+
+
+def create_explosion(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                     cfg: dict) -> int:
+    """Explosión animada que conserva la velocidad de la entidad destruida.
+
+    cfg es un tipo de explosions.json (por ejemplo cfg["simple"]). La animación
+    no se repite: al terminar, system_animation marca la entidad con CDestroy.
+    """
+    sheet = ServiceLocator.images.get(cfg["image"])
+    frames = [pygame.Rect(f["x"], f["y"], f["w"], f["h"]) for f in cfg["frames"]]
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)),
+        CVelocity(pygame.Vector2(vel)),
+        CSurface(sheet.subsurface(frames[0])),
+        CAnimation(sheet, frames, cfg["framerate"], loop=False),
+        CWorld(),
     )

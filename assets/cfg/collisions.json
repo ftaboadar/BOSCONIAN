@@ -1,8 +1,21 @@
 {
+    "hitboxes": {
+        "player": {
+            "size": { "w": 10, "h": 10 },
+            "layer": "PLAYER",
+            "mask": ["ENEMY", "ENEMY_BULLET", "BASE"]
+        },
+        "base": {
+            "size": { "w": 24, "h": 24 },
+            "layer": "BASE",
+            "mask": []
+        }
+    },
     "rules": [
         { "a": "ENEMY", "b": "ENEMY", "result": "BOUNCE" },
         { "a": "ENEMY", "b": "BASE", "result": "BOUNCE_A" },
         { "a": "PLAYER", "b": "ENEMY", "result": "DESTROY_BOTH" },
-        { "a": "PLAYER", "b": "ENEMY_BULLET", "result": "DESTROY_BOTH" }
+        { "a": "PLAYER", "b": "ENEMY_BULLET", "result": "DESTROY_BOTH" },
+        { "a": "PLAYER", "b": "BASE", "result": "DESTROY_A" }
     ]
 }

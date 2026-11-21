@@ -115,6 +115,13 @@ class DestroyTests(unittest.TestCase):
         step(self.w)
         self.assertFalse(self.w.entity_exists(player))
 
+    def test_jugador_contra_base_solo_muere_el_jugador(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK + ("BASE",))
+        base = make(self.w, (10, 10), (24, 24), "BASE")
+        step(self.w)
+        self.assertFalse(self.w.entity_exists(player))
+        self.assertTrue(self.w.entity_exists(base))
+
     def test_invulnerable_no_recibe_destroy_pero_el_otro_si(self):
         player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
         self.w.add_component(player, CInvulnerable())
@@ -132,9 +139,16 @@ class DestroyTests(unittest.TestCase):
         self.assertTrue(self.w.entity_exists(player))
         self.assertFalse(self.w.entity_exists(bullet))
 
+    def test_invulnerable_contra_base_no_muere(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK + ("BASE",))
+        self.w.add_component(player, CInvulnerable())
+        make(self.w, (10, 10), (24, 24), "BASE")
+        step(self.w)
+        self.assertTrue(self.w.entity_exists(player))
+
     def test_pares_sin_regla_se_ignoran(self):
-        a = make(self.w, (5, 5), (10, 10), "PLAYER", ("BASE",))
-        b = make(self.w, (10, 10), (10, 10), "BASE")
+        a = make(self.w, (5, 5), (10, 10), "PLAYER_BULLET", ("ENEMY",))
+        b = make(self.w, (10, 10), (10, 10), "ENEMY")
         step(self.w)
         self.assertTrue(self.w.entity_exists(a))
         self.assertTrue(self.w.entity_exists(b))

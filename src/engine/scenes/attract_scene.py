@@ -32,6 +32,10 @@ class AttractScene(PlayScene):
     def do_action(self, action: str, phase: Phase) -> None:
         """El jugador no controla la demo."""
 
+    def player_died(self) -> None:
+        """En la demo la muerte no cuesta vidas: termina la demo y pasa a las instrucciones."""
+        self.engine.switch_scene("ATTRACT_INFO")
+
     def do_update(self, delta_time: float) -> None:
         self.elapsed += delta_time
         if self.elapsed >= self.cfg["demo_seconds"]:
@@ -42,7 +46,9 @@ class AttractScene(PlayScene):
             self.since_turn = 0.0
             key = random.choice(DIRECTIONS)
             # La demo "pulsa" la tecla por el jugador: la nave se gobierna con `held`.
-            self.world.component_for_entity(self.player, CPlayerShip).held = {key}
+            # Si ya murió (se ve su explosión) no hay nave que gobernar.
+            if self.world.entity_exists(self.player):
+                self.world.component_for_entity(self.player, CPlayerShip).held = {key}
         super().do_update(delta_time)
 
     def do_draw(self, screen: pygame.Surface) -> None:

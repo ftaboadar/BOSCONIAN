@@ -21,7 +21,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
 
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
     (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
-    entidades con CInvulnerable.
+    entidades con CInvulnerable. DESTROY_A: solo se marca la entidad de la capa "a"
+    (con la misma excepción).
     """
     for ent_a, ent_b in collisions:
         if not (world.entity_exists(ent_a) and world.entity_exists(ent_b)):
@@ -42,6 +43,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
         elif result == "DESTROY_BOTH":
             _mark_destroy(world, ent_a)
             _mark_destroy(world, ent_b)
+        elif result == "DESTROY_A":
+            _mark_destroy(world, ent_a)
 
 
 def _mark_destroy(world: esper.World, ent: int) -> None:
