@@ -22,6 +22,7 @@ from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
 from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
+from src.ecs.systems.s_enemy_sprite import system_enemy_sprite
 from src.ecs.systems.s_enemy_state import system_enemy_state
 from src.ecs.systems.s_explode import create_explosion_group, system_explode
 from src.ecs.systems.s_minimap import system_minimap_rendering
@@ -269,6 +270,7 @@ class PlayScene(Scene):
             self.engine.state.add_score(points)
             if self.engine.state.lives > lives:
                 play_sound("extra_life")
+        system_enemy_sprite(self.world)  # tras las colisiones: usa la velocidad final del fotograma
         system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
         system_animation(self.world, delta_time)
         system_destroy(self.world)

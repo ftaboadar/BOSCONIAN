@@ -269,7 +269,7 @@ class CoreTests(BehaviorTestCase):
         self.assertEqual(kind, "E")
         # Nace justo fuera del borde de la base, por la abertura de abajo (no dentro de su hitbox).
         self.assertEqual(pos.x, POS.x)
-        self.assertAlmostEqual(pos.y, POS.y + 32 + 4 + 1)  # mitad del alto + mitad del E + 1
+        self.assertAlmostEqual(pos.y, POS.y + 32 + 5 + 1)  # mitad del alto + mitad de la hitbox del E + 1
         # Base vertical: sale por la abertura de abajo, donde está el jugador, sin desviarse.
         self.assertEqual(tuple(vel.normalize()), (0, 1))
         self.assertAlmostEqual(vel.length(), 80 * self.cfg_enemies["types"]["E"]["speed_factor"])

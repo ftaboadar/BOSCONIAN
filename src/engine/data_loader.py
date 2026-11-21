@@ -138,9 +138,9 @@ def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:
 
 
 ENEMY_TYPE_KEYS = {
-    "I": ("speed_factor", "turn_rate", "chase_seconds", "points", "spawn_weight", "size", "color"),
-    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "points", "spawn_weight", "size", "color"),
-    "E": ("speed_factor", "points", "spawn_weight", "size", "color"),
+    "I": ("speed_factor", "turn_rate", "chase_seconds", "points", "spawn_weight", "sprite"),
+    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "points", "spawn_weight", "sprite"),
+    "E": ("speed_factor", "points", "spawn_weight", "sprite"),
 }
 
 
@@ -171,6 +171,7 @@ def load_enemies() -> dict:
     for kind, keys in ENEMY_TYPE_KEYS.items():
         where = f"{path} types.{kind}"
         require_keys(cfg["types"][kind], keys, where)
+        require_keys(cfg["types"][kind]["sprite"], ("x", "y", "w", "h"), f"{where}.sprite")
         if cfg["types"][kind]["speed_factor"] <= 1:
             raise ConfigError(f"{where}: speed_factor debe ser mayor que 1")
     weights = [t["spawn_weight"] for t in cfg["types"].values()]

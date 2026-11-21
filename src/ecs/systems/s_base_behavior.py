@@ -4,7 +4,7 @@ núcleo se abre y se cierra, lanzando un enemigo E cada vez que se abre."""
 import esper
 import pygame
 
-from src.create.prefab_creator import create_enemy, create_enemy_bullet
+from src.create.prefab_creator import create_enemy, create_enemy_bullet, create_hitbox
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
@@ -70,7 +70,7 @@ def system_base_cores(world: esper.World, player_pos: pygame.Vector2,
             # hitbox la regla de rebote contra bases podría devolverlo hacia adentro.
             hitbox = world.component_for_entity(c_part.base, CHitBox)
             reach = (hitbox.size.x if direction.x else hitbox.size.y) / 2
-            reach += cfg_enemies["types"]["E"]["size"] / 2 + 1
+            reach += create_hitbox("enemy").size.x / 2 + 1  # medio enemigo, para nacer fuera
             # El E va derecho: la dificultad (desviación al perseguir) no le afecta.
             create_enemy(world, "E", c_t.pos + direction * reach, direction, cfg_enemies,
                          player_speed, 0.0)
