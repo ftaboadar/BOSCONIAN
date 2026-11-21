@@ -55,7 +55,6 @@ class CombatCycleTestCase(unittest.TestCase):
                      [{"x": BASE_POS.x, "y": BASE_POS.y, "orientation": self.orientation}])
         with mock.patch.object(play_scene, "load_level", return_value=level):
             self.engine = GameEngine()
-            self.addCleanup(self.engine._clean)
             self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
         self.scene.blast_left = 0
