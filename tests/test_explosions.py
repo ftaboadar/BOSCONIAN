@@ -163,6 +163,14 @@ class PlayerDeathTests(unittest.TestCase):
             self.scene.do_update(1 / 60)
         self.assertIsNone(ENGINE._next_scene)
 
+    def test_teclas_con_el_jugador_muerto_no_fallan(self):
+        from src.engine.input.command import Phase
+        self.scene.world.add_component(self.scene.player, CDestroy())
+        self.scene.do_update(1 / 60)
+        for action in ("UP", "LEFT", "FIRE"):
+            self.scene.do_action(action, Phase.START)
+            self.scene.do_action(action, Phase.END)
+
     def test_camara_quieta_sin_jugador(self):
         self.scene.world.add_component(self.scene.player, CDestroy())
         self.scene.do_update(1 / 60)

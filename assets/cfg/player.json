@@ -1,3 +1,57 @@
 {
-    "max_speed": 80
+    "sprite_rect": {
+        "x": 124,
+        "y": 8,
+        "w": 15,
+        "h": 17
+    },
+    "start_heading": {
+        "x": 0,
+        "y": -1
+    },
+    "max_speed": 80,
+    "acceleration": 30,
+    "weapon": {
+        "cooldown": 0.15,
+        "bullet_speed": 220,
+        "muzzle_offset": 9,
+        "offscreen_margin": 8,
+        "bullet_sprites": {
+            "vertical": {
+                "x": 4,
+                "y": 75,
+                "w": 4,
+                "h": 6
+            },
+            "horizontal": {
+                "x": 13,
+                "y": 76,
+                "w": 6,
+                "h": 4
+            },
+            "diagonal": {
+                "x": 23,
+                "y": 75,
+                "w": 7,
+                "h": 6
+            }
+        },
+        "special_spread": 11
+    },
+    "special_message": {
+        "duration": 3,
+        "y": 60,
+        "active_text": "DISPARO ESPECIAL: SI",
+        "inactive_text": "DISPARO ESPECIAL: NO",
+        "active_color": {
+            "r": 118,
+            "g": 255,
+            "b": 3
+        },
+        "inactive_color": {
+            "r": 160,
+            "g": 160,
+            "b": 160
+        }
+    }
 }
