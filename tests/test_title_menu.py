@@ -51,9 +51,9 @@ class TitleSceneTests(unittest.TestCase):
     def press(self, action: str) -> None:
         self.scene.do_action(action, Phase.START)
 
-    def test_enter_en_jugar_va_al_nivel(self):
+    def test_enter_en_jugar_va_a_la_cutscene_que_lleva_al_nivel(self):
         self.press("SELECT")
-        self.assertEqual(self.engine._next_scene, "PLAY")
+        self.assertEqual(self.engine._next_scene, "CUTSCENE")
 
     def test_menu_lleva_a_instrucciones_y_creditos(self):
         for steps, expected in ((2, "INSTRUCTIONS"), (1, "CREDITS")):

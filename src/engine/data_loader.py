@@ -185,3 +185,46 @@ def load_resources(path: str = os.path.join(CFG_DIR, "resources.json")) -> dict:
         if not isinstance(cfg.get(section, {}), dict):
             raise ConfigError(f"{path}: la sección {section} debe ser un objeto")
     return cfg
+
+
+STORY_EVENT_KEYS = {
+    "image": ("image", "from", "to", "seconds"),
+    "sprite": ("rect",),
+    "box": ("size", "color"),
+    "text": ("text", "pos"),
+    "frames": ("image", "rects", "framerate", "pos"),
+    "sound": ("sound",),
+}
+MOVING_EVENT_TYPES = ("image", "sprite", "box")  # se mueven de `from` a `to` en `seconds`
+STORY_SCENES = ("intro", "cutscene")
+
+
+def load_story() -> dict:
+    """Carga story.json: la línea de tiempo del intro animado (#35) y de la cutscene (#37).
+
+    Cada escena tiene `next` (a dónde va al terminar o al saltarla), `duration` y una lista
+    de `events` con su momento (`at`) y su tipo. Un error de configuración se reporta aquí,
+    con el evento que lo causa, y no a mitad de la animación.
+    """
+    path = os.path.join(CFG_DIR, "story.json")
+    cfg = load_entity_cfg("story", ("grace_seconds",) + STORY_SCENES)
+    for name in STORY_SCENES:
+        scene = cfg[name]
+        require_keys(scene, ("next", "duration", "stars_speed", "events"), f"{path} {name}")
+        if scene["duration"] <= 0:
+            raise ConfigError(f"{path} {name}: duration debe ser mayor que 0")
+        for i, event in enumerate(scene["events"]):
+            where = f"{path} {name}.events[{i}]"
+            require_keys(event, ("at", "type"), where)
+            if event["type"] not in STORY_EVENT_KEYS:
+                raise ConfigError(f"{where}: tipo desconocido {event['type']}")
+            require_keys(event, STORY_EVENT_KEYS[event["type"]], where)
+            if event["at"] < 0 or event["at"] > scene["duration"]:
+                raise ConfigError(f"{where}: at debe estar entre 0 y la duración de la escena")
+            if event["type"] in MOVING_EVENT_TYPES and "to" in event:
+                require_keys(event, ("from", "seconds"), where)
+                if event["seconds"] <= 0:
+                    raise ConfigError(f"{where}: seconds debe ser mayor que 0")
+            if event["type"] in ("sprite", "box") and "to" not in event:
+                require_keys(event, ("pos",), where)  # sin movimiento, se queda en `pos`
+    return cfg
