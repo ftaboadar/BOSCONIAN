@@ -153,6 +153,9 @@ class PlayScene(Scene):
             return
         if phase != Phase.START:
             return
+        if action == "EDITOR":
+            self.engine.switch_scene("EDITOR")  # F2: editor de niveles (#44); allí F2 vuelve
+            return
         if action == "CHEAT":
             self.engine.state.cheat = not self.engine.state.cheat  # F1, también en pausa o BLAST OFF!
             self._sync_invulnerable()

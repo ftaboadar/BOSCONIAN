@@ -41,10 +41,31 @@ python main.py
 | Enter | Elegir una opción del menú; en pausa, pide confirmar la salida al título |
 | Esc | Volver desde instrucciones y créditos; en el nivel (jugando o en pausa), pide confirmar la salida al título (Enter: sí, Esc: no) |
 | F1 | Modo trampa |
+| F2 | Entrar o salir del editor de niveles (desde el nivel) |
 
 Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. El gamepad es un bono y aún no está implementado.
 
 Disparo y habilidad especial se activan al completarse el hito 3. Por ahora la pausa vuelve al título con Enter; cuando esté el menú de opciones se enlazará desde ahí (#30).
+
+## Editor de niveles
+
+F2 abre el editor desde el nivel y F2 (o Esc) vuelve a jugar. Muestra el mundo entero a escala y edita el nivel que estabas jugando. Al salir se juega lo que esté **guardado**, así que guarda antes de volver (un `*` junto al título marca cambios sin guardar).
+
+| Tecla | Acción |
+|---|---|
+| Flechas | Mover el cursor (mantenerlas lo repite) |
+| Enter | Poner una base en el cursor |
+| Z | Borrar la base bajo el cursor |
+| X | Girar la base bajo el cursor; sin base, cambia con la que se ponen las nuevas |
+| P | Punto de partida de la nave |
+| S / L | Guardar / recargar el nivel (descarta los cambios) |
+| Re Pág / Av Pág | Nivel anterior / siguiente; un número que no existe empieza un nivel nuevo |
+| D | Dificultad (recorre los valores de `difficulty.json`) |
+| M | Música del nivel |
+| T | Habilidad especial sí / no |
+| H | Ayuda |
+
+Las bases no pueden solaparse ni cubrir el inicio de la nave, y un nivel sin bases no se guarda (no se podría pasar). Los niveles se guardan en `assets/cfg/levels/level_NN.json`, y uno nuevo entra solo en el flujo del juego.
 
 ## Modo trampa
 
