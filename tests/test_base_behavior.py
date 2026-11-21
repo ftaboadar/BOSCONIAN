@@ -267,7 +267,9 @@ class CoreTests(BehaviorTestCase):
         self.run_cores(0.5)
         (kind, pos, vel), = self.enemies()
         self.assertEqual(kind, "E")
-        self.assertEqual(tuple(pos), tuple(POS))
+        # Nace justo fuera del borde de la base, por la abertura de abajo (no dentro de su hitbox).
+        self.assertEqual(pos.x, POS.x)
+        self.assertAlmostEqual(pos.y, POS.y + 32 + 4 + 1)  # mitad del alto + mitad del E + 1
         # Base vertical: sale por la abertura de abajo, donde está el jugador, sin desviarse.
         self.assertEqual(tuple(vel.normalize()), (0, 1))
         self.assertAlmostEqual(vel.length(), 80 * self.cfg_enemies["types"]["E"]["speed_factor"])
@@ -388,9 +390,11 @@ class PlaySceneBehaviorTests(unittest.TestCase):
     def test_las_torretas_disparan_al_jugador_cercano_y_las_balas_avanzan_y_caducan(self):
         world = self.start("open")
         self.put_player((300, 470))  # junto a la base de (300, 400)
-        self.run_for(4.0)
-        bullets = world.get_component(CEnemyBullet)
-        self.assertGreater(len(bullets), 0)
+        fired = 0
+        for _ in range(round(4.0 / DT)):  # las balas se consumen al tocar a la nave: se cuentan al vuelo
+            self.scene.do_update(DT)
+            fired = max(fired, len(world.get_component(CEnemyBullet)))
+        self.assertGreater(fired, 0)
         self.scene.do_draw(pygame.Surface((256, 208)))  # dibujar con balas no falla
         self.put_player((900, 900))  # lejos de todas las bases: no salen más
         self.run_for(load_bases()["bullet"]["seconds"] + 0.1)

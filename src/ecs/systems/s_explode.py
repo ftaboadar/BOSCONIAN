@@ -28,11 +28,12 @@ def system_explode(world: esper.World, explosions_cfg: dict) -> None:
         if "frames" in cfg:
             create_explosion(world, c_t.pos, vel, cfg)
         else:
-            _create_group(world, c_t.pos, vel, cfg, explosions_cfg)
+            create_explosion_group(world, c_t.pos, vel, cfg, explosions_cfg)
 
 
-def _create_group(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
-                  cfg: dict, explosions_cfg: dict) -> None:
+def create_explosion_group(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                           cfg: dict, explosions_cfg: dict) -> None:
+    """Grupo de explosiones simples repartidas al azar en un radio alrededor de `pos`."""
     single = explosions_cfg[cfg["explosion"]]
     group_vel = vel if cfg.get("keep_velocity", False) else pygame.Vector2()
     for _ in range(cfg["count"]):

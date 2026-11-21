@@ -147,8 +147,8 @@ class DestroyTests(unittest.TestCase):
         self.assertTrue(self.w.entity_exists(player))
 
     def test_pares_sin_regla_se_ignoran(self):
-        a = make(self.w, (5, 5), (10, 10), "PLAYER_BULLET", ("ENEMY",))
-        b = make(self.w, (10, 10), (10, 10), "ENEMY")
+        a = make(self.w, (5, 5), (10, 10), "PLAYER_BULLET", ("ENEMY_BULLET",))
+        b = make(self.w, (10, 10), (10, 10), "ENEMY_BULLET")
         step(self.w)
         self.assertTrue(self.w.entity_exists(a))
         self.assertTrue(self.w.entity_exists(b))
