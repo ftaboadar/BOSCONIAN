@@ -18,3 +18,11 @@ def difficulty_params(level: dict) -> dict:
     row = table[value]
     require_keys(row, PARAMS, f"{PATH} nivel {value}")
     return {"difficulty": value, **row}
+
+
+def difficulty_factor(params: dict) -> float:
+    """Dificultad como número 0..1 (nivel mínimo = 0, máximo = 1), para interpolar easy/hard."""
+    cfg = load_json(PATH)
+    levels = [int(k) for k in cfg["levels"]]
+    lo, hi = min(levels), max(levels)
+    return 0.0 if hi == lo else (params["difficulty"] - lo) / (hi - lo)
