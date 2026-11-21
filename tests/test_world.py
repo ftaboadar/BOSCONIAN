@@ -14,7 +14,7 @@ import pygame
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
-from src.ecs.systems.s_minimap import blink_on, radar_point
+from src.ecs.systems.s_minimap import radar_point
 from src.ecs.systems.s_star import star_alpha, system_star_fall, system_star_parallax
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.ecs.components.c_star import CStar
@@ -92,49 +92,14 @@ class StarTests(unittest.TestCase):
 
 
 class MinimapTests(unittest.TestCase):
-    """Radar centrado en la nave (ver s_minimap)."""
+    """Mapa fijo del mundo entero (ver s_minimap; el detalle está en test_panel)."""
 
-    RECT = pygame.Rect(184, 54, 64, 80)
-    SCALE = 8
+    RECT = pygame.Rect(192, 80, 64, 96)
 
-    def point(self, pos, center=(500, 400)):
-        return radar_point(pygame.Vector2(pos), pygame.Vector2(center), WORLD, self.RECT, self.SCALE)
-
-    def test_el_centro_del_radar_es_la_nave(self):
-        self.assertEqual(self.point((500, 400)), self.RECT.center)
-
-    def test_lo_que_esta_a_la_derecha_y_abajo_se_ve_a_la_derecha_y_abajo_a_escala(self):
-        x, y = self.point((500 + 80, 400 + 160))
-        self.assertEqual((x - self.RECT.centerx, y - self.RECT.centery), (10, 20))
-
-    def test_el_mundo_es_toroidal_un_objeto_al_otro_lado_del_borde_se_ve_cerca(self):
-        # El mundo mide 1000 de ancho: x=10 está a 20 de x=990 pasando por el borde.
-        x, y = self.point((10, 400), center=(990, 400))
-        self.assertEqual((x - self.RECT.centerx, y - self.RECT.centery), (round(20 / self.SCALE), 0))
-        _, y2 = self.point((990, 790), center=(990, 10))  # y: 790 está a 20 de y=10 por el otro lado
-        self.assertEqual(y2 - self.RECT.centery, round(-20 / self.SCALE))
-
-    def test_lo_que_queda_fuera_del_alcance_no_se_dibuja(self):
-        self.assertIsNone(self.point((500 + 33 * self.SCALE, 400)))  # el radar mide 64 de ancho
-        self.assertIsNone(self.point((500, 400 - 41 * self.SCALE)))  # y 80 de alto
-        self.assertIsNotNone(self.point((500 + 30 * self.SCALE, 400 - 38 * self.SCALE)))
-
-    def test_el_borde_del_marco_no_cuenta_como_alcance(self):
-        edge = self.RECT.right - 1 - self.RECT.centerx
-        self.assertIsNone(self.point((500 + edge * self.SCALE, 400)))
-
-    def test_el_radar_alcanza_mas_que_la_pantalla_de_juego(self):
-        """Un radar útil muestra más mundo que el viewport (176x208)."""
-        self.assertGreater(self.RECT.w * self.SCALE, 176)
-        self.assertGreater(self.RECT.h * self.SCALE, 208)
-
-    def test_parpadeo_de_la_nave(self):
-        cfg = {"blink_seconds": 0.3}
-        self.assertTrue(blink_on(0.0, cfg))
-        self.assertTrue(blink_on(0.29, cfg))
-        self.assertFalse(blink_on(0.31, cfg))
-        self.assertFalse(blink_on(0.59, cfg))
-        self.assertTrue(blink_on(0.61, cfg))
+    def test_extremos_y_vuelta_toroidal(self):
+        self.assertEqual(radar_point(pygame.Vector2(0, 0), WORLD, self.RECT), (192, 80))
+        self.assertEqual(radar_point(pygame.Vector2(1000, 800), WORLD, self.RECT), (192, 80))   # da la vuelta
+        self.assertEqual(radar_point(pygame.Vector2(-1, 0), WORLD, self.RECT)[0], 255)
 
 
 class ColorTests(unittest.TestCase):

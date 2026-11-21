@@ -39,7 +39,7 @@ class Scene:
     def draw_radar(self, screen: pygame.Surface) -> None:
         """Radar de la barra lateral. Por defecto, vacío: solo el marco."""
         system_minimap_rendering(esper.World(), screen, self.engine.cfg_world["minimap"],
-                                 self.engine.world_size, pygame.Vector2(), 0.0)
+                                 self.engine.world_size)
 
     def do_clean(self) -> None:
         """Libera la escena."""

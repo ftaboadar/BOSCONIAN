@@ -19,7 +19,7 @@ LETTER_ADVANCE = 7  # CONDITION tiene 9 letras y debe caber en 64 px: el origina
 ROWS = {"hi_label": 0, "hi_value": 8, "up_label": 16, "up_value": 24, "cheat": 36,
         "condition": 48, "round": 200}
 BAR_Y, BAR_H = 61, 15
-ICONS_Y = 180
+ICONS_Y = 176  # justo bajo el radar (termina en y=176)
 ICON_SPACING = 16  # 4 mini-naves llenan justo los 64 px de la barra
 
 
@@ -55,9 +55,8 @@ class Hud:
         screen.blit(label, label.get_rect(center=bar.center))
         # El radar ocupa de y=80 a y=176 (lo dibuja s_minimap).
         shown = min(state.lives, self.icons_max)
-        left = self.panel.centerx - shown * ICON_SPACING // 2
-        for i in range(shown):
-            screen.blit(self.icon, (left + i * ICON_SPACING, ICONS_Y))
+        for i in range(shown):  # alineadas a la izquierda, como en el original
+            screen.blit(self.icon, (self.panel.left + i * ICON_SPACING, ICONS_Y))
         if state.lives > self.icons_max:  # más vidas de las visibles: el total, abajo a la derecha
             total = self.font.render(str(state.lives), False, WHITE)
             spot = total.get_rect(bottomright=(self.panel.right, ICONS_Y + self.icon.get_height()))
