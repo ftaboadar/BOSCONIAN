@@ -6,6 +6,7 @@ from src.engine.game_state import GameState
 
 WHITE = pygame.Color(255, 255, 255)
 YELLOW = pygame.Color(255, 220, 0)
+RED = pygame.Color(255, 60, 60)
 PANEL_CX = 216  # centro del panel derecho (x 176-256)
 
 
@@ -32,3 +33,8 @@ class Hud:
         if state.lives > self.icons_max:  # más vidas de las visibles: número total abajo a la derecha
             self._text(screen, str(state.lives), WHITE, (246, 202))
         self._text(screen, f"ROUND {round_number}", WHITE, (PANEL_CX, 190))
+
+    def draw_cheat(self, screen: pygame.Surface, state: GameState) -> None:
+        """Aviso del modo trampa, para que quede claro que la partida no es legítima."""
+        if state.cheat:
+            self._text(screen, "CHEAT", RED, (PANEL_CX, 162))

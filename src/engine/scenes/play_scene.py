@@ -7,6 +7,7 @@ from src.create.prefab_creator import (
     create_special_shot_message,
     create_stars,
 )
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_minimap_track import CMinimapTrack
@@ -55,6 +56,8 @@ from src.engine.service_locator import ServiceLocator
 class PlayScene(Scene):
     """Escena de nivel: mundo, cámara, estrellas, minimapa, bases y enemigos (jugador provisional)."""
 
+    cheat_allowed = True  # la demo del modo atractor lo desactiva: ahí la nave sí puede morir
+
     def do_create(self) -> None:
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
@@ -88,6 +91,7 @@ class PlayScene(Scene):
         self.round = level["round"]
         self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
         self.level_total_bases = len(level["bases"])
+        self._sync_invulnerable()  # la nave se recrea en cada nivel o vida: hereda el modo trampa
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
@@ -129,6 +133,10 @@ class PlayScene(Scene):
             return
         if phase != Phase.START:
             return
+        if action == "CHEAT":
+            self.engine.state.cheat = not self.engine.state.cheat  # F1, también en pausa o BLAST OFF!
+            self._sync_invulnerable()
+            return
         if self.confirm_exit:
             if action == "SELECT":
                 self.engine.switch_scene("TITLE")
@@ -145,6 +153,20 @@ class PlayScene(Scene):
             # Acceso al título desde la pausa (#27 lo convertirá en el menú de opciones).
             self.confirm_exit = True
             return
+
+    def _sync_invulnerable(self) -> None:
+        """Pone o quita CInvulnerable en la nave según el modo trampa (F1).
+
+        Así las reglas de colisión no la destruyen: no hay muerte que ignorar después.
+        """
+        if not self.world.entity_exists(self.player):
+            return
+        has = self.world.try_component(self.player, CInvulnerable) is not None
+        want = self.cheat_allowed and self.engine.state.cheat
+        if want and not has:
+            self.world.add_component(self.player, CInvulnerable())
+        elif has and not want:
+            self.world.remove_component(self.player, CInvulnerable)
 
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
@@ -221,6 +243,7 @@ class PlayScene(Scene):
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
         self.hud.draw(screen, self.engine.state, self.round)
+        self.hud.draw_cheat(screen, self.engine.state)
         if self.blast_left > 0:
             screen.blit(
                 self.blast_text,
