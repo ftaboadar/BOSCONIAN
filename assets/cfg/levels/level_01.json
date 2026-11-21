@@ -20,5 +20,6 @@
             "orientation": "horizontal"
         }
     ],
-    "special_shot": true
+    "special_shot": true,
+    "obstacles": { "rock": 10, "mine": 4, "solid_rock": 2 }
 }

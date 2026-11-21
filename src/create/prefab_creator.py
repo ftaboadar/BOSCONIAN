@@ -259,13 +259,17 @@ def create_explosion(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector
 
     cfg es un tipo de explosions.json (por ejemplo cfg["simple"]). La animación
     no se repite: al terminar, system_animation marca la entidad con CDestroy.
+    Si el tipo tiene "hitbox", la explosión mata lo que toque mientras dura.
     """
     sheet = ServiceLocator.images.get(cfg["image"])
     frames = [pygame.Rect(f["x"], f["y"], f["w"], f["h"]) for f in cfg["frames"]]
-    return world.create_entity(
+    ent = world.create_entity(
         CTransform(pygame.Vector2(pos)),
         CVelocity(pygame.Vector2(vel)),
         CSurface(sheet.subsurface(frames[0])),
         CAnimation(sheet, frames, cfg["framerate"], loop=False),
         CWorld(),
     )
+    if "hitbox" in cfg:  # explosión letal (por ejemplo, la de las minas)
+        world.add_component(ent, create_hitbox(cfg["hitbox"]))
+    return ent

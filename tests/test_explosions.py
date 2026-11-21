@@ -30,7 +30,8 @@ CFG = load_json("assets/cfg/explosions.json")
 
 
 def explosions(world):
-    return [ent for ent, _ in world.get_component(CAnimation)]
+    """Explosiones: animaciones que no se repiten (las minas, por ejemplo, sí se repiten)."""
+    return [ent for ent, c_a in world.get_component(CAnimation) if not c_a.loop]
 
 
 class AnimationTests(unittest.TestCase):

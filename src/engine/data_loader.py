@@ -8,6 +8,7 @@ CFG_DIR = "assets/cfg"
 LEVELS_DIR = os.path.join(CFG_DIR, "levels")
 LEVEL_FILE = re.compile(r"^level_(\d{2})\.json$")
 ORIENTATIONS = ("horizontal", "vertical")
+OBSTACLE_KINDS = ("rock", "mine", "solid_rock")
 TURRETS_PER_BASE = 6
 TURRET_FRAMES = 3  # cerrada, abierta y a punto de disparar
 CORE_MODES = ("open", "cycle")  # siempre abierto sin disparar, o se abre y cierra
@@ -64,6 +65,11 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    for kind, count in level.get("obstacles", {}).items():
+        if kind not in OBSTACLE_KINDS:
+            raise ConfigError(f"{path} obstacles: tipo desconocido {kind}")
+        if not isinstance(count, int) or count < 0:
+            raise ConfigError(f"{path} obstacles.{kind}: debe ser un entero >= 0")
     level.setdefault("special_shot", False)
     # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
     level.setdefault("core_mode", "open")

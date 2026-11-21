@@ -3,11 +3,31 @@
         "player": {
             "size": { "w": 10, "h": 10 },
             "layer": "PLAYER",
-            "mask": ["ENEMY", "ENEMY_BULLET", "BASE"]
+            "mask": ["ENEMY", "ENEMY_BULLET", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
         },
         "base": {
             "size": { "w": 24, "h": 24 },
             "layer": "BASE",
+            "mask": []
+        },
+        "rock": {
+            "size": { "w": 12, "h": 10 },
+            "layer": "ROCK",
+            "mask": []
+        },
+        "mine": {
+            "size": { "w": 11, "h": 11 },
+            "layer": "MINE",
+            "mask": []
+        },
+        "solid_rock": {
+            "size": { "w": 12, "h": 10 },
+            "layer": "ROCK_SOLID",
+            "mask": ["BASE"]
+        },
+        "mine_blast": {
+            "size": { "w": 16, "h": 16 },
+            "layer": "MINE_BLAST",
             "mask": []
         }
     },
@@ -16,6 +36,19 @@
         { "a": "ENEMY", "b": "BASE", "result": "BOUNCE_A" },
         { "a": "PLAYER", "b": "ENEMY", "result": "DESTROY_BOTH" },
         { "a": "PLAYER", "b": "ENEMY_BULLET", "result": "DESTROY_BOTH" },
-        { "a": "PLAYER", "b": "BASE", "result": "DESTROY_A" }
+        { "a": "PLAYER", "b": "BASE", "result": "DESTROY_A" },
+        { "a": "PLAYER", "b": "ROCK", "result": "DESTROY_BOTH" },
+        { "a": "PLAYER", "b": "MINE", "result": "DESTROY_BOTH" },
+        { "a": "PLAYER", "b": "ROCK_SOLID", "result": "DESTROY_A" },
+        { "a": "PLAYER", "b": "MINE_BLAST", "result": "DESTROY_A" },
+        { "a": "ENEMY", "b": "ROCK", "result": "DESTROY_BOTH" },
+        { "a": "ENEMY", "b": "MINE", "result": "DESTROY_BOTH" },
+        { "a": "ENEMY", "b": "ROCK_SOLID", "result": "DESTROY_A" },
+        { "a": "ENEMY", "b": "MINE_BLAST", "result": "DESTROY_A" },
+        { "a": "PLAYER_BULLET", "b": "ROCK", "result": "DESTROY_BOTH", "score": "b" },
+        { "a": "PLAYER_BULLET", "b": "MINE", "result": "DESTROY_BOTH", "score": "b" },
+        { "a": "PLAYER_BULLET", "b": "ROCK_SOLID", "result": "DESTROY_A" },
+        { "a": "ENEMY_BULLET", "b": "ROCK_SOLID", "result": "DESTROY_A" },
+        { "a": "ROCK_SOLID", "b": "BASE", "result": "BOUNCE_A" }
     ]
 }

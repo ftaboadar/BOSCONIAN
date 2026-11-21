@@ -7,6 +7,7 @@ from src.create.prefab_creator import (
     create_special_shot_message,
     create_stars,
 )
+from src.create.prefab_obstacles import create_obstacles
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
@@ -64,6 +65,7 @@ class PlayScene(Scene):
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
         self.explosions_cfg = load_json("assets/cfg/explosions.json")
+        obstacles_cfg = load_json("assets/cfg/obstacles.json")
         # Segundos que faltan para pasar a la siguiente escena tras morir (None: el jugador vive).
         self.death_left: float | None = None
         ServiceLocator.music.stop()
@@ -89,6 +91,7 @@ class PlayScene(Scene):
         for b in level["bases"]:
             create_base(self.world, pygame.Vector2(b["x"], b["y"]), b["orientation"],
                         self.cfg_bases, level["core_mode"], factor)
+        create_obstacles(self.world, level, obstacles_cfg, eng.world_size)
         # Enemigos I, P y E: salen alrededor del jugador a un ritmo que sube con la dificultad.
         self.cfg_enemies = load_enemies()
         create_enemy_spawner(self.world, self.cfg_enemies, factor)
@@ -232,8 +235,10 @@ class PlayScene(Scene):
         system_wraparound(self.world, self.engine.world_size)
         system_enemy_bullets(self.world, self.engine.world_size, delta_time)
         collisions = system_collision(self.world, self.engine.world_size)
-        system_collision_rules(self.world, collisions, self.collision_rules,
-                               self.engine.world_size)
+        points = system_collision_rules(self.world, collisions, self.collision_rules,
+                                        self.engine.world_size)
+        if points:
+            self.engine.state.add_score(points)
         system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
         system_animation(self.world, delta_time)
         system_destroy(self.world)
