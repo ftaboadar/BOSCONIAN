@@ -30,6 +30,7 @@ from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
+from src.ecs.systems.s_enemy_sprite import heading_key
 from src.ecs.systems.s_enemy_state import INITIAL_STATE
 from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
@@ -90,6 +91,15 @@ def create_hitbox(kind: str) -> CHitBox:
                    cfg["layer"], tuple(cfg["mask"]))
 
 
+def heading_sprites(base: pygame.Surface) -> dict[tuple[int, int], pygame.Surface]:
+    """Las 8 variantes de un sprite que mira hacia arriba, una por cada (dx, dy) de rumbo."""
+    # Ángulo antihorario de pygame.transform.rotate para cada (dx, dy) con "arriba" = (0, -1).
+    return {
+        (dx, dy): pygame.transform.rotate(base, round(math.degrees(math.atan2(-dx, -dy))))
+        for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)
+    }
+
+
 def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
     """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados.
 
@@ -97,11 +107,7 @@ def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: b
     r = cfg["sprite_rect"]
     base = ServiceLocator.images.get("ships").subsurface(
         pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
-    # Ángulo antihorario de pygame.transform.rotate para cada (dx, dy) con "arriba" = (0, -1).
-    sprites = {
-        (dx, dy): pygame.transform.rotate(base, round(math.degrees(math.atan2(-dx, -dy))))
-        for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)
-    }
+    sprites = heading_sprites(base)
     w = cfg["weapon"]
     heading = (cfg["start_heading"]["x"], cfg["start_heading"]["y"])
     return world.create_entity(
@@ -153,7 +159,7 @@ def _by_difficulty(span: dict, difficulty: float) -> float:
 def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: pygame.Vector2,
                  cfg: dict, player_speed: float, difficulty: float,
                  rng: random.Random | None = None) -> int:
-    """Enemigo de tipo I, P o E (cuadro de color provisional) con su IA de estados.
+    """Enemigo de tipo I, P o E con su sprite (que gira hacia donde va) y su IA de estados.
 
     Va a `speed_factor` veces la velocidad del jugador. `difficulty` (0..1) fija cuánto
     se desvía al perseguir: entre la mitad y el máximo del rango, hacia un lado al azar.
@@ -161,8 +167,10 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
     rng = rng or random.Random()
     type_cfg = cfg["types"][kind]
     speed = player_speed * type_cfg["speed_factor"]
-    surf = pygame.Surface((type_cfg["size"], type_cfg["size"]))
-    surf.fill(color_from_cfg(type_cfg["color"]))
+    r = type_cfg["sprite"]
+    sprite = ServiceLocator.images.get("ships").subsurface(
+        pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+    sprites = heading_sprites(sprite)
     max_dev = _by_difficulty(cfg["deviation_degrees"], difficulty)
     deviation = rng.choice((-1, 1)) * rng.uniform(max_dev / 2, max_dev)
     heading = pygame.Vector2(direction)
@@ -171,7 +179,7 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
     return world.create_entity(
         CTransform(pygame.Vector2(pos)),
         CVelocity(heading.normalize() * speed),
-        CSurface(surf), CWorld(),
+        CSurface(sprites[heading_key(heading)]), CHeadingSprites(sprites), CWorld(),
         CSteering(type_cfg.get("turn_rate", 0), deviation, type_cfg.get("wander")),
         CEnemyState(kind, INITIAL_STATE[kind], type_cfg.get("chase_seconds", 0)),
         CPoints(type_cfg["points"]), create_hitbox("enemy"), CExplosive("simple"),

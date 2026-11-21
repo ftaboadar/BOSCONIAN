@@ -26,15 +26,17 @@ WORLD = pygame.Vector2(1024, 1024)
 PLAYER_SPEED = 80
 DT = 1 / 60
 
+SPRITE = {"x": 0, "y": 111, "w": 14, "h": 14}  # una nave de naves.png
+
 CFG = {
     "deviation_degrees": {"easy": 60, "hard": 0},
     "types": {
         "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
-              "size": 8, "color": {"r": 255, "g": 255, "b": 0}},
+              "sprite": SPRITE},
         "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0, "points": 60,
               "wander": {"distance": 30, "radius": 20, "jitter": 720},
-              "size": 8, "color": {"r": 0, "g": 255, "b": 255}},
-        "E": {"speed_factor": 2.0, "points": 70, "size": 8, "color": {"r": 255, "g": 0, "b": 255}},
+              "sprite": SPRITE},
+        "E": {"speed_factor": 2.0, "points": 70, "sprite": SPRITE},
     },
 }
 

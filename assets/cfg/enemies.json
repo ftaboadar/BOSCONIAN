@@ -13,8 +13,7 @@
             "chase_seconds": 6.0,
             "points": 50,
             "spawn_weight": 3,
-            "size": 8,
-            "color": { "r": 255, "g": 220, "b": 0 }
+            "sprite": { "x": 0, "y": 111, "w": 14, "h": 14 }
         },
         "P": {
             "speed_factor": 1.15,
@@ -23,15 +22,13 @@
             "points": 60,
             "spawn_weight": 2,
             "wander": { "distance": 30, "radius": 20, "jitter": 720 },
-            "size": 8,
-            "color": { "r": 0, "g": 220, "b": 255 }
+            "sprite": { "x": 20, "y": 113, "w": 13, "h": 12 }
         },
         "E": {
             "speed_factor": 1.6,
             "points": 70,
             "spawn_weight": 1,
-            "size": 8,
-            "color": { "r": 255, "g": 64, "b": 255 }
+            "sprite": { "x": 41, "y": 109, "w": 7, "h": 16 }
         }
     }
 }
