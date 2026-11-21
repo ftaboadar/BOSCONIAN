@@ -54,6 +54,8 @@ class TestPause(unittest.TestCase):
     def test_select_in_pause_goes_to_title(self) -> None:
         self.scene.do_action("PAUSE", Phase.START)
         self.scene.do_action("SELECT", Phase.START)
+        self.assertIsNone(self.engine._next_scene)  # primero pide confirmación
+        self.scene.do_action("SELECT", Phase.START)
         self.assertEqual(self.engine._next_scene, "TITLE")
 
     def test_draw_while_paused_does_not_fail(self) -> None:

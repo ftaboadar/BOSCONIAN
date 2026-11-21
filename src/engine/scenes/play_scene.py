@@ -8,6 +8,7 @@ from src.create.prefab_creator import (
     create_stars,
 )
 from src.create.prefab_obstacles import create_obstacles
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_minimap_track import CMinimapTrack
@@ -58,6 +59,8 @@ from src.engine.service_locator import ServiceLocator
 class PlayScene(Scene):
     """Escena de nivel: mundo, cámara, estrellas, minimapa, bases y enemigos (jugador provisional)."""
 
+    cheat_allowed = True  # la demo del modo atractor lo desactiva: ahí la nave sí puede morir
+
     def do_create(self) -> None:
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
@@ -96,10 +99,16 @@ class PlayScene(Scene):
         self.round = level["round"]
         self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
         self.level_total_bases = len(level["bases"])
+        self._sync_invulnerable()  # la nave se recrea en cada nivel o vida: hereda el modo trampa
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
         self.paused = False
+        # Salir al título pierde el progreso: antes se pide confirmación (mundo congelado).
+        self.confirm_exit = False
+        white = pygame.Color(255, 255, 255)
+        font = ServiceLocator.fonts.get("main")
+        self.confirm_lines = [font.render(t, False, white) for t in eng.cfg_menu["exit_confirm"]]
         self.pause_text = ServiceLocator.fonts.get("main").render(
             "JUEGO PAUSADO", False, pygame.Color(255, 255, 255)
         )
@@ -134,13 +143,40 @@ class PlayScene(Scene):
             return
         if phase != Phase.START:
             return
+        if action == "CHEAT":
+            self.engine.state.cheat = not self.engine.state.cheat  # F1, también en pausa o BLAST OFF!
+            self._sync_invulnerable()
+            return
+        if self.confirm_exit:
+            if action == "SELECT":
+                self.engine.switch_scene("TITLE")
+            elif action == "BACK":
+                self.confirm_exit = False  # ESC otra vez: cancela y vuelve a donde estaba
+            return
+        if action == "BACK":
+            self.confirm_exit = True  # ESC pide confirmar, jugando o en pausa
+            return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
             return
         if self.paused and action == "SELECT":
-            # Acceso al menú del título desde la pausa (#27 lo convertirá en el menú de opciones).
-            self.engine.switch_scene("TITLE")
+            # Acceso al título desde la pausa (#27 lo convertirá en el menú de opciones).
+            self.confirm_exit = True
             return
+
+    def _sync_invulnerable(self) -> None:
+        """Pone o quita CInvulnerable en la nave según el modo trampa (F1).
+
+        Así las reglas de colisión no la destruyen: no hay muerte que ignorar después.
+        """
+        if not self.world.entity_exists(self.player):
+            return
+        has = self.world.try_component(self.player, CInvulnerable) is not None
+        want = self.cheat_allowed and self.engine.state.cheat
+        if want and not has:
+            self.world.add_component(self.player, CInvulnerable())
+        elif has and not want:
+            self.world.remove_component(self.player, CInvulnerable)
 
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
@@ -170,7 +206,7 @@ class PlayScene(Scene):
 
     def do_update(self, delta_time: float) -> None:
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
-        if self.paused:
+        if self.paused or self.confirm_exit:
             # En pausa solo las estrellas siguen brillando, quietas (sin parallax ni movimiento).
             system_star_blink(self.world, delta_time)
             return
@@ -228,6 +264,11 @@ class PlayScene(Scene):
         screen.set_clip(self.engine.viewport)
         system_star_rendering(self.world, screen)
         screen.set_clip(None)
+        if self.confirm_exit:
+            cx, cy = self.engine.viewport.center
+            for i, surf in enumerate(self.confirm_lines):
+                screen.blit(surf, surf.get_rect(center=(cx, cy - 32 + i * 14)))
+            return
         if self.paused:
             # Desaparecen jugador, bases, interfaz y minimapa; queda el fondo y el aviso.
             screen.blit(
@@ -240,6 +281,7 @@ class PlayScene(Scene):
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
                                  self.engine.world_size)
         self.hud.draw(screen, self.engine.state, self.round)
+        self.hud.draw_cheat(screen, self.engine.state)
         if self.blast_left > 0:
             screen.blit(
                 self.blast_text,

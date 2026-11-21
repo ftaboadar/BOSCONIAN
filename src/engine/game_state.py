@@ -20,6 +20,7 @@ class GameState:
         self.continues_used = 0
         self.game_over = False
         self.next_extra_life = self.cfg["extra_life_first"]
+        self.cheat = False  # modo trampa (F1): invulnerable; se apaga al empezar partida nueva
 
     def add_score(self, points: int) -> None:
         """Suma puntos, actualiza el HI-SCORE y concede vidas extra al cruzar cada umbral."""
