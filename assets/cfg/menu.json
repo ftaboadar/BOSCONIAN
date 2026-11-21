@@ -50,5 +50,6 @@
     "defeat": {
         "title": "GAME OVER",
         "lines": ["TE QUEDASTE SIN VIDAS"]
-    }
+    },
+    "exit_confirm": ["SALIR AL TITULO?", "SE PERDERA", "EL PROGRESO", "ENTER: SI", "ESC: NO"]
 }
