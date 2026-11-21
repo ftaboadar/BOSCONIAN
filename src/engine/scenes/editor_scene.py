@@ -34,6 +34,8 @@ class EditorScene(Scene):
     El modelo (LevelEditor) hace las ediciones y el acceso a archivos; esta escena solo
     traduce teclas y dibuja. Al salir se vuelve al nivel: se juega lo que esté guardado."""
 
+    has_panel = False  # el editor usa toda la pantalla: su mapa y su propio panel de opciones
+
     def do_create(self) -> None:
         eng = self.engine
         tracks = [name for name in load_json("assets/cfg/resources.json")["music"] if name != "title"]

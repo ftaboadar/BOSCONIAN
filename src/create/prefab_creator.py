@@ -37,11 +37,19 @@ from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
-def create_image(world: esper.World, image_name: str, center: pygame.Vector2) -> int:
-    return world.create_entity(
-        CTransform(center),
-        CSurface(ServiceLocator.images.get(image_name)),
-    )
+def scaled_to_width(surf: pygame.Surface, width: int) -> pygame.Surface:
+    """La imagen a `width` px de ancho, conservando la proporción y suavizando el escalado."""
+    height = max(1, round(surf.get_height() * width / surf.get_width()))
+    return pygame.transform.smoothscale(surf, (width, height))
+
+
+def create_image(world: esper.World, image_name: str, center: pygame.Vector2,
+                 width: int | None = None) -> int:
+    """Imagen de interfaz centrada en `center`; con `width` se reduce (o amplía) a ese ancho."""
+    surf = ServiceLocator.images.get(image_name)
+    if width is not None:
+        surf = scaled_to_width(surf, width)
+    return world.create_entity(CTransform(center), CSurface(surf))
 
 
 def create_text(world: esper.World, text: str, color: pygame.Color, center: pygame.Vector2) -> int:

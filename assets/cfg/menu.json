@@ -5,6 +5,7 @@
         "title": { "r": 118, "g": 255, "b": 3 }
     },
     "line_height": 14,
+    "logo_width": 168,
     "attract": {
         "idle_seconds": 15,
         "demo_seconds": 12,
@@ -20,28 +21,11 @@
     ],
     "instructions": {
         "title": "INSTRUCCIONES",
-        "lines": [
-            "FLECHAS: CAMBIAR DIRECCION",
-            "Z: DISPARAR ADELANTE Y ATRAS",
-            "X: HABILIDAD ESPECIAL",
-            "P: PAUSA",
-            "",
-            "DESTRUYE TODAS LAS BASES",
-            "PARA PASAR DE NIVEL.",
-            "EVITA ENEMIGOS Y OBSTACULOS."
-        ]
+        "lines": ["FLECHAS: DIRECCION", "Z: DISPARO DOBLE", "X: HABILIDAD ESPECIAL", "P: PAUSA", "", "DESTRUYE LAS BASES", "PARA PASAR DE NIVEL.", "EVITA ENEMIGOS", "Y OBSTACULOS."]
     },
     "credits": {
         "title": "CREDITOS",
-        "lines": [
-            "COSMONIAN",
-            "INTRODUCCION AL DESARROLLO",
-            "DE VIDEOJUEGOS",
-            "",
-            "IMAGENES: DIANA PACHECO",
-            "MUSICA: CENTURION OF WAR",
-            "FUENTE: CODEMAN38"
-        ]
+        "lines": ["COSMONIAN", "INTRODUCCION AL", "DESARROLLO DE", "VIDEOJUEGOS", "", "IMAGENES:", "DIANA PACHECO", "MUSICA:", "CENTURION OF WAR", "FUENTE: CODEMAN38"]
     },
     "victory": {
         "title": "VICTORIA",

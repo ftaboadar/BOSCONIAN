@@ -17,11 +17,12 @@ class TitleScene(Scene):
     """Título con menú: jugar, elegir nivel, instrucciones y créditos."""
 
     def do_create(self) -> None:
-        w, h = self.engine.screen.get_size()
-        self.area = self.engine.screen.get_rect()
+        stage = self.engine.viewport  # el campo de juego; a su derecha va la barra lateral
+        w, h = stage.size
+        self.area = stage
         cfg = self.engine.cfg_menu
         create_stars(self.world, self.engine.cfg_world, self.area)
-        create_image(self.world, "title", pygame.Vector2(w / 2, h * 0.35))
+        create_image(self.world, "title", pygame.Vector2(stage.centerx, h * 0.35), cfg["logo_width"])
         self.menu = Menu(cfg["title_items"], cfg["colors"], cfg["line_height"])
         self.menu_top = int(h * 0.62)
         self.idle = 0.0
@@ -40,6 +41,8 @@ class TitleScene(Scene):
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
             return
+        if action == "FIRE":
+            action = "SELECT"  # como en el original: disparar también elige (y empieza la partida)
         if self.menu.current_action == "LEVEL" and action in ("LEFT", "RIGHT"):
             self._cycle_level(-1 if action == "LEFT" else 1)
             return
@@ -62,4 +65,4 @@ class TitleScene(Scene):
     def do_draw(self, screen: pygame.Surface) -> None:
         system_star_rendering(self.world, screen)
         system_rendering(self.world, screen)
-        self.menu.draw(screen, screen.get_width() // 2, self.menu_top)
+        self.menu.draw(screen, self.engine.viewport.centerx, self.menu_top)

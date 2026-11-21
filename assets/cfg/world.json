@@ -1,6 +1,6 @@
 {
     "world_size": { "w": 1024, "h": 1024 },
-    "viewport": { "x": 0, "y": 0, "w": 176, "h": 208 },
+    "viewport": { "x": 0, "y": 0, "w": 192, "h": 208 },
     "star_colors": [
         { "r": 213, "g": 0, "b": 0 },
         { "r": 118, "g": 255, "b": 3 },
@@ -12,14 +12,18 @@
     "stars_parallax_factor": 0.5,
     "stars_menu_speed": 40,
     "stars_blink_speed": 0.4,
+    "shutter": { "close_seconds": 0.4, "open_seconds": 0.4, "color": { "r": 126, "g": 196, "b": 152 }, "to": ["CUTSCENE", "PLAY"] },
     "minimap": {
-        "rect": { "x": 184, "y": 64, "w": 64, "h": 64 },
-        "bg_color": { "r": 0, "g": 0, "b": 40 },
-        "border_color": { "r": 255, "g": 255, "b": 255 },
+        "rect": { "x": 192, "y": 80, "w": 64, "h": 96 },
+        "scale": 16,
+        "blink_seconds": 0.3,
+        "bg_color": { "r": 148, "g": 142, "b": 246 },
         "dot_colors": {
             "player": { "r": 255, "g": 255, "b": 255 },
             "base": { "r": 255, "g": 64, "b": 64 },
             "formation": { "r": 255, "g": 220, "b": 0 }
-        }
+        },
+        "dot_sizes": { "player": 2, "base": 5, "formation": 2 },
+        "base_core_color": { "r": 255, "g": 220, "b": 0 }
     }
 }

@@ -97,4 +97,5 @@ class DefeatScene(_EndScene):
         super().do_draw(screen)
         seconds = max(0, math.ceil(self.remaining))
         text = self.font.render(f"ENTER: CONTINUAR {seconds}", False, self.color)
-        screen.blit(text, text.get_rect(center=(screen.get_width() // 2, screen.get_height() - 32)))
+        stage = self.engine.viewport
+        screen.blit(text, text.get_rect(center=(stage.centerx, stage.bottom - 32)))
