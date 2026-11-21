@@ -41,6 +41,8 @@ class TitleScene(Scene):
     def do_action(self, action: str, phase: Phase) -> None:
         if phase != Phase.START:
             return
+        if action == "FIRE":
+            action = "SELECT"  # como en el original: disparar también elige (y empieza la partida)
         if self.menu.current_action == "LEVEL" and action in ("LEFT", "RIGHT"):
             self._cycle_level(-1 if action == "LEFT" else 1)
             return

@@ -5,6 +5,7 @@ import pygame
 from src.engine.data_loader import load_json, load_resources
 from src.engine.game_state import GameState
 from src.engine.hud import Hud
+from src.engine.shutter import Shutter
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
 from src.engine.scenes.editor_scene import EditorScene
@@ -48,6 +49,7 @@ class GameEngine:
         panel = pygame.Rect(self.viewport.right, 0, cfg_window["size"]["w"] - self.viewport.right,
                             cfg_window["size"]["h"])
         self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon, panel)
+        self.shutter = Shutter(self.cfg_world["shutter"], self.viewport)  # persiana entre pantallas
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
 
@@ -62,12 +64,24 @@ class GameEngine:
         self._apply_scene_change(self.cfg_scenes["start_scene"])
         while self.is_running:
             self._calculate_time()
-            self._process_events()
-            self._update()
-            self._draw()
-            if self._next_scene is not None:
-                self._apply_scene_change(self._next_scene)
+            self._frame()
         self._clean()
+
+    def _frame(self) -> None:
+        """Un fotograma: teclas, lógica y dibujo; al final, el cambio de escena pedido."""
+        self._process_events()
+        self._update()
+        self._draw()
+        if self._next_scene is not None:
+            self._request_scene(self._next_scene)
+
+    def _request_scene(self, name: str) -> None:
+        """Cambia de escena, con persiana si la escena de destino la pide (y no hay otra en curso)."""
+        if self.shutter.wants(name) and not self.shutter.busy:
+            self.shutter.close(name)  # la escena actual queda congelada hasta cubrir el campo
+            self._next_scene = None
+        else:
+            self._apply_scene_change(name)
 
     @property
     def level(self) -> int:
@@ -105,6 +119,8 @@ class GameEngine:
             if event.type == pygame.QUIT:
                 self.is_running = False
                 continue
+            if self.shutter.closing:
+                continue  # sin teclas mientras la persiana se cierra
             if event.type == pygame.KEYDOWN:
                 self._current_scene.do_any_key()
             command = self.commands.translate(event)
@@ -112,12 +128,20 @@ class GameEngine:
                 self._current_scene.do_action(*command)
 
     def _update(self) -> None:
+        if self.shutter.closing:
+            if self.shutter.update(self.delta_time):  # el campo ya está cubierto: se cambia de escena
+                self._apply_scene_change(self.shutter.target)
+                self.shutter.open()
+            return  # mientras se cierra, la escena actual no avanza
+        self.shutter.update(self.delta_time)
         self._current_scene.do_update(self.delta_time)
 
     def _draw(self) -> None:
         scene = self._current_scene
         self.screen.fill(self.bg_color)
         scene.do_draw(self.screen)
+        self.screen.set_clip(None)
+        self.shutter.draw(self.screen)  # sobre el campo de juego; la barra se dibuja después y no se mueve
         if scene.has_panel:
             self._draw_panel(scene)
         pygame.display.flip()

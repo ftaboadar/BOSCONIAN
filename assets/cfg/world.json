@@ -11,6 +11,7 @@
     "stars_parallax_factor": 0.5,
     "stars_menu_speed": 40,
     "stars_blink_speed": 0.4,
+    "shutter": { "close_seconds": 0.4, "open_seconds": 0.4, "color": { "r": 126, "g": 196, "b": 152 }, "to": ["CUTSCENE", "PLAY"] },
     "minimap": {
         "rect": { "x": 192, "y": 80, "w": 64, "h": 96 },
         "scale": 8,
