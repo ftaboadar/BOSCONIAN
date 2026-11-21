@@ -170,6 +170,9 @@ class EnemyConfigTests(unittest.TestCase):
 
 class PlaySceneEnemyTests(unittest.TestCase):
     def setUp(self):
+        # Los obstáculos del nivel se reparten al azar: con una semilla fija el jugador no
+        # choca con uno antes del primer spawn (sin jugador vivo no salen enemigos).
+        random.seed(1)
         self.engine = GameEngine()
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene

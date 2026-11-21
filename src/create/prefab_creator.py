@@ -1,5 +1,6 @@
 """Funciones que ensamblan entidades a partir de componentes."""
 
+import math
 import random
 
 import esper
@@ -17,12 +18,16 @@ from src.ecs.components.c_explosive import CExplosive
 from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_points import CPoints
+from src.ecs.components.c_lifetime import CLifetime
+from src.ecs.components.c_player_bullet import CPlayerBullet
+from src.ecs.components.c_player_ship import CHeadingSprites, CPlayerShip
 from src.ecs.components.c_star import CStar
 from src.ecs.components.c_steering import CSteering
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
 from src.ecs.systems.s_enemy_state import INITIAL_STATE
 from src.engine.data_loader import load_json
@@ -39,6 +44,16 @@ def create_image(world: esper.World, image_name: str, center: pygame.Vector2) ->
 def create_text(world: esper.World, text: str, color: pygame.Color, center: pygame.Vector2) -> int:
     surf = ServiceLocator.fonts.get("main").render(text, False, color)
     return world.create_entity(CTransform(center), CSurface(surf))
+
+
+def create_special_shot_message(world: esper.World, cfg: dict, active: bool, center_x: float) -> int:
+    """Aviso temporal al inicio del nivel que indica si el disparo especial está activo."""
+    m = cfg["special_message"]
+    key = "active" if active else "inactive"
+    entity = create_text(world, m[f"{key}_text"], color_from_cfg(m[f"{key}_color"]),
+                         pygame.Vector2(center_x, m["y"]))
+    world.add_component(entity, CLifetime(m["duration"]))
+    return entity
 
 
 def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
@@ -64,14 +79,58 @@ def create_hitbox(kind: str) -> CHitBox:
                    cfg["layer"], tuple(cfg["mask"]))
 
 
-def create_player_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
-    """Nave provisional (hito 3 la reemplaza): triángulo blanco de 12x12."""
-    surf = pygame.Surface((12, 12), pygame.SRCALPHA)
-    pygame.draw.polygon(surf, (255, 255, 255), [(6, 0), (12, 12), (0, 12)])
+def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
+    """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados.
+
+    `special` activa el disparo especial (lo define el nivel)."""
+    r = cfg["sprite_rect"]
+    base = ServiceLocator.images.get("ships").subsurface(
+        pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+    # Ángulo antihorario de pygame.transform.rotate para cada (dx, dy) con "arriba" = (0, -1).
+    sprites = {
+        (dx, dy): pygame.transform.rotate(base, round(math.degrees(math.atan2(-dx, -dy))))
+        for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)
+    }
+    w = cfg["weapon"]
+    heading = (cfg["start_heading"]["x"], cfg["start_heading"]["y"])
     return world.create_entity(
-        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(surf),
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(sprites[heading]),
         CWorld(), CCameraTarget(), CMinimapTrack("player"),
         create_hitbox("player"), CExplosive("player"),
+        CPlayerShip(heading, cfg["max_speed"], cfg["acceleration"]), CHeadingSprites(sprites),
+        CWeapon(w["cooldown"], w["bullet_speed"], w["muzzle_offset"], _bullet_sprites(w),
+                 special, w["special_spread"]),
+    )
+
+
+def _bullet_sprites(weapon_cfg: dict) -> dict[tuple[int, int], pygame.Surface]:
+    """Sprite de bala para cada una de las 8 direcciones a partir de vertical, horizontal y diagonal."""
+    sheet = ServiceLocator.images.get("ships")
+
+    def cut(name: str) -> pygame.Surface:
+        r = weapon_cfg["bullet_sprites"][name]
+        return sheet.subsurface(pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+
+    vertical, horizontal, diagonal = cut("vertical"), cut("horizontal"), cut("diagonal")
+    sprites = {}
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if (dx, dy) == (0, 0):
+                continue
+            if dx == 0:
+                sprites[(dx, dy)] = vertical
+            elif dy == 0:
+                sprites[(dx, dy)] = horizontal
+            else:  # el sprite diagonal original es "/" (arriba-derecha / abajo-izquierda)
+                sprites[(dx, dy)] = diagonal if dx * dy < 0 else pygame.transform.flip(diagonal, True, False)
+    return sprites
+
+
+def create_player_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                         surf: pygame.Surface) -> int:
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
+        CWorld(), CPlayerBullet(),
     )
 
 
@@ -167,7 +226,7 @@ def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: 
         hitbox.size = pygame.Vector2(hitbox.size.y, hitbox.size.x)
     base = world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
-        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]), create_hitbox("base"),
         CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
               core_frames, core["radius"]),
         hitbox,
