@@ -13,6 +13,7 @@ import pygame
 
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_hitbox import CHitBox
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_collision import system_collision
@@ -113,6 +114,23 @@ class DestroyTests(unittest.TestCase):
         make(self.w, (10, 10), (10, 10), "ENEMY", ENEMY_MASK)
         step(self.w)
         self.assertFalse(self.w.entity_exists(player))
+
+    def test_invulnerable_no_recibe_destroy_pero_el_otro_si(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
+        self.w.add_component(player, CInvulnerable())
+        enemy = make(self.w, (10, 10), (10, 10), "ENEMY", ENEMY_MASK)
+        step(self.w)
+        self.assertTrue(self.w.entity_exists(player))
+        self.assertIsNone(self.w.try_component(player, CDestroy))
+        self.assertFalse(self.w.entity_exists(enemy))
+
+    def test_bala_enemiga_no_destruye_al_invulnerable(self):
+        player = make(self.w, (5, 5), (10, 10), "PLAYER", PLAYER_MASK)
+        self.w.add_component(player, CInvulnerable())
+        bullet = make(self.w, (5, 5), (2, 2), "ENEMY_BULLET")
+        step(self.w)
+        self.assertTrue(self.w.entity_exists(player))
+        self.assertFalse(self.w.entity_exists(bullet))
 
     def test_pares_sin_regla_se_ignoran(self):
         a = make(self.w, (5, 5), (10, 10), "PLAYER", ("BASE",))

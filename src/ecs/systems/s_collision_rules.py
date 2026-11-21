@@ -3,6 +3,7 @@ import pygame
 
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_hitbox import CHitBox
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_collision import center_delta, hitbox_center
@@ -19,7 +20,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     """Aplica la regla que corresponde a cada par de entidades que chocan.
 
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
-    (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy.
+    (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
+    entidades con CInvulnerable.
     """
     for ent_a, ent_b in collisions:
         if not (world.entity_exists(ent_a) and world.entity_exists(ent_b)):
@@ -38,8 +40,14 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
         elif result == "BOUNCE_A":
             _bounce(world, ent_a, ent_b, False, world_size)
         elif result == "DESTROY_BOTH":
-            world.add_component(ent_a, CDestroy())
-            world.add_component(ent_b, CDestroy())
+            _mark_destroy(world, ent_a)
+            _mark_destroy(world, ent_b)
+
+
+def _mark_destroy(world: esper.World, ent: int) -> None:
+    """Marca la entidad con CDestroy, a menos que sea invulnerable."""
+    if world.try_component(ent, CInvulnerable) is None:
+        world.add_component(ent, CDestroy())
 
 
 def _bounce(world: esper.World, ent_a: int, ent_b: int, move_b: bool,

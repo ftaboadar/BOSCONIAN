@@ -2,6 +2,7 @@ import pygame
 
 from src.create.prefab_creator import (create_base, create_enemy_spawner,
                                        create_player_placeholder, create_stars)
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -32,6 +33,8 @@ from src.engine.service_locator import ServiceLocator
 class PlayScene(Scene):
     """Escena de nivel: mundo, cámara, estrellas, minimapa, bases y enemigos (jugador provisional)."""
 
+    cheat_allowed = True  # la demo del modo atractor lo desactiva: ahí la nave sí puede morir
+
     def do_create(self) -> None:
         eng = self.engine
         self.collision_rules = load_rules(load_json("assets/cfg/collisions.json"))
@@ -56,6 +59,7 @@ class PlayScene(Scene):
         self.round = level["round"]
         self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
         self.level_total_bases = len(level["bases"])
+        self._sync_invulnerable()  # la nave se recrea en cada nivel o vida: hereda el modo trampa
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         self.direction = pygame.Vector2(0, -1)
@@ -76,6 +80,7 @@ class PlayScene(Scene):
             return
         if action == "CHEAT":
             self.engine.state.cheat = not self.engine.state.cheat  # F1, también en pausa o BLAST OFF!
+            self._sync_invulnerable()
             return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
@@ -92,6 +97,20 @@ class PlayScene(Scene):
         if action in dirs:
             self.direction = pygame.Vector2(dirs[action])
 
+    def _sync_invulnerable(self) -> None:
+        """Pone o quita CInvulnerable en la nave según el modo trampa (F1).
+
+        Así las reglas de colisión no la destruyen: no hay muerte que ignorar después.
+        """
+        if not self.world.entity_exists(self.player):
+            return
+        has = self.world.try_component(self.player, CInvulnerable) is not None
+        want = self.cheat_allowed and self.engine.state.cheat
+        if want and not has:
+            self.world.add_component(self.player, CInvulnerable())
+        elif has and not want:
+            self.world.remove_component(self.player, CInvulnerable)
+
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
 
@@ -100,12 +119,7 @@ class PlayScene(Scene):
         self.engine.switch_scene(after_level_cleared(self.engine.state, level_numbers()))
 
     def player_died(self) -> None:
-        """El jugador murió: pierde una vida y repite el nivel, o va a derrota.
-
-        Con el modo trampa activo es invulnerable: la muerte se ignora.
-        """
-        if self.engine.state.cheat:
-            return
+        """El jugador murió: pierde una vida y repite el nivel, o va a derrota."""
         self.engine.switch_scene(after_player_died(self.engine.state))
 
     def do_update(self, delta_time: float) -> None:
