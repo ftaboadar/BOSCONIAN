@@ -14,6 +14,8 @@ DIRECTIONS = ("UP", "DOWN", "LEFT", "RIGHT")
 class AttractScene(PlayScene):
     """Modo atractor: el nivel se juega solo tras un rato de inactividad. Cualquier tecla lo interrumpe."""
 
+    cheat_allowed = False  # la demo no es del jugador: el modo trampa no la afecta
+
     def do_create(self) -> None:
         super().do_create()
         cfg = self.engine.cfg_menu["attract"]

@@ -4,6 +4,7 @@ import pygame
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_points import CPoints
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_collision import center_delta, hitbox_center
@@ -20,8 +21,9 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     """Aplica la regla que corresponde a cada par de entidades que chocan.
 
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
-    (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy.
-    DESTROY_A: solo se marca la entidad de la capa "a".
+    (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
+    entidades con CInvulnerable. DESTROY_A: solo se marca la entidad de la capa "a"
+    (con la misma excepción).
 
     Si la regla tiene "score": "a" o "b", esa entidad da sus CPoints al destruirse.
     Devuelve los puntos ganados en el frame (una entidad solo puntúa una vez).
@@ -49,19 +51,26 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
         elif result == "BOUNCE_A":
             _bounce(world, ent_a, ent_b, False, world_size)
         elif result == "DESTROY_BOTH":
-            world.add_component(ent_a, CDestroy())
-            world.add_component(ent_b, CDestroy())
+            _mark_destroy(world, ent_a)
+            _mark_destroy(world, ent_b)
         elif result == "DESTROY_A":
-            world.add_component(ent_a, CDestroy())
+            _mark_destroy(world, ent_a)
     return points
 
 
 def _points_if_new(world: esper.World, ent: int) -> int:
-    """Puntos de la entidad, solo si no estaba ya marcada para destruirse en este frame."""
-    if world.has_component(ent, CDestroy):
+    """Puntos de la entidad, solo si no estaba ya marcada para destruirse en este frame
+    ni es invulnerable (no se destruye, así que no puntúa)."""
+    if world.has_component(ent, CDestroy) or world.has_component(ent, CInvulnerable):
         return 0
     c_p = world.try_component(ent, CPoints)
     return c_p.points if c_p is not None else 0
+
+
+def _mark_destroy(world: esper.World, ent: int) -> None:
+    """Marca la entidad con CDestroy, a menos que sea invulnerable."""
+    if world.try_component(ent, CInvulnerable) is None:
+        world.add_component(ent, CDestroy())
 
 
 def _bounce(world: esper.World, ent_a: int, ent_b: int, move_b: bool,
