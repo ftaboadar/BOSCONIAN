@@ -11,7 +11,9 @@
         "I": {
             "speed_factor": 1.15,
             "turn_rate": 120,
+            "initial_state": "CHASE",
             "chase_seconds": 6.0,
+            "after_chase": "LEAVE",
             "points": 50,
             "spawn_weight": 3,
             "sprite": { "x": 0, "y": 111, "w": 14, "h": 14 }
@@ -19,7 +21,9 @@
         "P": {
             "speed_factor": 1.15,
             "turn_rate": 120,
+            "initial_state": "CHASE",
             "chase_seconds": 1.5,
+            "after_chase": "WANDER",
             "points": 60,
             "spawn_weight": 2,
             "wander": { "distance": 30, "radius": 20, "jitter": 720 },
@@ -27,6 +31,7 @@
         },
         "E": {
             "speed_factor": 1.6,
+            "initial_state": "STRAIGHT",
             "points": 70,
             "spawn_weight": 1,
             "sprite": { "x": 41, "y": 109, "w": 7, "h": 16 }

@@ -23,22 +23,35 @@
     ],
     "instructions": {
         "title": "INSTRUCCIONES",
-        "lines": ["FLECHAS: DIRECCION", "Z: DISPARO DOBLE", "X: HABILIDAD ESPECIAL", "P: PAUSA", "", "DESTRUYE LAS BASES", "PARA PASAR DE NIVEL.", "EVITA ENEMIGOS", "Y OBSTACULOS."]
+        "lines": ["FLECHAS: DIRECCION", "Z: DISPARO DOBLE", "ESPECIAL: SEGUN NIVEL", "P: PAUSA", "", "DESTRUYE LAS BASES", "PARA PASAR DE NIVEL.", "EVITA ENEMIGOS", "Y OBSTACULOS."]
     },
     "credits": {
         "title": "CREDITOS",
         "lines": ["COSMONIAN", "INTRODUCCION AL", "DESARROLLO DE", "VIDEOJUEGOS", "", "IMAGENES:", "DIANA PACHECO", "MUSICA:", "CENTURION OF WAR", "FUENTE: CODEMAN38"]
     },
+    "pause": {
+        "title": "JUEGO PAUSADO",
+        "title_y": 48,
+        "menu_top": 80,
+        "page_hint": "ENTER: VOLVER",
+        "extra_items": [
+            { "label": "SALIR AL TITULO", "action": "EXIT" }
+        ]
+    },
+    "end_grace_seconds": 0.5,
     "victory": {
         "title": "VICTORIA",
+        "music": "starshooter",
         "lines": ["HAS COMPLETADO TODOS", "LOS NIVELES"]
     },
     "record": {
         "title": "NUEVO RECORD",
+        "music": "starshooter",
         "lines": ["FELICITACIONES", "SUPERASTE EL HI-SCORE"]
     },
     "defeat": {
         "title": "GAME OVER",
+        "music": "night_tune",
         "lines": ["TE QUEDASTE SIN VIDAS"]
     },
     "exit_confirm": ["SALIR AL TITULO?", "SE PERDERA", "EL PROGRESO", "ENTER: SI", "ESC: NO"]

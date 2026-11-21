@@ -141,14 +141,17 @@ def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:
 
 
 ENEMY_TYPE_KEYS = {
-    "I": ("speed_factor", "turn_rate", "chase_seconds", "points", "spawn_weight", "sprite"),
-    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "points", "spawn_weight", "sprite"),
-    "E": ("speed_factor", "points", "spawn_weight", "sprite"),
+    "I": ("speed_factor", "turn_rate", "initial_state", "chase_seconds", "after_chase", "points",
+          "spawn_weight", "sprite"),
+    "P": ("speed_factor", "turn_rate", "initial_state", "chase_seconds", "after_chase", "wander",
+          "points", "spawn_weight", "sprite"),
+    "E": ("speed_factor", "initial_state", "points", "spawn_weight", "sprite"),
 }
+ENEMY_STATES = ("CHASE", "LEAVE", "WANDER", "STRAIGHT")  # los de EnemyState (c_enemy_state.py)
 
 
 def load_enemies() -> dict:
-    """Carga enemies.json: tipos I, P y E y la sección `spawn`.
+    """Carga enemies.json: tipos I, P y E (con su máquina de estados) y la sección `spawn`.
 
     Cada tipo debe ir más rápido que el jugador (speed_factor > 1) y tener un peso de
     spawn no negativo; al menos uno debe ser positivo para que pueda salir algún enemigo.
@@ -180,6 +183,10 @@ def load_enemies() -> dict:
         require_keys(cfg["types"][kind]["sprite"], ("x", "y", "w", "h"), f"{where}.sprite")
         if cfg["types"][kind]["speed_factor"] <= 1:
             raise ConfigError(f"{where}: speed_factor debe ser mayor que 1")
+        # Máquina de estados del tipo: con cuál nace y a cuál pasa al acabar la persecución.
+        for key in ("initial_state", "after_chase"):
+            if cfg["types"][kind].get(key, ENEMY_STATES[0]) not in ENEMY_STATES:
+                raise ConfigError(f"{where}: {key} debe ser uno de {', '.join(ENEMY_STATES)}")
     weights = [t["spawn_weight"] for t in cfg["types"].values()]
     if min(weights) < 0 or sum(weights) <= 0:
         raise ConfigError(f"{path} types: spawn_weight no puede ser negativo ni todos cero")

@@ -154,6 +154,23 @@ class SceneSoundTests(Recorder, unittest.TestCase):
         self.engine._apply_scene_change("ATTRACT")
         self.assertEqual(self.music, [])
 
+    def test_el_disparo_del_jugador_suena_una_vez_por_disparo(self):
+        scene = self.open_level(1)
+        self.played.clear()
+        scene.do_action("FIRE", Phase.START)
+        scene.do_action("FIRE", Phase.END)
+        scene.do_update(1 / 60)
+        self.assertEqual(self.played.count("shoot"), 1)  # dos balas, un sonido
+
+    def test_victoria_derrota_y_record_cambian_la_musica_del_nivel(self):
+        for name, key in (("VICTORY", "victory"), ("DEFEAT", "defeat"), ("RECORD", "record")):
+            self.open_level(1)
+            self.music.clear()
+            self.engine._apply_scene_change(name)
+            track = self.engine.cfg_menu[key]["music"]
+            self.assertIn(track, RESOURCES["music"], name)
+            self.assertEqual(self.music, [track], name)
+
     def test_blast_off_suena_al_empezar(self):
         self.open_level(1)
         self.assertIn("blast_off", self.played)

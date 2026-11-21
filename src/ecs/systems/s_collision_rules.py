@@ -39,6 +39,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     for ent_a, ent_b in collisions:
         if not (world.entity_exists(ent_a) and world.entity_exists(ent_b)):
             continue
+        if world.has_component(ent_a, CDestroy) or world.has_component(ent_b, CDestroy):
+            continue  # ya destruida en este frame: una bala solo se lleva una cosa
         layer_a = world.component_for_entity(ent_a, CHitBox).layer
         layer_b = world.component_for_entity(ent_b, CHitBox).layer
         rule = rules.get((layer_a, layer_b))
@@ -67,8 +69,6 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
         elif result == "DESTROY_A":
             _mark_destroy(world, ent_a)
         elif result == "DAMAGE_BASE":
-            if world.has_component(ent_a, CDestroy):
-                continue  # la bala ya dio en otra parte en este frame
             shot = world.component_for_entity(ent_a, CVelocity).vel
             part_pos = pygame.Vector2(world.component_for_entity(ent_b, CTransform).pos)
             base_pos = pygame.Vector2(world.component_for_entity(

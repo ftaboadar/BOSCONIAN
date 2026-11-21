@@ -17,6 +17,7 @@ import esper
 import pygame
 
 from src.create.prefab_creator import create_base, create_enemy, create_enemy_bullet
+from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_enemy_bullet import CEnemyBullet
 from src.ecs.components.c_surface import CSurface
@@ -28,7 +29,11 @@ from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_base_damage import damage_base_part
-from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
+from src.ecs.systems.s_collision import system_collision
+from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
+from src.ecs.systems.s_destroy import system_destroy
+from src.ecs.systems.s_explode import system_explode
+from src.ecs.systems.s_lifetime import system_lifetime
 from src.ecs.systems.s_movement import system_movement
 from src.engine import data_loader
 from src.engine.data_loader import ConfigError, load_bases, load_enemies, load_level
@@ -40,6 +45,17 @@ WORLD = pygame.Vector2(1024, 1024)
 POS = pygame.Vector2(300, 400)
 DT = 1 / 60
 FAR = pygame.Vector2(800, 900)
+RULES = load_rules(data_loader.load_json("assets/cfg/collisions.json"))
+EXPLOSIONS = data_loader.load_json("assets/cfg/explosions.json")
+
+
+def system_enemy_bullets(world, world_size, delta_time):
+    """Lo que el nivel hace con las balas de torreta en cada fotograma: caducan (CLifetime) y
+    chocan por su HitBox según las reglas de collisions.json, con explosión."""
+    system_lifetime(world, delta_time)
+    system_collision_rules(world, system_collision(world, world_size), RULES, world_size)
+    system_explode(world, EXPLOSIONS)
+    system_destroy(world)
 
 
 class BehaviorTestCase(unittest.TestCase):
@@ -183,12 +199,18 @@ class EnemyBulletTests(BehaviorTestCase):
 
     def test_un_enemigo_que_choca_con_una_bala_muere_junto_con_ella(self):
         bullet = self.bullet((500, 500))
-        hit = self.enemy((504, 497))    # su caja de 8 px toca la bala de 2 px
-        missed = self.enemy((506, 500))  # a 6 px: no la toca
+        hit = self.enemy((504, 497))    # su hitbox de 10 px toca la de la bala (3 px)
+        missed = self.enemy((507, 500))  # a 7 px: no la toca
         system_enemy_bullets(self.world, WORLD, DT)
         self.assertFalse(self.world.entity_exists(bullet))
         self.assertFalse(self.world.entity_exists(hit))
         self.assertTrue(self.world.entity_exists(missed))
+
+    def test_el_enemigo_alcanzado_por_una_bala_explota(self):
+        self.bullet((500, 500))
+        self.enemy((502, 500))
+        system_enemy_bullets(self.world, WORLD, DT)
+        self.assertEqual(len(self.world.get_component(CAnimation)), 1)  # toda colisión explota
 
     def test_una_bala_solo_se_lleva_a_un_enemigo(self):
         self.bullet((500, 500))

@@ -9,12 +9,11 @@ import pygame
 
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_transform import CTransform
-from src.engine.service_locator import color_from_cfg
+from src.engine.service_locator import color_from_cfg, rect_from_cfg
 
 
 def radar_rect(cfg: dict) -> pygame.Rect:
-    r = cfg["rect"]
-    return pygame.Rect(r["x"], r["y"], r["w"], r["h"])
+    return rect_from_cfg(cfg["rect"])
 
 
 def radar_point(world_pos: pygame.Vector2, world_size: pygame.Vector2,

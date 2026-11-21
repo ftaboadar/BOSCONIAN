@@ -2,6 +2,7 @@
     "round": 8,
     "subtitle": "THE EDGE OF THE GALAXY.",
     "difficulty": 4,
+    "core_mode": "cycle",
     "player_start": { "x": 512, "y": 512 },
     "bases": [
         { "x": 590, "y": 760, "orientation": "horizontal" },

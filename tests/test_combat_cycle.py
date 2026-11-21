@@ -20,6 +20,7 @@ import pygame
 from src.create.prefab_creator import (create_base, create_enemy, create_enemy_bullet,
                                        create_player_bullet)
 from src.ecs.components.c_animation import CAnimation
+from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_enemy_bullet import CEnemyBullet
@@ -33,7 +34,9 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.engine.data_loader import load_bases, load_enemies, load_level
 from src.engine.game_engine import GameEngine
+from src.ecs.systems.s_base_damage import damage_base_part
 from src.engine.input.command import Phase
+from src.engine.level_flow import after_level_cleared, after_player_died
 from src.engine.scenes import play_scene
 
 DT = 1 / 60
@@ -151,6 +154,71 @@ class PlayerShotsTests(CombatCycleTestCase):
         self.bullet((900, 900), (0, 0))
         self.step(0.5)
         self.assertEqual(self.state.score, 0)
+
+
+class LevelProgressTests(unittest.TestCase):
+    """Perder una vida no reinicia el nivel: las bases destruidas no vuelven (no se puede
+    repetirlas para sumar puntos) y el tiempo hacia la alerta ROJA sigue corriendo."""
+
+    def setUp(self):
+        random.seed(3)
+        self.engine = GameEngine()
+        self.engine.start_game()
+        self.state = self.engine.state
+        self.scene = self.open()
+
+    def open(self):
+        self.engine._next_scene = None
+        self.engine._apply_scene_change("PLAY")
+        scene = self.engine._current_scene
+        scene.blast_left = 0
+        return scene
+
+    def destroy_first_base(self):
+        base = next(b for b, i in self.scene.base_index.items() if i == 0)
+        core = next(ent for ent, c_p in self.scene.world.get_component(CBasePart)
+                    if c_p.base == base and c_p.kind == "core")
+        along = UP if self.scene.world.component_for_entity(base, CBase).orientation == "vertical" \
+            else pygame.Vector2(1, 0)
+        damage_base_part(self.scene.world, core, along)
+        self.scene._explode_destroyed_bases()
+
+    def test_la_base_destruida_no_vuelve_al_perder_una_vida(self):
+        total = self.scene.bases_remaining()
+        self.destroy_first_base()
+        self.assertEqual(self.state.bases_destroyed, {0})
+        self.assertEqual(after_player_died(self.state), "PLAY")
+        self.scene = self.open()
+        self.assertEqual(self.scene.bases_remaining(), total - 1)
+        self.assertNotIn(0, self.scene.base_index.values())
+
+    def test_el_reloj_de_la_alerta_roja_no_se_reinicia_al_perder_una_vida(self):
+        self.scene.do_update(1.0)
+        self.assertAlmostEqual(self.state.level_seconds, 1.0)
+        self.scene = self.open()
+        self.assertAlmostEqual(self.scene.alert.elapsed, 1.0)
+        self.assertEqual(self.scene.alert.level.name, "GREEN")  # pero la nave reaparece en VERDE
+
+    def test_pasar_de_nivel_continuar_o_empezar_partida_olvidan_el_progreso(self):
+        for forget in (lambda: after_level_cleared(self.state, [1, 2]),
+                       self.state.continue_game, self.engine.start_game):
+            self.state.bases_destroyed.add(0)
+            self.state.level_seconds = 50.0
+            forget()
+            self.assertEqual((self.state.bases_destroyed, self.state.level_seconds), (set(), 0.0))
+
+    def test_entrar_al_editor_olvida_el_progreso(self):
+        self.destroy_first_base()
+        self.scene.do_action("EDITOR", Phase.START)
+        self.assertEqual(self.state.bases_destroyed, set())
+
+    def test_la_demo_no_usa_ni_toca_el_progreso(self):
+        self.state.bases_destroyed.add(0)
+        self.engine._apply_scene_change("ATTRACT")
+        demo = self.engine._current_scene
+        self.assertIn(0, demo.base_index.values())
+        demo.do_update(1.0)
+        self.assertEqual(self.state.level_seconds, 0.0)
 
 
 class PlayerDeathTests(CombatCycleTestCase):

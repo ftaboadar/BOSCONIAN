@@ -212,6 +212,15 @@ class EditorModelTests(TempLevels):
         ed.toggle_special()
         self.assertEqual(ed.level["special_shot"], was)
 
+    def test_el_nucleo_alterna_entre_abierto_y_ciclo(self):
+        ed = self.editor()
+        ed.level["core_mode"] = "open"
+        self.assertEqual(ed.toggle_core(), "NUCLEO CICLO")
+        self.assertEqual(ed.level["core_mode"], "cycle")
+        self.assertTrue(ed.dirty)
+        self.assertEqual(ed.toggle_core(), "NUCLEO ABIERTO")
+        self.assertEqual(ed.level["core_mode"], "open")
+
     def test_guardar_y_volver_a_cargar_conserva_lo_editado(self):
         ed = self.editor(2)
         self.move_to(ed, 900, 900)

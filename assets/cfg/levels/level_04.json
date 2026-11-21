@@ -2,6 +2,7 @@
     "round": 4,
     "subtitle": "INTO THE DEEP NEBULA.",
     "difficulty": 2,
+    "core_mode": "cycle",
     "player_start": { "x": 512, "y": 512 },
     "bases": [
         { "x": 750, "y": 590, "orientation": "horizontal" },

@@ -1,6 +1,7 @@
 """Patrón State de la IA enemiga: cada estado aplica un steering behaviour.
 
-Máquina de estados por tipo de enemigo:
+Máquina de estados por tipo de enemigo (definida en enemies.json: `initial_state` y
+`after_chase` de cada tipo):
   I: CHASE --(chase_seconds)--> LEAVE   persigue y se va después de un rato
   P: CHASE --(chase_seconds)--> WANDER  persigue y pronto se vuelve aleatorio
   E: STRAIGHT                           va derecho, rápido, sin desviarse
@@ -16,10 +17,6 @@ from src.ecs.components.c_steering import CSteering
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.engine import steering
-
-# Estado con el que nace cada tipo y al que pasa cuando se le acaba la persecución.
-INITIAL_STATE = {"I": EnemyState.CHASE, "P": EnemyState.CHASE, "E": EnemyState.STRAIGHT}
-AFTER_CHASE = {"I": EnemyState.LEAVE, "P": EnemyState.WANDER}
 
 _rng = random.Random()
 
@@ -49,8 +46,8 @@ def _change_state(c_state: CEnemyState, new_state: EnemyState) -> None:
 
 def _do_chase(c_t: CTransform, c_state: CEnemyState, c_steer: CSteering,
               player_pos: pygame.Vector2, world_size: pygame.Vector2) -> pygame.Vector2:
-    if c_state.time_in_state >= c_state.chase_seconds:
-        _change_state(c_state, AFTER_CHASE[c_state.kind])
+    if c_state.after_chase is not None and c_state.time_in_state >= c_state.chase_seconds:
+        _change_state(c_state, c_state.after_chase)
     # Seek desviado: con menos dificultad el ángulo es mayor y le cuesta alcanzar al jugador.
     return steering.seek(c_t.pos, player_pos, world_size).rotate(c_steer.deviation)
 

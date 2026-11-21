@@ -7,6 +7,7 @@ from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_weapon import CWeapon
 from src.engine.camera import Camera, wrap_delta
+from src.engine.sfx import play_sound
 
 
 def system_player_fire(world: esper.World, delta_time: float) -> None:
@@ -21,6 +22,7 @@ def system_player_fire(world: esper.World, delta_time: float) -> None:
             continue  # una pulsación pendiente espera al enfriamiento en vez de perderse
         c_w.trigger = False
         c_w.timer = c_w.cooldown
+        play_sound("shoot")  # uno por disparo, no por bala
         forward = pygame.Vector2(c_p.heading).normalize()
         side = pygame.Vector2(-forward.y, forward.x)  # perpendicular al rumbo
         lanes = (-1, 0, 1) if c_w.special else (0,)

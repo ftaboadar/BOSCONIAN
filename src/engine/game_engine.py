@@ -1,5 +1,7 @@
 """Motor del juego: game loop, escenas, input y servicios."""
 
+import asyncio
+
 import pygame
 
 from src.engine.data_loader import load_json, load_resources
@@ -15,7 +17,7 @@ from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
 from src.engine.scenes.story_scenes import BylineScene, CutsceneScene, LogoSlideScene, SplashScene
 from src.engine.scenes.title_scene import TitleScene
-from src.engine.service_locator import ServiceLocator, color_from_cfg
+from src.engine.service_locator import ServiceLocator, color_from_cfg, rect_from_cfg
 
 
 class GameEngine:
@@ -41,15 +43,14 @@ class GameEngine:
         self.cfg_world = load_json("assets/cfg/world.json")
         self.cfg_menu = load_json("assets/cfg/menu.json")
         self.state = GameState()  # vidas, puntaje, récord y nivel, compartido entre escenas
-        r = load_json("assets/cfg/player.json")["sprite_rect"]
         life_icon = ServiceLocator.images.get("ships").subsurface(
-            pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
-        v = self.cfg_world["viewport"]
-        self.viewport = pygame.Rect(v["x"], v["y"], v["w"], v["h"])  # el campo de juego
+            rect_from_cfg(load_json("assets/cfg/player.json")["sprite_rect"])).copy()
+        self.viewport = rect_from_cfg(self.cfg_world["viewport"])  # el campo de juego
         # La barra lateral ocupa el resto de la pantalla, a la derecha del campo de juego.
-        panel = pygame.Rect(self.viewport.right, 0, cfg_window["size"]["w"] - self.viewport.right,
-                            cfg_window["size"]["h"])
-        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon, panel)
+        self.panel = pygame.Rect(self.viewport.right, 0, cfg_window["size"]["w"] - self.viewport.right,
+                                 cfg_window["size"]["h"])
+        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon,
+                       self.panel)
         self.shutter = Shutter(self.cfg_world["shutter"], self.viewport)  # persiana entre pantallas
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
@@ -61,11 +62,17 @@ class GameEngine:
         self._next_scene: str | None = None
 
     def run(self) -> None:
+        asyncio.run(self.run_async())
+
+    async def run_async(self) -> None:
+        """Game loop. Es una corrutina para la versión web (pygbag): tras cada fotograma cede
+        el control al navegador; en escritorio ese `sleep(0)` no espera nada."""
         self.is_running = True
         self._apply_scene_change(self.cfg_scenes["start_scene"])
         while self.is_running:
             self._calculate_time()
             self._frame()
+            await asyncio.sleep(0)
         self._clean()
 
     def _frame(self) -> None:
@@ -150,9 +157,7 @@ class GameEngine:
     def _draw_panel(self, scene: Scene) -> None:
         """La barra lateral, igual en todas las pantallas del juego (salvo el editor)."""
         self.screen.set_clip(None)
-        panel = pygame.Rect(self.viewport.right, 0, self.screen.get_width() - self.viewport.right,
-                            self.screen.get_height())
-        self.screen.fill(self.bg_color, panel)  # tapa lo que la escena haya dibujado de más
+        self.screen.fill(self.bg_color, self.panel)  # tapa lo que la escena haya dibujado de más
         scene.draw_radar(self.screen)
         self.hud.draw(self.screen, scene.panel_state(), scene.panel_round(), scene.panel_lives)
         self.hud.draw_cheat(self.screen, self.state)

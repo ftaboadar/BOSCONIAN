@@ -32,6 +32,13 @@ class LevelsTests(unittest.TestCase):
     def test_hay_10_niveles_consecutivos(self):
         self.assertEqual(level_numbers(), list(range(1, 11)))
 
+    def test_hay_niveles_con_nucleo_abierto_y_con_ciclo(self):
+        """El núcleo depende del nivel: en unos queda abierto y en otros se abre, se cierra
+        y lanza enemigos E."""
+        modes = {level["core_mode"] for level in LEVELS.values()}
+        self.assertEqual(modes, {"open", "cycle"})
+        self.assertEqual(LEVELS[1]["core_mode"], "open")  # el primero, el más tranquilo
+
     def test_la_ronda_coincide_con_el_numero(self):
         for n, level in LEVELS.items():
             self.assertEqual(level["round"], n)

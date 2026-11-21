@@ -2,6 +2,7 @@
     "round": 6,
     "subtitle": "ABOVE THE BURNING SUN.",
     "difficulty": 3,
+    "core_mode": "cycle",
     "player_start": { "x": 512, "y": 512 },
     "bases": [
         { "x": 180, "y": 530, "orientation": "horizontal" },

@@ -33,7 +33,7 @@
         "enemy": {
             "size": { "w": 10, "h": 10 },
             "layer": "ENEMY",
-            "mask": ["ENEMY", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
+            "mask": ["ENEMY", "ENEMY_BULLET", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
         },
         "enemy_bullet": {
             "size": { "w": 3, "h": 3 },
@@ -76,6 +76,7 @@
         { "a": "PLAYER_BULLET", "b": "ROCK", "result": "DESTROY_BOTH", "score": "b" },
         { "a": "PLAYER_BULLET", "b": "MINE", "result": "DESTROY_BOTH", "score": "b" },
         { "a": "PLAYER_BULLET", "b": "ROCK_SOLID", "result": "DESTROY_A" },
+        { "a": "ENEMY_BULLET", "b": "ENEMY", "result": "DESTROY_BOTH" },
         { "a": "ENEMY_BULLET", "b": "ROCK_SOLID", "result": "DESTROY_A" },
         { "a": "ROCK_SOLID", "b": "BASE", "result": "BOUNCE_A" }
     ]

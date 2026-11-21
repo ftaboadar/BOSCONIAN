@@ -7,6 +7,7 @@ from src.engine.input.command import Phase
 from src.engine.scenes.info_scene import InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.service_locator import ServiceLocator
+from src.engine.sfx import play_music
 
 DIRECTIONS = ("UP", "DOWN", "LEFT", "RIGHT")
 
@@ -15,6 +16,7 @@ class AttractScene(PlayScene):
     """Modo atractor: el nivel se juega solo tras un rato de inactividad. Cualquier tecla lo interrumpe."""
 
     cheat_allowed = False  # la demo no es del jugador: el modo trampa no la afecta
+    keeps_progress = False  # ni usa ni altera el progreso de la partida del jugador
 
     def do_create(self) -> None:
         super().do_create()
@@ -28,8 +30,7 @@ class AttractScene(PlayScene):
 
     def play_level_music(self, level: dict) -> None:
         """La demo va en silencio, como antes de la música por nivel."""
-        if pygame.mixer.get_init():
-            ServiceLocator.music.stop()
+        play_music(None)
 
     def do_any_key(self) -> None:
         self.engine.switch_scene("TITLE")

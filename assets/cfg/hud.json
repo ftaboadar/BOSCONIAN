@@ -1,0 +1,24 @@
+{
+    "texts": {
+        "hi_score": "HI-SCORE",
+        "player": "1UP",
+        "condition": "CONDITION",
+        "round": "ROUND",
+        "cheat": "CHEAT"
+    },
+    "colors": {
+        "text": { "r": 255, "g": 255, "b": 255 },
+        "highlight": { "r": 255, "g": 60, "b": 40 },
+        "bar_text": { "r": 0, "g": 0, "b": 0 },
+        "condition": {
+            "GREEN": { "r": 128, "g": 255, "b": 160 },
+            "YELLOW": { "r": 255, "g": 225, "b": 60 },
+            "RED": { "r": 255, "g": 80, "b": 80 }
+        }
+    },
+    "rows": { "hi_label": 0, "hi_value": 8, "up_label": 16, "up_value": 24, "cheat": 36, "condition": 48, "round": 200 },
+    "condition_bar": { "y": 61, "h": 15 },
+    "life_icons": { "y": 176, "spacing": 16 },
+    "letter_gap": 1,
+    "trimmed_letters": { "I": 1 }
+}

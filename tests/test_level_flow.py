@@ -44,10 +44,10 @@ class DifficultyTests(unittest.TestCase):
     def test_se_acota_al_rango_definido(self):
         self.assertEqual(difficulty_params({"difficulty": 99})["difficulty"], 5)
 
-    def test_mas_dificultad_mas_spawn_y_menos_desvio(self):
+    def test_mas_dificultad_alertas_mas_tempranas(self):
         a, b = difficulty_params({"difficulty": 1}), difficulty_params({"difficulty": 5})
-        self.assertLess(b["spawn_interval"], a["spawn_interval"])
-        self.assertLess(b["steer_deviation"], a["steer_deviation"])
+        self.assertLess(b["yellow_after"], a["yellow_after"])
+        self.assertLess(b["red_after"], a["red_after"])
 
     def test_nivel_con_difficulty_invalida_falla(self):
         import json, tempfile

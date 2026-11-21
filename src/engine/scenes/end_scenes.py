@@ -6,15 +6,19 @@ import pygame
 
 from src.engine.input.command import Phase
 from src.engine.level_flow import after_game_end
-from src.engine.sfx import play_sound
+from src.engine.sfx import play_music, play_sound
 from src.engine.scenes.info_scene import InfoScene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
-GRACE_SECONDS = 0.5  # evita saltarse la escena con la tecla que se pulsaba al terminar el juego
-
-
 class _EndScene(InfoScene):
     HINT = "PULSA UNA TECLA"
+
+    def do_create(self) -> None:
+        super().do_create()
+        # Cada final tiene su música (menu.json); sin ella, silencio: la del nivel no sigue.
+        play_music(self.engine.cfg_menu[self.CFG_KEY].get("music"))
+        # Evita saltarse la escena con la tecla que se pulsaba al terminar el juego.
+        self.grace = self.engine.cfg_menu["end_grace_seconds"]
 
     def page(self) -> dict:
         base = self.engine.cfg_menu[self.CFG_KEY]
@@ -40,7 +44,7 @@ class VictoryScene(_EndScene):
         pass  # cualquier tecla se maneja en do_any_key
 
     def do_any_key(self) -> None:
-        if self.elapsed >= GRACE_SECONDS:
+        if self.elapsed >= self.grace:
             self.engine.switch_scene(after_game_end(self.engine.state))
 
 
@@ -61,7 +65,7 @@ class RecordScene(VictoryScene):
         play_sound("extra_life")
 
     def do_any_key(self) -> None:
-        if self.elapsed >= GRACE_SECONDS:
+        if self.elapsed >= self.grace:
             self.engine.switch_scene("TITLE")
 
 

@@ -32,12 +32,14 @@ CFG = {
     "heading_steps": 16,
     "deviation_degrees": {"easy": 60, "hard": 0},
     "types": {
-        "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
+        "I": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 3.0, "after_chase": "LEAVE", "points": 50,
               "sprite": SPRITE},
-        "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0, "points": 60,
+        "P": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 1.0, "after_chase": "WANDER", "points": 60,
               "wander": {"distance": 30, "radius": 20, "jitter": 720},
               "sprite": SPRITE},
-        "E": {"speed_factor": 2.0, "points": 70, "sprite": SPRITE},
+        "E": {"speed_factor": 2.0, "initial_state": "STRAIGHT", "points": 70, "sprite": SPRITE},
     },
 }
 

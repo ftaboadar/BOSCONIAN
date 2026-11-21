@@ -1,9 +1,10 @@
-"""Dificultad única por nivel: traduce el valor del JSON a parámetros para spawn, steering y alertas."""
+"""Dificultad única por nivel: traduce el valor del JSON a los tiempos de las alertas y a un
+factor 0..1 con el que spawn, steering y núcleos interpolan entre sus valores easy y hard."""
 
 from src.engine.data_loader import ConfigError, load_json, require_keys
 
 PATH = "assets/cfg/difficulty.json"
-PARAMS = ("spawn_interval", "steer_deviation", "yellow_after", "red_after")
+PARAMS = ("yellow_after", "red_after")
 # Alertas, igual en todos los niveles: segundos en VERDE tras destruir una base y cuánto
 # más rápidos y más seguidos salen los enemigos en ROJA.
 ALERT_PARAMS = ("calm_seconds", "red_speed_factor", "red_spawn_factor")

@@ -38,8 +38,8 @@ class Scene:
         return self.engine.state
 
     def panel_round(self) -> int:
-        """Número que muestra la barra en ROUND."""
-        return self.engine.level
+        """Número que muestra la barra en ROUND: 1 mientras no se está jugando."""
+        return 1
 
     def draw_radar(self, screen: pygame.Surface) -> None:
         """Radar de la barra lateral. Por defecto, vacío: solo el marco."""

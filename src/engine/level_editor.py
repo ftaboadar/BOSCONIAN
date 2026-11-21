@@ -9,8 +9,9 @@ from src.engine import data_loader
 from src.engine.data_loader import ConfigError, load_json
 
 STEP = 16        # el cursor se mueve de a 16 px del mundo
-MAX_BASES = 12   # más bases que esto no caben en un mundo de 1024x1024 sin amontonarse
+MAX_BASES = 12   # con más bases el nivel queda amontonado (y el radar, ilegible)
 MIN_LEVEL, MAX_LEVEL = 1, 99  # level_XX.json tiene dos dígitos
+CORE_LABELS = {"open": "ABIERTO", "cycle": "CICLO"}  # cómo se muestra cada core_mode
 
 
 class LevelEditor:
@@ -144,6 +145,14 @@ class LevelEditor:
         self.level["special_shot"] = not self.level.get("special_shot", False)
         self.dirty = True
         return "HABILIDAD " + ("SI" if self.level["special_shot"] else "NO")
+
+    def toggle_core(self) -> str:
+        """Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E."""
+        modes = data_loader.CORE_MODES
+        current = self.level.get("core_mode", modes[0])
+        self.level["core_mode"] = modes[(modes.index(current) + 1) % len(modes)]
+        self.dirty = True
+        return "NUCLEO " + CORE_LABELS[self.level["core_mode"]]
 
     # --- archivos -------------------------------------------------------------------------
 

@@ -57,12 +57,14 @@ CFG = {
         "despawn_distance": 300,
     },
     "types": {
-        "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
+        "I": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 3.0, "after_chase": "LEAVE", "points": 50,
               "spawn_weight": 1, "sprite": SPRITE},
-        "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0, "points": 60,
+        "P": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 1.0, "after_chase": "WANDER", "points": 60,
               "spawn_weight": 1, "wander": {"distance": 30, "radius": 20, "jitter": 720},
               "sprite": SPRITE},
-        "E": {"speed_factor": 2.0, "points": 70, "spawn_weight": 1,
+        "E": {"speed_factor": 2.0, "initial_state": "STRAIGHT", "points": 70, "spawn_weight": 1,
               "sprite": SPRITE},
     },
 }
@@ -167,6 +169,17 @@ class EnemyConfigTests(unittest.TestCase):
     def test_tope_de_vivos_menor_que_uno_falla(self):
         with self.assertRaisesRegex(ConfigError, "max_alive"):
             self.load_with(lambda cfg: cfg["spawn"]["max_alive"].update(easy=0))
+
+    def test_estado_desconocido_falla(self):
+        with self.assertRaisesRegex(ConfigError, "after_chase"):
+            self.load_with(lambda cfg: cfg["types"]["I"].update(after_chase="DORMIR"))
+        with self.assertRaisesRegex(ConfigError, "initial_state"):
+            self.load_with(lambda cfg: cfg["types"]["E"].update(initial_state="VOLAR"))
+
+    def test_la_maquina_de_estados_de_cada_tipo_sale_de_la_configuracion(self):
+        types = load_enemies()["types"]
+        self.assertEqual({k: (t["initial_state"], t.get("after_chase")) for k, t in types.items()},
+                         {"I": ("CHASE", "LEAVE"), "P": ("CHASE", "WANDER"), "E": ("STRAIGHT", None)})
 
     def test_tipo_desconocido_falla(self):
         with self.assertRaisesRegex(ConfigError, "Z"):

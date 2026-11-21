@@ -14,16 +14,12 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
 from src.engine.camera import wrap_delta
-from src.engine.service_locator import ServiceLocator
-
-
-def _rect(r: dict) -> pygame.Rect:
-    return pygame.Rect(r["x"], r["y"], r["w"], r["h"])
+from src.engine.service_locator import ServiceLocator, rect_from_cfg
 
 
 def _random_sprite(cfg: dict) -> pygame.Surface:
     sheet = ServiceLocator.images.get(cfg["image"])
-    return sheet.subsurface(_rect(random.choice(cfg["sprites"])))
+    return sheet.subsurface(rect_from_cfg(random.choice(cfg["sprites"])))
 
 
 def create_rock(world: esper.World, pos: pygame.Vector2, cfg: dict) -> int:
@@ -37,7 +33,7 @@ def create_rock(world: esper.World, pos: pygame.Vector2, cfg: dict) -> int:
 def create_mine(world: esper.World, pos: pygame.Vector2, cfg: dict) -> int:
     """Mina estática con luces animadas; su explosión es letal."""
     sheet = ServiceLocator.images.get(cfg["image"])
-    frames = [_rect(f) for f in cfg["frames"]]
+    frames = [rect_from_cfg(f) for f in cfg["frames"]]
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(sheet.subsurface(frames[0])), CWorld(),
         CAnimation(sheet, frames, cfg["framerate"], loop=True),

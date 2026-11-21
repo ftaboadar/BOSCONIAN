@@ -18,6 +18,7 @@
         "EDIT_DIFFICULTY": "K_d",
         "EDIT_MUSIC": "K_m",
         "EDIT_SPECIAL": "K_t",
+        "EDIT_CORE": "K_c",
         "EDIT_HELP": "K_h"
     }
 }

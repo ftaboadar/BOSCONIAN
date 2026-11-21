@@ -36,6 +36,13 @@ class GameState:
         self.record_to_beat = self.hi_score  # el récord con el que empieza esta partida (#43)
         self.alert = ALERTS[0]  # todo nivel empieza en verde
         self.cheat = False  # modo trampa (F1): invulnerable; se apaga al empezar partida nueva
+        self.clear_level_progress()
+
+    def clear_level_progress(self) -> None:
+        """Olvida lo avanzado en el nivel en curso. Ese progreso sobrevive a perder una vida:
+        las bases destruidas no vuelven y el tiempo hacia la alerta ROJA no se reinicia."""
+        self.bases_destroyed: set[int] = set()  # índices en level["bases"]
+        self.level_seconds = 0.0  # segundos de nivel jugado (CAlert.elapsed)
 
     @property
     def broke_record(self) -> bool:
@@ -44,12 +51,15 @@ class GameState:
         return self.hi_score > self.record_to_beat
 
     def add_score(self, points: int) -> None:
-        """Suma puntos, actualiza el HI-SCORE y concede vidas extra al cruzar cada umbral."""
+        """Suma puntos, actualiza el HI-SCORE y concede vidas extra al cruzar cada umbral:
+        `extra_life_first` y después cada múltiplo de `extra_life_step`."""
         self.score += points
         self.hi_score = max(self.hi_score, self.score)
+        step = self.cfg["extra_life_step"]
         while self.score >= self.next_extra_life:
             self.lives += 1
-            self.next_extra_life += self.cfg["extra_life_step"]
+            # Tras la primera (50.000) siguen los múltiplos del paso: 100.000, 200.000...
+            self.next_extra_life = (self.next_extra_life // step + 1) * step
 
     def lose_life(self) -> int:
         """Descuenta una vida. Con el contador en 0 aún queda la última nave: solo se acaba
@@ -67,3 +77,4 @@ class GameState:
         self.lives = self.cfg["lives"]
         self.score = 0
         self.next_extra_life = self.cfg["extra_life_first"]
+        self.clear_level_progress()  # sin puntaje, el nivel también empieza de cero
