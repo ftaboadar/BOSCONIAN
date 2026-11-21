@@ -7,11 +7,11 @@
         { "r": 65, "g": 105, "b": 225 }
     ],
     "blast_off": { "text": "BLAST OFF!", "seconds": 2.0 },
+    "score_popup": { "seconds": 1.0, "rise_speed": 10, "color": { "r": 255, "g": 255, "b": 255 } },
     "stars_number": 100,
     "stars_parallax_factor": 0.5,
     "stars_menu_speed": 40,
     "stars_blink_speed": 0.4,
-    "score_popup": { "seconds": 1.0, "rise_speed": 10, "color": { "r": 255, "g": 255, "b": 255 } },
     "minimap": {
         "rect": { "x": 184, "y": 64, "w": 64, "h": 64 },
         "bg_color": { "r": 0, "g": 0, "b": 40 },
