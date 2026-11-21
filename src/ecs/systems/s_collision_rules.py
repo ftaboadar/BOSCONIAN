@@ -7,6 +7,7 @@ from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.systems.s_base_damage import damage_base_part
 from src.ecs.systems.s_collision import center_delta, hitbox_center
 
 
@@ -23,7 +24,9 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
     (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
     entidades con CInvulnerable. DESTROY_A: solo se marca la entidad de la capa "a"
-    (con la misma excepción).
+    (con la misma excepción). DAMAGE_BASE: la bala de la capa "a" golpea una torreta o el
+    núcleo de una base (capa "b"): daña esa parte según la dirección del disparo, da los
+    puntos que corresponda (torreta, o base entera) y la bala se consume.
 
     Si la regla tiene "score": "a" o "b", esa entidad da sus CPoints al destruirse.
     Devuelve los puntos ganados en el frame (una entidad solo puntúa una vez).
@@ -54,6 +57,12 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
             _mark_destroy(world, ent_a)
             _mark_destroy(world, ent_b)
         elif result == "DESTROY_A":
+            _mark_destroy(world, ent_a)
+        elif result == "DAMAGE_BASE":
+            if world.has_component(ent_a, CDestroy):
+                continue  # la bala ya dio en otra parte en este frame
+            shot = world.component_for_entity(ent_a, CVelocity).vel
+            points += damage_base_part(world, ent_b, shot.normalize() if shot.length() else shot)
             _mark_destroy(world, ent_a)
     return points
 

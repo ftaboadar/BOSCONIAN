@@ -29,6 +29,31 @@
             "size": { "w": 16, "h": 16 },
             "layer": "MINE_BLAST",
             "mask": []
+        },
+        "enemy": {
+            "size": { "w": 8, "h": 8 },
+            "layer": "ENEMY",
+            "mask": ["ENEMY", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
+        },
+        "enemy_bullet": {
+            "size": { "w": 3, "h": 3 },
+            "layer": "ENEMY_BULLET",
+            "mask": []
+        },
+        "player_bullet": {
+            "size": { "w": 4, "h": 4 },
+            "layer": "PLAYER_BULLET",
+            "mask": ["ENEMY", "ROCK", "MINE", "ROCK_SOLID", "BASE_TURRET", "BASE_CORE"]
+        },
+        "base_turret": {
+            "size": { "w": 14, "h": 14 },
+            "layer": "BASE_TURRET",
+            "mask": []
+        },
+        "base_core": {
+            "size": { "w": 18, "h": 18 },
+            "layer": "BASE_CORE",
+            "mask": []
         }
     },
     "rules": [
@@ -45,6 +70,9 @@
         { "a": "ENEMY", "b": "MINE", "result": "DESTROY_BOTH" },
         { "a": "ENEMY", "b": "ROCK_SOLID", "result": "DESTROY_A" },
         { "a": "ENEMY", "b": "MINE_BLAST", "result": "DESTROY_A" },
+        { "a": "PLAYER_BULLET", "b": "ENEMY", "result": "DESTROY_BOTH", "score": "b" },
+        { "a": "PLAYER_BULLET", "b": "BASE_TURRET", "result": "DAMAGE_BASE" },
+        { "a": "PLAYER_BULLET", "b": "BASE_CORE", "result": "DAMAGE_BASE" },
         { "a": "PLAYER_BULLET", "b": "ROCK", "result": "DESTROY_BOTH", "score": "b" },
         { "a": "PLAYER_BULLET", "b": "MINE", "result": "DESTROY_BOTH", "score": "b" },
         { "a": "PLAYER_BULLET", "b": "ROCK_SOLID", "result": "DESTROY_A" },
