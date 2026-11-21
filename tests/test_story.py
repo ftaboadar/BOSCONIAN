@@ -18,6 +18,7 @@ import esper
 import pygame
 
 from src.ecs.components.c_arrival import CArrival
+from src.ecs.components.c_star import CStar
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -25,6 +26,7 @@ from src.ecs.systems.s_arrival import system_arrival
 from src.ecs.systems.s_movement import system_movement
 from src.engine import data_loader
 from src.engine.data_loader import ConfigError, level_numbers, load_json, load_level, load_story
+from src.ecs.components.c_shutter import ShutterState
 from src.engine.game_engine import GameEngine
 from src.engine.input.command import Phase
 from src.engine.level_flow import after_level_cleared, after_player_died
@@ -38,6 +40,16 @@ SECTIONS = ("splash", "logo_slide", "byline", "title", "cutscene")
 
 def rgb(color: dict) -> tuple:
     return (color["r"], color["g"], color["b"])
+
+
+def background(screen: pygame.Surface, rect: pygame.Rect) -> tuple:
+    """El color que más se repite en `rect`: el fondo, haya o no estrellas encima."""
+    count = {}
+    for x in range(rect.left, rect.right):
+        for y in range(rect.top, rect.bottom):
+            color = tuple(screen.get_at((x, y)))[:3]
+            count[color] = count.get(color, 0) + 1
+    return max(count, key=count.get)
 
 
 def story_with(mutate):
@@ -158,6 +170,7 @@ class TimelineTests(unittest.TestCase):
         tl.update(0.1)
         self.assertEqual(len(self.world.get_component(CSurface)), 2)
         tl.remove_group("push")
+        tl.update(0.0)  # quedan marcadas con CDestroy: se borran al avanzar la línea de tiempo
         self.assertEqual(len(self.world.get_component(CSurface)), 1)
         tl.update(6.0)
         self.assertEqual(len(self.world.get_component(CSurface)), 1)  # el del grupo pendiente no salió
@@ -243,14 +256,15 @@ class SplashTests(StorySceneTestCase):
 
 
 class LogoSlideTests(StorySceneTestCase):
-    def test_el_fondo_es_verde_menta_y_sin_estrellas(self):
+    def test_el_fondo_es_verde_menta_con_estrellas(self):
         scene = self.open("LOGO_SLIDE")
-        self.assertFalse(scene.stars)
+        self.assertTrue(scene.stars)  # las estrellas están en todas las escenas
+        self.assertEqual(len(scene.world.get_component(CStar)), self.engine.cfg_world["stars_number"])
         self.run_for(0.1)
         screen = self.draw()
         mint = rgb(STORY["logo_slide"]["background"])
-        self.assertEqual(tuple(screen.get_at((5, 5)))[:3], mint)
-        self.assertEqual(tuple(screen.get_at((5, 200)))[:3], mint)
+        self.assertEqual(background(screen, pygame.Rect(0, 0, 192, 20)), mint)
+        self.assertEqual(background(screen, pygame.Rect(0, 188, 192, 20)), mint)
 
     def test_el_logo_entra_por_la_derecha_hasta_el_centro(self):
         scene = self.open("LOGO_SLIDE")
@@ -321,7 +335,7 @@ class FullSequenceTests(unittest.TestCase):
             name = type(engine._current_scene).__name__
             if name != seen[-1]:
                 seen.append(name)
-            if name == "TitleScene" and not engine.shutter.busy:
+            if name == "TitleScene" and not engine.shutter.state is not ShutterState.IDLE:
                 break
         self.assertEqual(seen, ["SplashScene", "LogoSlideScene", "BylineScene", "TitleScene"])
 
@@ -338,12 +352,21 @@ class FullSequenceTests(unittest.TestCase):
 
 
 class TitleTests(StorySceneTestCase):
+    def test_el_titulo_tiene_estrellas_que_caen(self):
+        scene = self.open("TITLE")
+        stars = [c_t for _, (c_t, _c_s) in scene.world.get_components(CTransform, CStar)]
+        self.assertEqual(len(stars), self.engine.cfg_world["stars_number"])
+        before = [c_t.pos.y for c_t in stars]
+        scene.do_update(DT)
+        self.assertTrue(all(c_t.pos.y != y for c_t, y in zip(stars, before)))
+        self.draw()
+
     def test_fondo_verde_logo_subtitulo_y_push_button(self):
         scene = self.open("TITLE")
         self.run_for(2.0)
         screen = self.draw()
         mint = rgb(STORY["title"]["background"])
-        self.assertEqual(tuple(screen.get_at((4, 4)))[:3], mint)
+        self.assertEqual(background(screen, pygame.Rect(0, 0, 192, 20)), mint)
         texts = [e["text"] for e in STORY["title"]["events"] if e["type"] == "text"]
         self.assertIn("PUSH BUTTON TO START", texts)
         self.assertEqual(scene.mode, "push")
@@ -384,7 +407,7 @@ class TitleTests(StorySceneTestCase):
         scene.do_update(DT)
         screen = self.draw()
         mint = rgb(STORY["title"]["background"])
-        self.assertEqual(tuple(screen.get_at((4, 4)))[:3], mint)
+        self.assertEqual(background(screen, pygame.Rect(0, 0, 192, 20)), mint)
         top = STORY["title"]["menu_top"]
         yellow = [(x, y) for x in range(192) for y in range(top - 6, top + 6)
                   if tuple(screen.get_at((x, y)))[:3] == (255, 220, 0)]
@@ -512,8 +535,8 @@ class CutsceneTests(StorySceneTestCase):
     def test_continuar_o_pasar_de_nivel_no_repite_ni_la_persiana_ni_la_cinematica(self):
         self.assertEqual(after_player_died(self.engine.state), "PLAY")
         self.assertEqual(after_level_cleared(self.engine.state, [1, 2, 3]), "PLAY")
-        self.assertFalse(self.engine.shutter.wants("PLAY"))
-        self.assertFalse(self.engine.shutter.wants("CUTSCENE"))  # el verde ya no es la entrada al juego
+        self.assertFalse("PLAY" in self.engine.shutter.scenes)
+        self.assertFalse("CUTSCENE" in self.engine.shutter.scenes)  # el verde ya no es la entrada al juego
 
     def test_se_dibuja_sin_fallar_durante_toda_la_cinematica(self):
         self.open("CUTSCENE")

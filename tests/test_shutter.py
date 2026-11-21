@@ -9,19 +9,49 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 sys.path.insert(0, os.getcwd())
 
+import esper
 import pygame
 
 from src.engine.data_loader import ConfigError, load_json
+from src.ecs.components.c_shutter import CShutter, ShutterState
 from src.engine.game_engine import GameEngine
 from src.engine.input.command import Phase
 from src.engine.scenes.story_scenes import BylineScene, LogoSlideScene, SplashScene
 from src.engine.scenes.title_scene import TitleScene
-from src.engine.shutter import Shutter
+from src.create.prefab_ui import create_shutter
+from src.ecs.systems.s_shutter import (shutter_cover, shutter_start, system_shutter,
+                                       system_shutter_rendering)
 
 CFG = load_json("assets/cfg/world.json")["shutter"]
 STAGE = pygame.Rect(0, 0, 192, 208)
 MINT = tuple(pygame.Color(CFG["color"]["r"], CFG["color"]["g"], CFG["color"]["b"]))[:3]
 DT = 1 / 60
+
+
+class Shutter:
+    """La persiana de un mundo ECS propio, manejada con sus sistemas."""
+
+    def __init__(self, cfg, stage):
+        self.world = esper.World()
+        self.c = self.world.component_for_entity(create_shutter(self.world, cfg, stage), CShutter)
+
+    cover = property(lambda self: shutter_cover(self.c))
+    busy = property(lambda self: self.c.state is not ShutterState.IDLE)
+    closing = property(lambda self: self.c.state is ShutterState.CLOSING)
+    target = property(lambda self: self.c.target)
+
+    def wants(self, scene):
+        return scene in self.c.scenes
+
+    def close(self, target):
+        return shutter_start(self.world, target)
+
+    def update(self, delta_time):
+        """True en el frame en que el campo queda cubierto."""
+        return system_shutter(self.world, delta_time) is not None
+
+    def draw(self, screen):
+        system_shutter_rendering(self.world, screen)
 
 
 def shutter():
@@ -47,7 +77,7 @@ class ShutterModelTests(unittest.TestCase):
 
     def test_al_cerrarse_cubre_de_a_poco_hasta_cerrar_del_todo(self):
         s = shutter()
-        self.assertTrue(s.close("PLAY"))
+        self.assertTrue(s.close("TITLE"))
         covers = []
         closed_at = None
         for i in range(round(CFG["close_seconds"] / DT) + 5):
@@ -64,16 +94,15 @@ class ShutterModelTests(unittest.TestCase):
         self.assertTrue(s.busy)
 
     def test_avisa_de_que_esta_cerrada_una_sola_vez(self):
-        s = shutter(); s.close("PLAY")
+        s = shutter(); s.close("TITLE")
         signals = [s.update(DT) for _ in range(round(CFG["close_seconds"] / DT) + 30)]
         self.assertEqual(signals.count(True), 1)
 
     def test_al_abrirse_descubre_y_queda_libre(self):
-        s = shutter(); s.close("PLAY")
+        s = shutter(); s.close("TITLE")
         while not s.update(DT):
             pass
-        s.open()
-        self.assertEqual(s.cover, 1.0)
+        self.assertEqual(s.cover, 1.0)  # cubierta: desde aquí se abre sola
         previous = 1.0
         for _ in range(round(CFG["open_seconds"] / DT) + 3):
             s.update(DT)
@@ -83,12 +112,12 @@ class ShutterModelTests(unittest.TestCase):
 
     def test_no_se_apilan_persianas(self):
         s = shutter()
-        self.assertTrue(s.close("PLAY"))
-        self.assertFalse(s.close("CUTSCENE"))
-        self.assertEqual(s.target, "PLAY")
+        self.assertTrue(s.close("TITLE"))
+        self.assertFalse(s.close("BYLINE"))
+        self.assertEqual(s.target, "TITLE")
 
     def test_bandas_a_medio_cerrar_dejan_una_franja_negra_en_el_centro(self):
-        s = shutter(); s.close("PLAY")
+        s = shutter(); s.close("TITLE")
         while s.cover < 0.5:
             s.update(DT)
         screen = pygame.Surface((256, 208)); screen.fill((0, 0, 0))
@@ -101,7 +130,7 @@ class ShutterModelTests(unittest.TestCase):
         self.assertEqual(tuple(screen.get_at((50, 104)))[:3], (0, 0, 0))          # el centro sigue visible
 
     def test_cerrada_cubre_todo_el_campo_pero_no_la_barra(self):
-        s = shutter(); s.close("PLAY")
+        s = shutter(); s.close("TITLE")
         while not s.update(DT):
             pass
         screen = pygame.Surface((256, 208)); screen.fill((9, 9, 9))
@@ -137,16 +166,16 @@ class EngineShutterTests(unittest.TestCase):
         self.engine.switch_scene("LOGO_SLIDE")
         self.engine._frame()
         self.assertIsInstance(self.engine._current_scene, SplashScene)
-        self.assertTrue(self.engine.shutter.closing)
+        self.assertTrue(self.engine.shutter.state is ShutterState.CLOSING)
         self.assertIsNone(self.engine._next_scene)  # el pedido quedó en la persiana
 
     def test_con_el_campo_cubierto_se_cambia_de_escena_y_luego_se_abre(self):
         self.engine.switch_scene("LOGO_SLIDE")
         self.frames(CFG["close_seconds"] + 3 * DT)
         self.assertIsInstance(self.engine._current_scene, LogoSlideScene)
-        self.assertEqual(self.engine.shutter.state, "opening")
+        self.assertEqual(self.engine.shutter.state, ShutterState.OPENING)
         self.frames(CFG["open_seconds"] + 3 * DT)
-        self.assertFalse(self.engine.shutter.busy)
+        self.assertFalse(self.engine.shutter.state is not ShutterState.IDLE)
 
     def test_en_el_momento_del_cambio_el_campo_esta_todo_cubierto(self):
         self.engine.switch_scene("LOGO_SLIDE")
@@ -187,16 +216,16 @@ class EngineShutterTests(unittest.TestCase):
         self.engine.switch_scene("INSTRUCTIONS")
         self.engine._frame()
         self.assertEqual(type(self.engine._current_scene).__name__, "InstructionsScene")
-        self.assertFalse(self.engine.shutter.busy)
+        self.assertFalse(self.engine.shutter.state is not ShutterState.IDLE)
 
     def test_un_pedido_durante_la_apertura_se_aplica_sin_apilar_persianas(self):
         self.engine.switch_scene("LOGO_SLIDE")
         self.frames(CFG["close_seconds"] + 3 * DT)
-        self.assertEqual(self.engine.shutter.state, "opening")
+        self.assertEqual(self.engine.shutter.state, ShutterState.OPENING)
         self.engine.switch_scene("BYLINE")
         self.engine._frame()
         self.assertIsInstance(self.engine._current_scene, BylineScene)
-        self.assertNotEqual(self.engine.shutter.state, "closing")
+        self.assertNotEqual(self.engine.shutter.state, ShutterState.CLOSING)
 
     def test_entrar_al_juego_no_usa_persiana(self):
         """El verde ya no es la entrada al nivel: ni la cinemática, ni el nivel, ni cada vida."""
@@ -206,13 +235,13 @@ class EngineShutterTests(unittest.TestCase):
             self.engine.switch_scene(target)
             self.engine._frame()
             self.assertEqual(type(self.engine._current_scene).__name__, self.engine.SCENES[target].__name__, (origin, target))
-            self.assertFalse(self.engine.shutter.busy, (origin, target))
+            self.assertFalse(self.engine.shutter.state is not ShutterState.IDLE, (origin, target))
 
     def test_volver_al_titulo_desde_otras_pantallas_si_lleva_persiana(self):
         self.engine._apply_scene_change("VICTORY")
         self.engine.switch_scene("TITLE")
         self.engine._frame()
-        self.assertTrue(self.engine.shutter.closing)
+        self.assertTrue(self.engine.shutter.state is ShutterState.CLOSING)
 
     def test_cerrar_la_ventana_funciona_aunque_haya_persiana(self):
         self.engine.is_running = True

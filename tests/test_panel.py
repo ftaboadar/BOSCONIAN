@@ -18,8 +18,9 @@ from src.ecs.systems.s_minimap import radar_point, radar_rect, system_minimap_re
 from src.engine.data_loader import load_json
 from src.engine.game_engine import GameEngine
 from src.engine.game_state import ALERTS, GameState
-from src.engine.hud import (BAR_H, BAR_Y, CONDITION_COLORS, ICON_SPACING, ICONS_Y,
-                            RED, ROWS, WHITE)
+from src.ecs.systems.s_hud import system_cheat_rendering, system_hud_rendering
+from hud_cfg import (BAR_H, BAR_Y, CONDITION_COLORS, ICON_SPACING, ICONS_Y,
+                     RED, ROWS, WHITE)
 from src.engine.service_locator import color_from_cfg
 
 CFG = load_json("assets/cfg/world.json")["minimap"]
@@ -49,8 +50,8 @@ class PanelTestCase(unittest.TestCase):
 
     def draw(self):
         self.screen.fill(BLACK)
-        self.hud.draw(self.screen, self.state, 1)
-        self.hud.draw_cheat(self.screen, self.state)
+        system_hud_rendering(self.engine.ui_world, self.screen, self.state, 1)
+        system_cheat_rendering(self.engine.ui_world, self.screen, self.state.cheat)
 
     def row(self, name, height=8):
         return pygame.Rect(self.panel.left, ROWS[name], self.panel.w, height)
@@ -206,6 +207,24 @@ class ConditionTests(PanelTestCase):
         self.engine._apply_scene_change("PLAY")
         self.assertEqual(self.engine.state.alert, "GREEN")
 
+    def test_al_salir_del_nivel_la_alerta_vuelve_a_verde(self):
+        """Si no se está jugando, CONDITION está en VERDE por defecto."""
+        self.engine._apply_scene_change("PLAY")
+        self.engine.state.alert = "RED"
+        for scene in ("TITLE", "DEFEAT"):
+            self.engine._apply_scene_change(scene)
+            self.assertEqual(self.engine.state.alert, "GREEN", scene)
+            self.engine._apply_scene_change("PLAY")
+            self.engine.state.alert = "RED"
+
+    def test_fuera_de_la_partida_la_ronda_es_1(self):
+        """ROUND marca el nivel solo mientras se juega; si no, 1 por defecto."""
+        self.engine.state.level = 7
+        self.engine._apply_scene_change("TITLE")
+        self.assertEqual(self.engine._current_scene.panel_round(), 1)
+        self.engine._apply_scene_change("PLAY")
+        self.assertEqual(self.engine._current_scene.panel_round(), 7)
+
     def test_una_partida_nueva_vuelve_a_verde(self):
         self.state.alert = "RED"
         self.state.reset()
@@ -355,7 +374,7 @@ class PlaySceneIntegrationTests(PanelTestCase):
     def test_el_nivel_dibuja_panel_y_radar_sin_fallar_y_cambia_con_la_alerta(self):
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
-        scene.blast_left = 0
+        scene.clock.blast_left = 0
         scene.do_update(1 / 60)
         self.engine._draw()
         green = pygame.image.tobytes(self.engine.screen, "RGB")
@@ -366,7 +385,7 @@ class PlaySceneIntegrationTests(PanelTestCase):
     def test_en_pausa_desaparecen_las_marcas_del_radar_pero_queda_el_radar_y_la_barra(self):
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
-        scene.blast_left = 0
+        scene.clock.blast_left = 0
         self.engine._draw()
         radar = radar_rect(CFG)
         self.assertGreater(len(colors(self.engine.screen, radar)), 1)  # con marcas: fondo, bases, nave...

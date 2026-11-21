@@ -2,11 +2,12 @@ import random
 
 import pygame
 
-from src.ecs.components.c_player_ship import CPlayerShip
+from src.ecs.systems.s_player import system_player_input
 from src.engine.input.command import Phase
 from src.engine.scenes.info_scene import InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
-from src.engine.service_locator import ServiceLocator
+from src.engine.service_locator import ServiceLocator, color_from_cfg
+from src.engine.sfx import play_music
 
 DIRECTIONS = ("UP", "DOWN", "LEFT", "RIGHT")
 
@@ -15,21 +16,21 @@ class AttractScene(PlayScene):
     """Modo atractor: el nivel se juega solo tras un rato de inactividad. Cualquier tecla lo interrumpe."""
 
     cheat_allowed = False  # la demo no es del jugador: el modo trampa no la afecta
+    keeps_progress = False  # ni usa ni altera el progreso de la partida del jugador
 
     def do_create(self) -> None:
         super().do_create()
         cfg = self.engine.cfg_menu["attract"]
-        self.blast_left = 0.0  # la demo arranca sin cuenta
+        self.clock.blast_left = 0.0  # la demo arranca sin cuenta
         self.elapsed = 0.0
         self.since_turn = 0.0
         self.cfg = cfg
         self.hint = ServiceLocator.fonts.get("main").render(
-            cfg["hint"], False, pygame.Color(255, 220, 0))
+            cfg["hint"], False, color_from_cfg(self.engine.cfg_menu["colors"]["selected"]))
 
     def play_level_music(self, level: dict) -> None:
         """La demo va en silencio, como antes de la música por nivel."""
-        if pygame.mixer.get_init():
-            ServiceLocator.music.stop()
+        play_music(None)
 
     def do_any_key(self) -> None:
         self.engine.switch_scene("TITLE")
@@ -49,17 +50,19 @@ class AttractScene(PlayScene):
         self.since_turn += delta_time
         if self.since_turn >= self.cfg["turn_every"]:
             self.since_turn = 0.0
+            # La demo "pulsa" una tecla por el jugador (y suelta las demás), con el mismo
+            # sistema de input que la partida. Si la nave ya murió, no hay a quién llegarle.
             key = random.choice(DIRECTIONS)
-            # La demo "pulsa" la tecla por el jugador: la nave se gobierna con `held`.
-            # Si ya murió (se ve su explosión) no hay nave que gobernar.
-            if self.world.entity_exists(self.player):
-                self.world.component_for_entity(self.player, CPlayerShip).held = {key}
+            for direction in DIRECTIONS:
+                system_player_input(self.world, direction,
+                                    Phase.START if direction == key else Phase.END, True, False)
         super().do_update(delta_time)
 
     def do_draw(self, screen: pygame.Surface) -> None:
         super().do_draw(screen)
         screen.blit(self.hint, self.hint.get_rect(
-            center=(self.engine.viewport.centerx, self.engine.viewport.bottom - 8)))
+            center=(self.engine.viewport.centerx,
+                    self.engine.viewport.bottom - self.cfg["hint_bottom"])))
 
 
 class AttractInstructionsScene(InstructionsScene):

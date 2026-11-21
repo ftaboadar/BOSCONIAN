@@ -4,6 +4,7 @@ import pygame
 from src.create.prefab_creator import create_score_popup
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_destroy import CDestroy
+from src.ecs.components.c_explosive import CExplosive
 from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_invulnerable import CInvulnerable
@@ -27,7 +28,9 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
     (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
     entidades con CInvulnerable. DESTROY_A: solo se marca la entidad de la capa "a"
-    (con la misma excepción). DAMAGE_BASE: la bala de la capa "a" golpea una torreta o el
+    (con la misma excepción); si la regla trae "explosion", esa entidad explota con ese
+    tipo de explosions.json aunque no sea explosiva (una bala contra una roca indestructible:
+    toda colisión deja una explosión). DAMAGE_BASE: la bala de la capa "a" golpea una torreta o el
     núcleo de una base (capa "b"): daña esa parte según la dirección del disparo, da los
     puntos que corresponda (torreta, o base entera) y la bala se consume.
 
@@ -39,6 +42,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     for ent_a, ent_b in collisions:
         if not (world.entity_exists(ent_a) and world.entity_exists(ent_b)):
             continue
+        if world.has_component(ent_a, CDestroy) or world.has_component(ent_b, CDestroy):
+            continue  # ya destruida en este frame: una bala solo se lleva una cosa
         layer_a = world.component_for_entity(ent_a, CHitBox).layer
         layer_b = world.component_for_entity(ent_b, CHitBox).layer
         rule = rules.get((layer_a, layer_b))
@@ -65,10 +70,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
             _mark_destroy(world, ent_a)
             _mark_destroy(world, ent_b)
         elif result == "DESTROY_A":
-            _mark_destroy(world, ent_a)
+            _mark_destroy(world, ent_a, rule.get("explosion"))
         elif result == "DAMAGE_BASE":
-            if world.has_component(ent_a, CDestroy):
-                continue  # la bala ya dio en otra parte en este frame
             shot = world.component_for_entity(ent_a, CVelocity).vel
             part_pos = pygame.Vector2(world.component_for_entity(ent_b, CTransform).pos)
             base_pos = pygame.Vector2(world.component_for_entity(
@@ -97,10 +100,14 @@ def _points_if_new(world: esper.World, ent: int) -> int:
     return c_p.points if c_p is not None else 0
 
 
-def _mark_destroy(world: esper.World, ent: int) -> None:
-    """Marca la entidad con CDestroy, a menos que sea invulnerable."""
-    if world.try_component(ent, CInvulnerable) is None:
-        world.add_component(ent, CDestroy())
+def _mark_destroy(world: esper.World, ent: int, explosion: str | None = None) -> None:
+    """Marca la entidad con CDestroy, a menos que sea invulnerable. Con `explosion`, una
+    entidad que no era explosiva explota con ese tipo."""
+    if world.try_component(ent, CInvulnerable) is not None:
+        return
+    world.add_component(ent, CDestroy())
+    if explosion and not world.has_component(ent, CExplosive):
+        world.add_component(ent, CExplosive(explosion))
 
 
 def _bounce(world: esper.World, ent_a: int, ent_b: int, move_b: bool,

@@ -22,6 +22,9 @@ from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_animation import CAnimation
+from src.ecs.systems.s_destroy import system_destroy
+from src.ecs.systems.s_explode import system_explode
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.engine.camera import wrap_delta
 from src.engine import data_loader
@@ -57,12 +60,14 @@ CFG = {
         "despawn_distance": 300,
     },
     "types": {
-        "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
+        "I": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 3.0, "after_chase": "LEAVE", "points": 50,
               "spawn_weight": 1, "sprite": SPRITE},
-        "P": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 1.0, "points": 60,
+        "P": {"speed_factor": 1.2, "turn_rate": 180, "initial_state": "CHASE",
+              "chase_seconds": 1.0, "after_chase": "WANDER", "points": 60,
               "spawn_weight": 1, "wander": {"distance": 30, "radius": 20, "jitter": 720},
               "sprite": SPRITE},
-        "E": {"speed_factor": 2.0, "points": 70, "spawn_weight": 1,
+        "E": {"speed_factor": 2.0, "initial_state": "STRAIGHT", "points": 70, "spawn_weight": 1,
               "sprite": SPRITE},
     },
 }
@@ -120,6 +125,10 @@ class EnemySpawnTests(unittest.TestCase):
         far = create_enemy(self.world, "I", pygame.Vector2(400, 1000), pygame.Vector2(1, 0),
                            CFG, PLAYER_SPEED, 1.0, self.rng)    # a 380 px
         system_enemy_despawn(self.world, self.player, WORLD, CFG["spawn"]["despawn_distance"])
+        self.assertEqual(len(self.world.get_component(CAnimation)), 0)  # se van sin explotar
+        system_explode(self.world, load_json("assets/cfg/explosions.json"))
+        system_destroy(self.world)
+        self.assertEqual(len(self.world.get_component(CAnimation)), 0)
         self.assertTrue(self.world.entity_exists(near))
         self.assertFalse(self.world.entity_exists(far))
 
@@ -168,6 +177,17 @@ class EnemyConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "max_alive"):
             self.load_with(lambda cfg: cfg["spawn"]["max_alive"].update(easy=0))
 
+    def test_estado_desconocido_falla(self):
+        with self.assertRaisesRegex(ConfigError, "after_chase"):
+            self.load_with(lambda cfg: cfg["types"]["I"].update(after_chase="DORMIR"))
+        with self.assertRaisesRegex(ConfigError, "initial_state"):
+            self.load_with(lambda cfg: cfg["types"]["E"].update(initial_state="VOLAR"))
+
+    def test_la_maquina_de_estados_de_cada_tipo_sale_de_la_configuracion(self):
+        types = load_enemies()["types"]
+        self.assertEqual({k: (t["initial_state"], t.get("after_chase")) for k, t in types.items()},
+                         {"I": ("CHASE", "LEAVE"), "P": ("CHASE", "WANDER"), "E": ("STRAIGHT", None)})
+
     def test_tipo_desconocido_falla(self):
         with self.assertRaisesRegex(ConfigError, "Z"):
             self.load_with(lambda cfg: cfg["types"].update(Z=dict(cfg["types"]["E"])))
@@ -193,13 +213,13 @@ class PlaySceneEnemyTests(unittest.TestCase):
         from src.engine.input.command import Phase
         self.run_for(self.engine.cfg_world["blast_off"]["seconds"] - 0.1)
         self.assertEqual(self.enemies(), 0)
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         self.scene.do_action("PAUSE", Phase.START)
         self.run_for(30.0)
         self.assertEqual(self.enemies(), 0)
 
     def test_en_el_nivel_salen_enemigos_y_se_mueven(self):
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         # La nave no puede morir (sin ella no salen enemigos) y los enemigos pueden chocar con
         # obstáculos y desaparecer: se mira el máximo, fotograma a fotograma, no el final.
         self.scene.world.add_component(self.scene.player, CInvulnerable())

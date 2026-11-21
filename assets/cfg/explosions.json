@@ -26,6 +26,19 @@
         "hitbox": "mine_blast",
         "sound": "explosion"
     },
+    "impact": {
+        "explosion": "simple",
+        "count": 1,
+        "radius": 0,
+        "keep_velocity": false
+    },
+    "turret": {
+        "explosion": "simple",
+        "count": 1,
+        "radius": 0,
+        "keep_velocity": false,
+        "sound": "turret_hit"
+    },
     "player": {
         "explosion": "simple",
         "count": 4,

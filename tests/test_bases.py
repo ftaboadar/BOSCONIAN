@@ -16,6 +16,7 @@ import esper
 import pygame
 
 from src.create.prefab_creator import create_base
+from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_minimap_track import CMinimapTrack
@@ -24,7 +25,7 @@ from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_world import CWorld
-from src.ecs.systems.s_base_damage import BASE_DESTROYED, damage_base_part
+from base_helpers import EXPLOSIONS, hit_base_part
 from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine import data_loader
 from src.engine.data_loader import ConfigError, load_bases
@@ -108,13 +109,8 @@ UP, DOWN, LEFT, RIGHT = (pygame.Vector2(v) for v in ((0, -1), (0, 1), (-1, 0), (
 
 
 class BaseDestructionTests(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        self.destroyed = []
-        # esper guarda los handlers por weakref: hay que conservar la referencia.
-        self.on_destroyed = lambda base, pos: self.destroyed.append((base, tuple(pos)))
-        esper.set_handler(BASE_DESTROYED, self.on_destroyed)
-        self.addCleanup(esper.remove_handler, BASE_DESTROYED, self.on_destroyed)
+    def explosions(self):
+        return len(self.world.get_component(CAnimation))
 
     def alive(self, base):
         return self.world.entity_exists(base)
@@ -122,17 +118,17 @@ class BaseDestructionTests(BaseTestCase):
     def test_destruir_una_torreta_da_200_y_la_base_sigue(self):
         base = create_base(self.world, POS, "vertical", self.cfg)
         turret = self.parts(base, "turret")[0]
-        self.assertEqual(damage_base_part(self.world, turret, UP), 200)
+        self.assertEqual(hit_base_part(self.world, turret, UP), 200)
         self.assertFalse(self.world.entity_exists(turret))
         self.assertEqual(len(self.parts(base, "turret")), 5)
         self.assertTrue(self.alive(base))
-        self.assertEqual(self.destroyed, [])
+        self.assertEqual(self.explosions(), 1)  # la torreta explota; la base, no
 
     def test_la_torreta_destruida_se_ve_distinta(self):
         base = create_base(self.world, POS, "vertical", self.cfg)
         other = create_base(self.world, POS, "vertical", self.cfg)
         before = pygame.image.tobytes(self.world.component_for_entity(base, CSurface).surf, "RGBA")
-        damage_base_part(self.world, self.parts(base, "turret")[0], UP)
+        hit_base_part(self.world, self.parts(base, "turret")[0], UP)
         after = pygame.image.tobytes(self.world.component_for_entity(base, CSurface).surf, "RGBA")
         self.assertNotEqual(before, after)
         # Cada base tiene su propio sprite: la otra queda intacta.
@@ -142,12 +138,12 @@ class BaseDestructionTests(BaseTestCase):
 
     def test_se_destruye_al_eliminar_las_seis_torretas(self):
         base = create_base(self.world, POS, "vertical", self.cfg)
-        points = [damage_base_part(self.world, t, LEFT) for t in self.parts(base, "turret")]
+        points = [hit_base_part(self.world, t, LEFT) for t in self.parts(base, "turret")]
         self.assertEqual(points, [200, 200, 200, 200, 200, 200 + 1500])
         self.assertFalse(self.alive(base))
         self.assertEqual(self.world.get_component(CBasePart), [])
         self.assertEqual(self.world.get_component(CMinimapTrack), [])
-        self.assertEqual(self.destroyed, [(base, (300, 400))])
+        self.assertGreaterEqual(self.explosions(), 6 + EXPLOSIONS["base"]["count"])
 
     def test_se_destruye_con_un_unico_disparo_al_nucleo(self):
         # El jugador dispara en 8 direcciones: las diagonales también entran al núcleo.
@@ -157,13 +153,13 @@ class BaseDestructionTests(BaseTestCase):
             for shot in shots:
                 with self.subTest(orientation=orientation, shot=tuple(shot)):
                     self.world = esper.World()
-                    self.destroyed.clear()
                     base = create_base(self.world, POS, orientation, self.cfg)
                     core = self.parts(base, "core")[0]
-                    self.assertEqual(damage_base_part(self.world, core, shot), 1500)
+                    self.assertEqual(hit_base_part(self.world, core, shot), 1500)
                     self.assertFalse(self.alive(base))
                     self.assertEqual(self.world.get_component(CBasePart), [])
-                    self.assertEqual(self.destroyed, [(base, (300, 400))])
+                    # Explota la base; las torretas que quedaban desaparecen con ella.
+                    self.assertEqual(self.explosions(), EXPLOSIONS["base"]["count"])
 
     def test_el_nucleo_solo_es_vulnerable_en_la_direccion_de_la_orientacion(self):
         for orientation, shots in (("vertical", (LEFT, RIGHT)), ("horizontal", (UP, DOWN))):
@@ -172,20 +168,19 @@ class BaseDestructionTests(BaseTestCase):
                     self.world = esper.World()
                     base = create_base(self.world, POS, orientation, self.cfg)
                     core = self.parts(base, "core")[0]
-                    self.assertEqual(damage_base_part(self.world, core, shot), 0)
+                    self.assertEqual(hit_base_part(self.world, core, shot), 0)
                     self.assertTrue(self.alive(base))
                     self.assertEqual(len(self.parts(base, "turret")), 6)
-                    self.assertEqual(self.destroyed, [])
+                    self.assertEqual(self.explosions(), 0)
 
     def test_una_parte_ya_destruida_no_vuelve_a_dar_puntos(self):
         base = create_base(self.world, POS, "vertical", self.cfg)
         turret = self.parts(base, "turret")[0]
         core = self.parts(base, "core")[0]
-        damage_base_part(self.world, turret, UP)
-        self.assertEqual(damage_base_part(self.world, turret, UP), 0)
-        damage_base_part(self.world, core, UP)
-        self.assertEqual(damage_base_part(self.world, core, UP), 0)
-        self.assertEqual(len(self.destroyed), 1)
+        hit_base_part(self.world, turret, UP)
+        self.assertEqual(hit_base_part(self.world, turret, UP), 0)
+        hit_base_part(self.world, core, UP)
+        self.assertEqual(hit_base_part(self.world, core, UP), 0)
 
     def test_los_restos_se_dibujan_bien_aunque_la_base_cruce_el_borde_del_mundo(self):
         # La torreta dio la vuelta al mundo: su posición ya no está junto a la de la base.
@@ -196,7 +191,7 @@ class BaseDestructionTests(BaseTestCase):
             system_wraparound(self.world, world_size)
             for turret in self.parts(base, "turret"):
                 if len(self.parts(base, "turret")) > 1:
-                    damage_base_part(self.world, turret, UP)
+                    hit_base_part(self.world, turret, UP)
             images.append(pygame.image.tobytes(
                 self.world.component_for_entity(base, CSurface).surf, "RGBA"))
         self.assertEqual(images[0], images[1])
@@ -204,7 +199,7 @@ class BaseDestructionTests(BaseTestCase):
     def test_destruir_una_base_no_toca_a_las_demas(self):
         base = create_base(self.world, POS, "vertical", self.cfg)
         other = create_base(self.world, pygame.Vector2(700, 700), "horizontal", self.cfg)
-        damage_base_part(self.world, self.parts(base, "core")[0], UP)
+        hit_base_part(self.world, self.parts(base, "core")[0], UP)
         self.assertTrue(self.alive(other))
         self.assertEqual(len(self.parts(other, "turret")), 6)
         self.assertEqual(len(self.parts(other, "core")), 1)

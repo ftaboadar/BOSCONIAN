@@ -9,6 +9,11 @@ def color_from_cfg(cfg: dict) -> pygame.Color:
     return pygame.Color(cfg["r"], cfg["g"], cfg["b"])
 
 
+def rect_from_cfg(cfg: dict) -> pygame.Rect:
+    """Convierte {"x","y","w","h"} del JSON en pygame.Rect."""
+    return pygame.Rect(cfg["x"], cfg["y"], cfg["w"], cfg["h"])
+
+
 class _Images:
     def __init__(self, paths: dict) -> None:
         self._paths = paths

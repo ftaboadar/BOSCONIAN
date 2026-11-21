@@ -22,18 +22,18 @@ class BlastOffTests(unittest.TestCase):
         return self.scene.world.component_for_entity(self.scene.player, CTransform).pos.copy()
 
     def test_empieza_con_la_cuenta_activa(self):
-        self.assertEqual(self.scene.blast_left, self.engine.cfg_world["blast_off"]["seconds"])
+        self.assertEqual(self.scene.clock.blast_left, self.engine.cfg_world["blast_off"]["seconds"])
 
     def test_el_jugador_no_se_mueve_durante_blast_off(self):
         start = self.pos()
         self.scene.do_update(0.5)
         self.assertEqual(self.pos(), start)
-        self.assertGreater(self.scene.blast_left, 0)
+        self.assertGreater(self.scene.clock.blast_left, 0)
 
     def test_se_mueve_cuando_termina(self):
         start = self.pos()
         self.scene.do_update(self.engine.cfg_world["blast_off"]["seconds"] + 0.1)
-        self.assertEqual(self.scene.blast_left, 0)
+        self.assertEqual(self.scene.clock.blast_left, 0)
         self.scene.do_update(0.5)
         self.assertNotEqual(self.pos(), start)
 
@@ -57,7 +57,7 @@ class BlastOffTests(unittest.TestCase):
         screen = pygame.Surface((256, 208))
         self.scene.do_draw(screen)
         with_text = pygame.image.tobytes(screen, "RGB")
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         screen.fill((0, 0, 0))
         self.scene.do_draw(screen)
         self.assertNotEqual(with_text, pygame.image.tobytes(screen, "RGB"))

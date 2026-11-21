@@ -4,7 +4,7 @@ import pygame
 
 from src.engine.data_loader import load_json
 from src.engine.input.command import Phase
-from src.engine.level_editor import LevelEditor
+from src.engine.level_editor import CORE_LABELS, LevelEditor
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
@@ -13,11 +13,14 @@ REPEAT_RATE = 0.05   # ...y luego se mueve cada tanto
 MESSAGE_SECONDS = 2.0
 DIRECTIONS = {"UP": (0, -1), "DOWN": (0, 1), "LEFT": (-1, 0), "RIGHT": (1, 0)}
 PANEL_X = 184
+GRID_CELLS = 8  # la rejilla divide el mundo en 8 x 8 celdas, sea cual sea su tamaño
 HELP = [("FLECHAS", "MOVER"), ("ENTER", "BASE"), ("Z", "BORRAR"), ("X", "GIRAR"),
         ("P", "INICIO"), ("S", "GUARDAR"), ("L", "CARGAR"), ("PGUP/DN", "NIVEL"),
-        ("D", "DIFICULTAD"), ("M", "MUSICA"), ("T", "HABILIDAD"), ("F2/ESC", "SALIR"),
+        ("D", "DIFICULTAD"), ("M", "MUSICA"), ("T", "HABILIDAD"), ("C", "NUCLEO"),
+        ("F2/ESC", "SALIR"),
         ("H", "CERRAR")]
 HELP_KEY_WIDTH = 8  # caracteres de la columna de teclas
+HELP_LINE_HEIGHT = 11  # las 14 líneas caben en el recuadro de ayuda
 
 BG = pygame.Color(0, 0, 40)
 GRID = pygame.Color(30, 30, 90)
@@ -82,7 +85,7 @@ class EditorScene(Scene):
                     "PAUSE": ed.set_start, "EDIT_SAVE": ed.save, "EDIT_LOAD": ed.load,
                     "EDIT_PREV": lambda: ed.goto(-1), "EDIT_NEXT": lambda: ed.goto(1),
                     "EDIT_DIFFICULTY": ed.cycle_difficulty, "EDIT_MUSIC": ed.cycle_music,
-                    "EDIT_SPECIAL": ed.toggle_special}
+                    "EDIT_SPECIAL": ed.toggle_special, "EDIT_CORE": ed.toggle_core}
         if action in ("EDITOR", "BACK"):
             self.leave()
         elif action == "EDIT_HELP":
@@ -117,12 +120,11 @@ class EditorScene(Scene):
         ed = self.editor
         screen.fill(pygame.Color(0, 0, 0))
         pygame.draw.rect(screen, BG, self.map_rect)
-        step = round(128 * self.scale)
-        for i in range(1, 8):  # rejilla cada 128 px del mundo
-            pygame.draw.line(screen, GRID, (self.map_rect.x + i * step, self.map_rect.top),
-                             (self.map_rect.x + i * step, self.map_rect.bottom - 1))
-            pygame.draw.line(screen, GRID, (self.map_rect.left, self.map_rect.y + i * step),
-                             (self.map_rect.right - 1, self.map_rect.y + i * step))
+        for i in range(1, GRID_CELLS):  # rejilla: el mundo en GRID_CELLS x GRID_CELLS celdas
+            x = self.map_rect.x + round(i * self.map_rect.w / GRID_CELLS)
+            y = self.map_rect.y + round(i * self.map_rect.h / GRID_CELLS)
+            pygame.draw.line(screen, GRID, (x, self.map_rect.top), (x, self.map_rect.bottom - 1))
+            pygame.draw.line(screen, GRID, (self.map_rect.left, y), (self.map_rect.right - 1, y))
         pygame.draw.rect(screen, BORDER, self.map_rect, 1)
         for base in ed.level["bases"]:
             self._draw_base(screen, base, BASE_COLOR)
@@ -164,6 +166,8 @@ class EditorScene(Scene):
         lines = [("NIVEL", self.title_color), (f"{ed.number:02d}", self.normal_color),
                  ("DIF", self.title_color), (str(ed.level.get("difficulty", 1)), self.normal_color),
                  ("HABIL", self.title_color), ("SI" if ed.level.get("special_shot") else "NO", self.normal_color),
+                 ("NUCLEO", self.title_color),
+                 (CORE_LABELS[ed.level.get("core_mode", "open")], self.normal_color),
                  ("MUSICA", self.title_color), ((music or "NINGUNA")[:9].upper(), self.normal_color),
                  ("BASES", self.title_color), (f"{len(ed.level['bases'])}", self.normal_color),
                  ("NUEVAS", self.title_color), (ed.orientation[:5].upper(), self.normal_color),
@@ -177,4 +181,4 @@ class EditorScene(Scene):
         pygame.draw.rect(screen, BORDER, box, 1)
         for i, line in enumerate(HELP):  # (tecla, qué hace)
             self.text(screen, line[0].ljust(HELP_KEY_WIDTH) + line[1], self.normal_color,
-                      box.x + 4, box.y + 6 + i * 12)
+                      box.x + 4, box.y + 6 + i * HELP_LINE_HEIGHT)

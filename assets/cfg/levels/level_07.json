@@ -2,6 +2,7 @@
     "round": 7,
     "subtitle": "BEYOND THE DEAD WORLDS.",
     "difficulty": 4,
+    "core_mode": "cycle",
     "player_start": { "x": 512, "y": 512 },
     "bases": [
         { "x": 420, "y": 850, "orientation": "horizontal" },

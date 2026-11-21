@@ -15,3 +15,9 @@ __pycache__/
 # Editor / macOS
 .vscode/
 .DS_Store
+
+settings.json
+
+# Versión web (tools/build_web.py)
+build/
+dist/

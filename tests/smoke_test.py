@@ -9,6 +9,7 @@ sys.path.insert(0, os.getcwd())
 
 import pygame
 
+from src.ecs.components.c_shutter import ShutterState
 from src.engine.game_engine import GameEngine
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.title_scene import TitleScene
@@ -25,7 +26,7 @@ for _ in range(60 * 40):
     name = type(engine._current_scene).__name__
     if name != seen[-1]:
         seen.append(name)
-    if name == "TitleScene" and not engine.shutter.busy:
+    if name == "TitleScene" and not engine.shutter.state is not ShutterState.IDLE:
         break
 assert seen == ["SplashScene", "LogoSlideScene", "BylineScene", "TitleScene"], seen
 assert isinstance(engine._current_scene, TitleScene)

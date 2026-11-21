@@ -21,7 +21,7 @@ from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_base_behavior import system_turrets
-from src.ecs.systems.s_base_damage import damage_base_part
+from base_helpers import hit_base_part
 from src.ecs.systems.s_explode import system_explode
 from src.engine.data_loader import level_numbers, load_bases, load_json, load_level
 from src.engine.game_engine import GameEngine
@@ -62,7 +62,8 @@ class ResourcesTests(unittest.TestCase):
 
     def test_los_sonidos_de_las_explosiones_estan_registrados(self):
         for kind, cfg in EXPLOSIONS.items():
-            self.assertIn(cfg["sound"], RESOURCES["sounds"], kind)
+            if "sound" in cfg:  # el impacto de una bala contra una roca es mudo
+                self.assertIn(cfg["sound"], RESOURCES["sounds"], kind)
 
 
 class PlaySoundTests(Recorder, unittest.TestCase):
@@ -115,12 +116,12 @@ class EventSoundTests(Recorder, unittest.TestCase):
     def test_destruir_torretas_y_base_suena(self):
         base = create_base(self.w, pygame.Vector2(500, 500), "vertical", load_bases())
         turrets = [e for e, c_p in self.w.get_component(CBasePart) if c_p.kind == "turret"]
-        damage_base_part(self.w, turrets[0], pygame.Vector2(0, 1))
+        hit_base_part(self.w, turrets[0], pygame.Vector2(0, 1))
         self.assertEqual(self.played, ["turret_hit"])
         for t in turrets[1:]:
-            damage_base_part(self.w, t, pygame.Vector2(0, 1))
+            hit_base_part(self.w, t, pygame.Vector2(0, 1))
         self.assertEqual(self.played.count("turret_hit"), 6)
-        self.assertEqual(self.played[-1], "base_destroyed")
+        self.assertEqual(self.played.count("base_destroyed"), 1)
         self.assertFalse(self.w.entity_exists(base))
 
 
@@ -141,7 +142,7 @@ class SceneSoundTests(Recorder, unittest.TestCase):
         self.engine._next_scene = None
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
-        scene.blast_left = 0
+        scene.clock.blast_left = 0
         return scene
 
     def test_cada_nivel_pone_su_musica(self):
@@ -153,6 +154,23 @@ class SceneSoundTests(Recorder, unittest.TestCase):
     def test_el_modo_demo_va_en_silencio(self):
         self.engine._apply_scene_change("ATTRACT")
         self.assertEqual(self.music, [])
+
+    def test_el_disparo_del_jugador_suena_una_vez_por_disparo(self):
+        scene = self.open_level(1)
+        self.played.clear()
+        scene.do_action("FIRE", Phase.START)
+        scene.do_action("FIRE", Phase.END)
+        scene.do_update(1 / 60)
+        self.assertEqual(self.played.count("shoot"), 1)  # dos balas, un sonido
+
+    def test_victoria_derrota_y_record_cambian_la_musica_del_nivel(self):
+        for name, key in (("VICTORY", "victory"), ("DEFEAT", "defeat"), ("RECORD", "record")):
+            self.open_level(1)
+            self.music.clear()
+            self.engine._apply_scene_change(name)
+            track = self.engine.cfg_menu[key]["music"]
+            self.assertIn(track, RESOURCES["music"], name)
+            self.assertEqual(self.music, [track], name)
 
     def test_blast_off_suena_al_empezar(self):
         self.open_level(1)

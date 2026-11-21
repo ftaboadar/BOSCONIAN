@@ -2,10 +2,10 @@
     "default": 1,
     "alert": { "calm_seconds": 6, "red_speed_factor": 2.0, "red_spawn_factor": 2.0 },
     "levels": {
-        "1": { "spawn_interval": 6.0, "steer_deviation": 0.6, "yellow_after": 8, "red_after": 120 },
-        "2": { "spawn_interval": 5.0, "steer_deviation": 0.5, "yellow_after": 7, "red_after": 110 },
-        "3": { "spawn_interval": 4.0, "steer_deviation": 0.4, "yellow_after": 6, "red_after": 100 },
-        "4": { "spawn_interval": 3.0, "steer_deviation": 0.3, "yellow_after": 5, "red_after": 90 },
-        "5": { "spawn_interval": 2.0, "steer_deviation": 0.2, "yellow_after": 4, "red_after": 80 }
+        "1": { "yellow_after": 8, "red_after": 120 },
+        "2": { "yellow_after": 7, "red_after": 110 },
+        "3": { "yellow_after": 6, "red_after": 100 },
+        "4": { "yellow_after": 5, "red_after": 90 },
+        "5": { "yellow_after": 4, "red_after": 80 }
     }
 }

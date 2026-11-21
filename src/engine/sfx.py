@@ -5,6 +5,19 @@ import pygame
 from src.engine.service_locator import ServiceLocator
 
 
+def play_music(name: str | None) -> None:
+    """Pone la pista `name` de resources.json; si no está registrada (o es None), silencio.
+
+    Sin audio disponible no hace nada, igual que play_sound."""
+    music = getattr(ServiceLocator, "music", None)
+    if music is None or not pygame.mixer.get_init():
+        return
+    if name is not None and music.has(name):
+        music.play(name)
+    else:
+        music.stop()
+
+
 def play_sound(name: str) -> None:
     """Reproduce un sonido de resources.json; si no se puede, no hace nada.
 

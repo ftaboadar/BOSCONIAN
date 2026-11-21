@@ -4,29 +4,25 @@ textos y animaciones descritos por eventos de story.json."""
 import esper
 import pygame
 
-from src.create.prefab_creator import logo_surface, scaled_to_width
+from src.create.prefab_creator import logo_cfg, logo_surface, scaled_to_width
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_arrival import CArrival
 from src.ecs.components.c_lifetime import CLifetime
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
-from src.engine.service_locator import ServiceLocator, color_from_cfg
+from src.engine.service_locator import ServiceLocator, color_from_cfg, rect_from_cfg
 
 
 def _vec(point: dict) -> pygame.Vector2:
     return pygame.Vector2(point["x"], point["y"])
 
 
-def _rect(r: dict) -> pygame.Rect:
-    return pygame.Rect(r["x"], r["y"], r["w"], r["h"])
-
-
 def _event_surface(event: dict, menu_colors: dict, fields: dict) -> pygame.Surface:
     """Superficie de un evento image, sprite, box o text (el tipo frames usa su primer cuadro)."""
     kind = event["type"]
     if kind == "image":
-        if event["image"] == "title":  # el logo del juego, sin su mancha translúcida
+        if event["image"] == logo_cfg()["image"]:  # el logo del juego, sin su mancha translúcida
             return logo_surface(event.get("width"))
         surf = ServiceLocator.images.get(event["image"])
         return scaled_to_width(surf, event["width"]) if "width" in event else surf
@@ -41,8 +37,8 @@ def _event_surface(event: dict, menu_colors: dict, fields: dict) -> pygame.Surfa
             event["text"].format(**fields), False, color_from_cfg(color))
     sheet = ServiceLocator.images.get(event.get("image", "ships"))
     if kind == "frames":
-        return sheet.subsurface(_rect(event["rects"][0]))
-    surf = sheet.subsurface(_rect(event["rect"])).copy()  # sprite
+        return sheet.subsurface(rect_from_cfg(event["rects"][0]))
+    surf = sheet.subsurface(rect_from_cfg(event["rect"])).copy()  # sprite
     if "colorkey" in event:  # fondo transparente (por ejemplo, el magenta de las bases)
         pixels = pygame.PixelArray(surf)
         pixels.replace(color_from_cfg(event["colorkey"]), pygame.Color(0, 0, 0, 0))
@@ -72,7 +68,7 @@ def create_story_actor(world: esper.World, event: dict, menu_colors: dict,
         comps.append(CArrival(event["seconds"], target))
     if event["type"] == "frames":
         sheet = ServiceLocator.images.get(event["image"])
-        comps.append(CAnimation(sheet, [_rect(r) for r in event["rects"]], event["framerate"],
+        comps.append(CAnimation(sheet, [rect_from_cfg(r) for r in event["rects"]], event["framerate"],
                                 loop=False))
     if "life" in event:
         comps.append(CLifetime(event["life"]))

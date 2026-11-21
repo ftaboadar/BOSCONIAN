@@ -8,7 +8,6 @@ from src.create.prefab_creator import create_enemy, create_enemy_bullet, create_
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
-from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
@@ -69,10 +68,10 @@ def system_base_cores(world: esper.World, player_pos: pygame.Vector2,
                 direction = pygame.Vector2(0, 1 if to_player.y >= 0 else -1)
             else:
                 direction = pygame.Vector2(1 if to_player.x >= 0 else -1, 0)
-            # Nace justo fuera del borde de la base, en el lado de la abertura: dentro de su
-            # hitbox la regla de rebote contra bases podría devolverlo hacia adentro.
-            hitbox = world.component_for_entity(c_part.base, CHitBox)
-            reach = (hitbox.size.x if direction.x else hitbox.size.y) / 2
+            # Nace justo fuera del borde de la base, en el lado de la abertura: dentro de
+            # ella la regla de rebote contra bases podría devolverlo hacia adentro.
+            width, height = world.component_for_entity(c_part.base, CSurface).surf.get_size()
+            reach = (width if direction.x else height) / 2
             reach += create_hitbox("enemy").size.x / 2 + 1  # medio enemigo, para nacer fuera
             # El E va derecho: la dificultad (desviación al perseguir) no le afecta.
             create_enemy(world, "E", c_t.pos + direction * reach, direction, cfg_enemies,

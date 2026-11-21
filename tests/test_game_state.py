@@ -26,14 +26,16 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(self.s.hi_score, 21000)
 
     def test_vidas_extra_en_50k_100k_y_cada_100k(self):
-        for total, lives in ((49999, 4), (50000, 5), (99999, 5), (150000, 6), (250000, 7)):
+        for total, lives in ((49999, 4), (50000, 5), (99999, 5), (100000, 6), (199999, 6), (200000, 7),
+                             (300000, 8)):
             s = GameState(dict(CFG))
             s.add_score(total)
             self.assertEqual(s.lives, lives, total)
 
     def test_un_salto_grande_concede_todas_las_vidas_cruzadas(self):
-        self.s.add_score(250000)  # cruza 50k, 150k y 250k
+        self.s.add_score(250000)  # cruza 50k, 100k y 200k
         self.assertEqual(self.s.lives, 7)
+        self.assertEqual(self.s.next_extra_life, 300000)
 
     def test_perder_vidas_y_game_over(self):
         for _ in range(4):  # 4 -> 0: el cero cuenta como una vida más

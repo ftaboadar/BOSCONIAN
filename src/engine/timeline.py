@@ -6,6 +6,7 @@ evento de story.json aparece en su momento y las entidades se mueven con los sis
 import esper
 
 from src.create.prefab_story import create_story_actor
+from src.ecs.components.c_destroy import CDestroy
 from src.ecs.systems.s_animation import system_animation
 from src.ecs.systems.s_arrival import system_arrival
 from src.ecs.systems.s_destroy import system_destroy
@@ -47,5 +48,5 @@ class Timeline:
         """Quita las entidades de un grupo (y los eventos de ese grupo que aún no aparecieron)."""
         for ent in self.groups.pop(group, []):
             if self.world.entity_exists(ent):
-                self.world.delete_entity(ent, immediate=True)
+                self.world.add_component(ent, CDestroy(explodes=False))  # la quita system_destroy
         self.pending = [e for e in self.pending if e.get("group") != group]

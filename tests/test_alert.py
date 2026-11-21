@@ -26,7 +26,7 @@ from src.ecs.systems.s_base_damage import damage_base_part
 from src.engine.data_loader import level_numbers, load_bases, load_enemies, load_level
 from src.engine.difficulty import difficulty_params
 from src.engine.game_engine import GameEngine
-from src.engine.hud import BAR_Y, CONDITION_COLORS
+from hud_cfg import BAR_Y, CONDITION_COLORS
 from src.engine.service_locator import ServiceLocator
 
 GameEngine()  # inicia pygame y los servicios
@@ -259,7 +259,7 @@ class PlaySceneAlertTests(Recorder, unittest.TestCase):
         self.assertIn("alert_yellow", self.played)
 
     def test_destruir_una_base_en_el_nivel_vuelve_a_verde(self):
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         self.run_for(self.params["yellow_after"] + 0.1)
         self.assertEqual(self.alert.level, AlertLevel.YELLOW)
         base = self.world.get_component(CBase)[0][0]
@@ -277,7 +277,7 @@ class PlaySceneAlertTests(Recorder, unittest.TestCase):
         return tuple(self.engine.screen.get_at((panel.left + 1, BAR_Y + 1)))[:3]
 
     def test_el_panel_muestra_la_alerta_con_su_color(self):
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         seen = []
         for level in AlertLevel:
             self.alert.level = level
@@ -287,7 +287,7 @@ class PlaySceneAlertTests(Recorder, unittest.TestCase):
         self.assertEqual(len(set(seen)), 3)  # tres colores distintos
 
     def test_el_nombre_de_la_barra_sigue_a_la_alerta_del_nivel(self):
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         for level in AlertLevel:
             self.alert.level = level
             self.scene.do_update(DT)
