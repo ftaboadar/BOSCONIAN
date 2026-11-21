@@ -32,7 +32,9 @@ class FlowTests(unittest.TestCase):
         self.assertEqual(after_player_died(s), "PLAY")
         self.assertEqual(s.lives, 3)
         s.lives = 1
-        self.assertEqual(after_player_died(s), "DEFEAT")
+        self.assertEqual(after_player_died(s), "PLAY")  # llega a 0: aún queda una vida
+        self.assertEqual(s.lives, 0)
+        self.assertEqual(after_player_died(s), "DEFEAT")  # muere con el contador en 0
 
 
 class DifficultyTests(unittest.TestCase):

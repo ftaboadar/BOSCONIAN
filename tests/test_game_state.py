@@ -36,18 +36,19 @@ class GameStateTests(unittest.TestCase):
         self.assertEqual(self.s.lives, 7)
 
     def test_perder_vidas_y_game_over(self):
-        for _ in range(3):
+        for _ in range(4):  # 4 -> 0: el cero cuenta como una vida más
             self.s.lose_life()
+        self.assertEqual(self.s.lives, 0)
         self.assertFalse(self.s.game_over)
-        self.s.lose_life()
+        self.s.lose_life()  # la última nave
         self.assertTrue(self.s.game_over)
-        self.s.lose_life()
         self.assertEqual(self.s.lives, 0)
 
     def test_continuar_recupera_vidas_y_pierde_puntaje_pero_conserva_record(self):
         self.s.add_score(30000)
-        self.s.lives = 0
+        self.s.lives, self.s.game_over = 0, True
         self.s.continue_game()
+        self.assertFalse(self.s.game_over)
         self.assertEqual((self.s.lives, self.s.score, self.s.continues_used), (4, 0, 1))
         self.assertEqual(self.s.hi_score, 30000)
 

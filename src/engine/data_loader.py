@@ -64,6 +64,7 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    level.setdefault("special_shot", False)
     # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
     level.setdefault("core_mode", "open")
     if level["core_mode"] not in CORE_MODES:

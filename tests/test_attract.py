@@ -10,6 +10,7 @@ sys.path.insert(0, os.getcwd())
 
 import pygame
 
+from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_transform import CTransform
 from src.engine.game_engine import GameEngine
 from src.engine.input.command import Phase
@@ -51,14 +52,15 @@ class AttractTests(unittest.TestCase):
             demo.do_update(self.cfg["turn_every"])
             if self.engine._next_scene:
                 break
-            seen.add((demo.direction.x, demo.direction.y))
+            seen.add(frozenset(demo.world.component_for_entity(demo.player, CPlayerShip).held))
         self.assertGreater(len(seen), 1)
 
     def test_el_jugador_no_controla_la_demo(self):
         demo = self.go("ATTRACT")
-        before = demo.direction.copy()
+        ship = demo.world.component_for_entity(demo.player, CPlayerShip)
+        before = set(ship.held)
         demo.do_action("DOWN", Phase.START)
-        self.assertEqual(demo.direction, before)
+        self.assertEqual(ship.held, before)
 
     def test_tras_la_demo_van_las_instrucciones_y_luego_el_titulo(self):
         demo = self.go("ATTRACT")
