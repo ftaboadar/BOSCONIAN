@@ -16,6 +16,7 @@ from src.ecs.components.c_world import CWorld
 from src.engine.camera import wrap_delta
 from src.engine.service_locator import ServiceLocator
 
+
 def _rect(r: dict) -> pygame.Rect:
     return pygame.Rect(r["x"], r["y"], r["w"], r["h"])
 
