@@ -92,6 +92,11 @@ class PlayScene(Scene):
         self.camera.delta = pygame.Vector2()
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
         self.paused = False
+        # Salir al título pierde el progreso: antes se pide confirmación (mundo congelado).
+        self.confirm_exit = False
+        white = pygame.Color(255, 255, 255)
+        font = ServiceLocator.fonts.get("main")
+        self.confirm_lines = [font.render(t, False, white) for t in eng.cfg_menu["exit_confirm"]]
         self.pause_text = ServiceLocator.fonts.get("main").render(
             "JUEGO PAUSADO", False, pygame.Color(255, 255, 255)
         )
@@ -124,12 +129,21 @@ class PlayScene(Scene):
             return
         if phase != Phase.START:
             return
+        if self.confirm_exit:
+            if action == "SELECT":
+                self.engine.switch_scene("TITLE")
+            elif action == "BACK":
+                self.confirm_exit = False  # ESC otra vez: cancela y vuelve a donde estaba
+            return
+        if action == "BACK":
+            self.confirm_exit = True  # ESC pide confirmar, jugando o en pausa
+            return
         if action == "PAUSE":
             self.paused = not self.paused  # P alterna entre jugar y pausar
             return
         if self.paused and action == "SELECT":
-            # Acceso al menú del título desde la pausa (#27 lo convertirá en el menú de opciones).
-            self.engine.switch_scene("TITLE")
+            # Acceso al título desde la pausa (#27 lo convertirá en el menú de opciones).
+            self.confirm_exit = True
             return
 
     def bases_remaining(self) -> int:
@@ -145,7 +159,7 @@ class PlayScene(Scene):
 
     def do_update(self, delta_time: float) -> None:
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
-        if self.paused:
+        if self.paused or self.confirm_exit:
             # En pausa solo las estrellas siguen brillando, quietas (sin parallax ni movimiento).
             system_star_blink(self.world, delta_time)
             return
@@ -190,6 +204,11 @@ class PlayScene(Scene):
         screen.set_clip(self.engine.viewport)
         system_star_rendering(self.world, screen)
         screen.set_clip(None)
+        if self.confirm_exit:
+            cx, cy = self.engine.viewport.center
+            for i, surf in enumerate(self.confirm_lines):
+                screen.blit(surf, surf.get_rect(center=(cx, cy - 32 + i * 14)))
+            return
         if self.paused:
             # Desaparecen jugador, bases, interfaz y minimapa; queda el fondo y el aviso.
             screen.blit(

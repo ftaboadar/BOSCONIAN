@@ -38,8 +38,8 @@ python main.py
 | Z | Disparar (adelante y atrás) |
 | X | Habilidad especial |
 | P | Pausar / reanudar el nivel |
-| Enter | Elegir una opción del menú; en pausa, volver al título |
-| Esc | Volver desde instrucciones y créditos |
+| Enter | Elegir una opción del menú; en pausa, pide confirmar la salida al título |
+| Esc | Volver desde instrucciones y créditos; en el nivel (jugando o en pausa), pide confirmar la salida al título (Enter: sí, Esc: no) |
 | F1 | Modo trampa |
 
 Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. El gamepad es un bono y aún no está implementado.
