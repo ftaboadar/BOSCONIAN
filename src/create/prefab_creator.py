@@ -141,7 +141,7 @@ def create_player_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Ve
                          surf: pygame.Surface) -> int:
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
-        CWorld(), CPlayerBullet(),
+        CWorld(), CPlayerBullet(), create_hitbox("player_bullet"),
     )
 
 
@@ -174,7 +174,7 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
         CSurface(surf), CWorld(),
         CSteering(type_cfg.get("turn_rate", 0), deviation, type_cfg.get("wander")),
         CEnemyState(kind, INITIAL_STATE[kind], type_cfg.get("chase_seconds", 0)),
-        CPoints(type_cfg["points"]),
+        CPoints(type_cfg["points"]), create_hitbox("enemy"), CExplosive("simple"),
     )
 
 
@@ -237,7 +237,7 @@ def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: 
         hitbox.size = pygame.Vector2(hitbox.size.y, hitbox.size.x)
     base = world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
-        CMinimapTrack("base"), CPoints(cfg["points"]["base"]), create_hitbox("base"),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
         CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
               core_frames, core["radius"]),
         hitbox,
@@ -247,9 +247,11 @@ def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: 
         interval = rng.uniform(turret["fire_interval"]["min"], turret["fire_interval"]["max"])
         world.create_entity(CTransform(pos + offset), CWorld(),
                             CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]),
-                            CTurret(interval, _turret_frames(cfg, off, turns)))
+                            CTurret(interval, _turret_frames(cfg, off, turns)),
+                            create_hitbox("base_turret"))
     core_ent = world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
-                                   CBasePart(base, "core", pygame.Vector2()))
+                                   CBasePart(base, "core", pygame.Vector2()),
+                                   create_hitbox("base_core"))
     if core_mode == "cycle":
         # El sprite de la base trae el núcleo abierto: empieza en el último cuadro.
         world.add_component(core_ent, CBaseCore(
@@ -265,7 +267,7 @@ def create_enemy_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vec
     surf.fill(color_from_cfg(cfg["color"]))
     return world.create_entity(
         CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
-        CWorld(), CEnemyBullet(cfg["seconds"]),
+        CWorld(), CEnemyBullet(cfg["seconds"]), create_hitbox("enemy_bullet"),
     )
 
 

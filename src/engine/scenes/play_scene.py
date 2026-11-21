@@ -23,7 +23,7 @@ from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_enemy_bullet import system_enemy_bullets
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.ecs.systems.s_enemy_state import system_enemy_state
-from src.ecs.systems.s_explode import system_explode
+from src.ecs.systems.s_explode import create_explosion_group, system_explode
 from src.ecs.systems.s_minimap import system_minimap_rendering
 from src.ecs.systems.s_movement import system_movement
 from src.ecs.systems.s_player import (
@@ -89,9 +89,12 @@ class PlayScene(Scene):
         factor = difficulty_factor(self.difficulty)  # 0..1 para núcleos, spawner y steering
         # Bases: las torretas disparan de cerca; el núcleo queda abierto o tiene ciclo según el nivel.
         self.cfg_bases = load_bases()
+        self.base_positions: dict[int, pygame.Vector2] = {}  # para la explosión al caer cada base
         for b in level["bases"]:
-            create_base(self.world, pygame.Vector2(b["x"], b["y"]), b["orientation"],
-                        self.cfg_bases, level["core_mode"], factor)
+            pos = pygame.Vector2(b["x"], b["y"])
+            base = create_base(self.world, pos, b["orientation"], self.cfg_bases,
+                               level["core_mode"], factor)
+            self.base_positions[base] = pos
         create_obstacles(self.world, level, obstacles_cfg, eng.world_size)
         # Enemigos I, P y E: salen alrededor del jugador a un ritmo que sube con la dificultad.
         self.cfg_enemies = load_enemies()
@@ -188,6 +191,17 @@ class PlayScene(Scene):
         elif has and not want:
             self.world.remove_component(self.player, CInvulnerable)
 
+    def _explode_destroyed_bases(self) -> None:
+        """Una base cayó (sus seis torretas o un disparo al núcleo): explota donde estaba.
+
+        damage_base_part la borra al instante, así que se la reconoce porque ya no existe.
+        (Se evita el evento global BASE_DESTROYED de esper: sus manejadores son referencias
+        débiles compartidas por todas las escenas y pueden romper un dispatch.)
+        """
+        for base in [b for b in self.base_positions if not self.world.entity_exists(b)]:
+            create_explosion_group(self.world, self.base_positions.pop(base), pygame.Vector2(),
+                                   self.explosions_cfg["base"], self.explosions_cfg)
+
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
 
@@ -255,6 +269,7 @@ class PlayScene(Scene):
         system_explode(self.world, self.explosions_cfg)  # antes de borrar: aún hay posición
         system_animation(self.world, delta_time)
         system_destroy(self.world)
+        self._explode_destroyed_bases()
         if player_alive:
             system_enemy_despawn(self.world, player_pos, self.engine.world_size,
                                  self.cfg_enemies["spawn"]["despawn_distance"])

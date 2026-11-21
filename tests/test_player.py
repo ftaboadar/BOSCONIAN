@@ -10,6 +10,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import esper
 import pygame
 
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -75,6 +76,8 @@ class PlaySceneInputTests(unittest.TestCase):
         self.scene = self.engine._current_scene
         self.scene.blast_left = 0.0  # sin cuenta regresiva
         self.ship = self.scene.world.component_for_entity(self.scene.player, CPlayerShip)
+        # Estas pruebas miden el movimiento: los enemigos que salen no deben matar la nave.
+        self.scene.world.add_component(self.scene.player, CInvulnerable())
 
     def tearDown(self):
         self.engine._clean()
