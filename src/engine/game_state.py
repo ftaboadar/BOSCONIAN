@@ -18,11 +18,8 @@ class GameState:
         self.lives = self.cfg["lives"]
         self.score = 0
         self.continues_used = 0
+        self.game_over = False
         self.next_extra_life = self.cfg["extra_life_first"]
-
-    @property
-    def game_over(self) -> bool:
-        return self.lives <= 0
 
     def add_score(self, points: int) -> None:
         """Suma puntos, actualiza el HI-SCORE y concede vidas extra al cruzar cada umbral."""
@@ -33,12 +30,18 @@ class GameState:
             self.next_extra_life += self.cfg["extra_life_step"]
 
     def lose_life(self) -> int:
-        self.lives = max(0, self.lives - 1)
+        """Descuenta una vida. Con el contador en 0 aún queda la última nave: solo se acaba
+        la partida al morir estando en 0 (4 vidas + la del cero = 5 intentos)."""
+        if self.lives == 0:
+            self.game_over = True
+        else:
+            self.lives -= 1
         return self.lives
 
     def continue_game(self) -> None:
         """Continuar tras la derrota: recupera las vidas y pierde el puntaje."""
         self.continues_used += 1
+        self.game_over = False
         self.lives = self.cfg["lives"]
         self.score = 0
         self.next_extra_life = self.cfg["extra_life_first"]
