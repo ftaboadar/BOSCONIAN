@@ -4,6 +4,7 @@ import pygame
 
 from src.engine.data_loader import load_json, load_resources
 from src.engine.game_state import GameState
+from src.engine.hud import Hud
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
 from src.engine.scenes.editor_scene import EditorScene
@@ -38,6 +39,10 @@ class GameEngine:
         self.cfg_world = load_json("assets/cfg/world.json")
         self.cfg_menu = load_json("assets/cfg/menu.json")
         self.state = GameState()  # vidas, puntaje, récord y nivel, compartido entre escenas
+        r = load_json("assets/cfg/player.json")["sprite_rect"]
+        life_icon = ServiceLocator.images.get("ships").subsurface(
+            pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon)
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
         v = self.cfg_world["viewport"]
@@ -107,9 +112,22 @@ class GameEngine:
         self._current_scene.do_update(self.delta_time)
 
     def _draw(self) -> None:
+        scene = self._current_scene
         self.screen.fill(self.bg_color)
-        self._current_scene.do_draw(self.screen)
+        scene.do_draw(self.screen)
+        if scene.has_panel:
+            self._draw_panel(scene)
         pygame.display.flip()
+
+    def _draw_panel(self, scene: Scene) -> None:
+        """La barra lateral, igual en todas las pantallas del juego (salvo el editor)."""
+        self.screen.set_clip(None)
+        panel = pygame.Rect(self.viewport.right, 0, self.screen.get_width() - self.viewport.right,
+                            self.screen.get_height())
+        self.screen.fill(self.bg_color, panel)  # tapa lo que la escena haya dibujado de más
+        scene.draw_radar(self.screen)
+        self.hud.draw(self.screen, self.state, scene.panel_round())
+        self.hud.draw_cheat(self.screen, self.state)
 
     def _clean(self) -> None:
         if self._current_scene is not None:

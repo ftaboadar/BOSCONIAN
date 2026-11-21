@@ -200,22 +200,28 @@ class PlaySceneIntegrationTests(PanelTestCase):
         scene = self.engine._current_scene
         scene.blast_left = 0
         scene.do_update(1 / 60)
-        self.screen.fill(BLACK)
-        scene.do_draw(self.screen)
-        green = self.screen.copy()
+        self.engine._draw()
+        green = pygame.image.tobytes(self.engine.screen, "RGB")
         self.engine.state.alert = "RED"
-        self.screen.fill(BLACK)
-        scene.do_draw(self.screen)
-        self.assertNotEqual(pygame.image.tobytes(green, "RGB"), pygame.image.tobytes(self.screen, "RGB"))
+        self.engine._draw()
+        self.assertNotEqual(green, pygame.image.tobytes(self.engine.screen, "RGB"))
 
-    def test_en_pausa_no_se_ve_el_radar(self):
+    def radar_colors(self):
+        rect = radar_rect(CFG).inflate(-2, -2)
+        screen = self.engine.screen
+        return {tuple(screen.get_at((x, y)))[:3] for x in range(rect.left, rect.right)
+                for y in range(rect.top, rect.bottom)}
+
+    def test_en_pausa_desaparecen_las_marcas_del_radar_pero_queda_el_marco_y_la_barra(self):
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
         scene.blast_left = 0
+        self.engine._draw()
+        self.assertGreater(len(self.radar_colors()), 1)  # con marcas: fondo, bases, nave...
         scene.paused = True
-        self.screen.fill(BLACK)
-        scene.do_draw(self.screen)
-        self.assertFalse(lit(self.screen, radar_rect(CFG)))
+        self.engine._draw()
+        self.assertEqual(self.radar_colors(), {tuple(color_from_cfg(CFG["bg_color"]))[:3]})
+        self.assertTrue(lit(self.engine.screen, pygame.Rect(176, 0, 80, 54)))  # HI-SCORE y 1UP siguen
 
 
 if __name__ == "__main__":

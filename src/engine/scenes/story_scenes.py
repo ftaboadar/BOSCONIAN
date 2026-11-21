@@ -32,7 +32,7 @@ class StoryScene(Scene):
         story = load_story()
         self.cfg = story[self.CFG_KEY]
         self.grace = story["grace_seconds"]
-        self.area = self.engine.screen.get_rect()
+        self.area = self.engine.viewport  # el campo de juego; a su derecha va la barra lateral
         create_stars(self.world, self.engine.cfg_world, self.area)
         self.pending = sorted(self.cfg["events"], key=lambda e: e["at"])  # estable: respeta el orden
         self.elapsed = 0.0

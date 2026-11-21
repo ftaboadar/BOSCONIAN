@@ -51,7 +51,6 @@ from src.engine.data_loader import (
     )
 from src.engine.difficulty import difficulty_factor, difficulty_params
 from src.engine.game_state import ALERTS
-from src.engine.hud import Hud
 from src.engine.level_flow import after_level_cleared, after_player_died
 from src.engine.input.command import Phase
 from src.engine.scenes.scene import Scene
@@ -103,10 +102,6 @@ class PlayScene(Scene):
         create_enemy_spawner(self.world, self.cfg_enemies, factor)
         create_stars(self.world, eng.cfg_world, eng.viewport)
         self.round = level["round"]
-        r = self.player_cfg["sprite_rect"]
-        life_icon = ServiceLocator.images.get("ships").subsurface(
-            pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
-        self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"], life_icon)
         self.radar_time = 0.0  # para el parpadeo de la nave en el radar
         eng.state.alert = ALERTS[0]  # todo nivel empieza en verde
         self.level_total_bases = len(level["bases"])
@@ -300,6 +295,17 @@ class PlayScene(Scene):
             self.engine.cfg_world["stars_parallax_factor"],
         )
 
+    def panel_round(self) -> int:
+        return self.round
+
+    def draw_radar(self, screen: pygame.Surface) -> None:
+        """El radar con sus marcas. En pausa y al confirmar la salida desaparecen y queda el marco."""
+        if self.paused or self.confirm_exit:
+            super().draw_radar(screen)
+            return
+        system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
+                                 self.engine.world_size, self.camera.pos, self.radar_time)
+
     def do_draw(self, screen: pygame.Surface) -> None:
         screen.set_clip(self.engine.viewport)
         system_star_rendering(self.world, screen)
@@ -318,10 +324,6 @@ class PlayScene(Scene):
             return
         system_world_rendering(self.world, screen, self.camera)
         system_rendering(self.world, screen)
-        system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
-                                 self.engine.world_size, self.camera.pos, self.radar_time)
-        self.hud.draw(screen, self.engine.state, self.round)
-        self.hud.draw_cheat(screen, self.engine.state)
         if self.blast_left > 0:
             screen.blit(
                 self.blast_text,

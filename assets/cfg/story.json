@@ -7,25 +7,25 @@
         "stars_speed": 170,
         "events": [
             { "at": 0.3, "type": "image", "image": "title",
-              "from": { "x": 128, "y": -40 }, "to": { "x": 128, "y": 56 }, "seconds": 1.8 },
+              "from": { "x": 88, "y": -40 }, "to": { "x": 88, "y": 56 }, "seconds": 1.8 },
             { "at": 2.3, "type": "text", "text": "LA FLOTA ENEMIGA ATACA", "color": "normal",
-              "pos": { "x": 128, "y": 104 } },
+              "pos": { "x": 88, "y": 104 } },
             { "at": 3.0, "type": "text", "text": "TU MISION: DESTRUIR", "color": "normal",
-              "pos": { "x": 128, "y": 116 } },
+              "pos": { "x": 88, "y": 116 } },
             { "at": 3.0, "type": "text", "text": "TODAS SUS BASES", "color": "normal",
-              "pos": { "x": 128, "y": 128 } },
+              "pos": { "x": 88, "y": 128 } },
 
             { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 56, "w": 72, "h": 64 },
               "colorkey": { "r": 255, "g": 0, "b": 255 },
-              "from": { "x": 310, "y": 166 }, "to": { "x": 212, "y": 166 }, "seconds": 1.6, "life": 2.3 },
+              "from": { "x": 240, "y": 166 }, "to": { "x": 126, "y": 166 }, "seconds": 1.6, "life": 2.3 },
             { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 },
               "scale": 2, "rotate": -90,
-              "from": { "x": -30, "y": 166 }, "to": { "x": 112, "y": 166 }, "seconds": 1.6 },
+              "from": { "x": -30, "y": 166 }, "to": { "x": 44, "y": 166 }, "seconds": 1.6 },
 
             { "at": 5.7, "type": "box", "size": { "w": 6, "h": 2 }, "color": { "r": 255, "g": 255, "b": 255 },
-              "from": { "x": 130, "y": 160 }, "to": { "x": 178, "y": 160 }, "seconds": 0.3, "life": 0.3 },
+              "from": { "x": 60, "y": 160 }, "to": { "x": 94, "y": 160 }, "seconds": 0.3, "life": 0.3 },
             { "at": 5.7, "type": "box", "size": { "w": 6, "h": 2 }, "color": { "r": 255, "g": 255, "b": 255 },
-              "from": { "x": 130, "y": 172 }, "to": { "x": 178, "y": 172 }, "seconds": 0.3, "life": 0.3 },
+              "from": { "x": 60, "y": 172 }, "to": { "x": 94, "y": 172 }, "seconds": 0.3, "life": 0.3 },
             { "at": 5.7, "type": "sound", "sound": "shoot" },
 
             { "at": 6.0, "type": "frames", "image": "ships", "framerate": 12,
@@ -33,23 +33,23 @@
                   { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
                   { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
                   { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 196, "y": 154 } },
+              "pos": { "x": 110, "y": 154 } },
             { "at": 6.15, "type": "frames", "image": "ships", "framerate": 12,
               "rects": [
                   { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
                   { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
                   { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 216, "y": 172 } },
+              "pos": { "x": 132, "y": 172 } },
             { "at": 6.3, "type": "frames", "image": "ships", "framerate": 12,
               "rects": [
                   { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
                   { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
                   { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 204, "y": 184 } },
+              "pos": { "x": 118, "y": 184 } },
             { "at": 6.0, "type": "sound", "sound": "explosion" },
 
             { "at": 7.0, "type": "text", "text": "PULSA UNA TECLA", "color": "selected",
-              "pos": { "x": 128, "y": 196 } }
+              "pos": { "x": 88, "y": 196 } }
         ]
     },
     "cutscene": {
@@ -58,16 +58,16 @@
         "stars_speed": 90,
         "events": [
             { "at": 0.2, "type": "text", "text": "RONDA {round}", "color": "title",
-              "pos": { "x": 128, "y": 54 } },
+              "pos": { "x": 88, "y": 54 } },
             { "at": 1.0, "type": "text", "text": "DESTRUYE LAS BASES", "color": "normal",
-              "pos": { "x": 128, "y": 82 } },
+              "pos": { "x": 88, "y": 82 } },
             { "at": 1.8, "type": "text", "text": "ENEMIGAS", "color": "normal",
-              "pos": { "x": 128, "y": 94 } },
+              "pos": { "x": 88, "y": 94 } },
 
             { "at": 0.4, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 2,
-              "from": { "x": 128, "y": 236 }, "to": { "x": 128, "y": 156 }, "seconds": 2.6, "life": 3.6 },
+              "from": { "x": 88, "y": 236 }, "to": { "x": 88, "y": 156 }, "seconds": 2.6, "life": 3.6 },
             { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 2,
-              "from": { "x": 128, "y": 156 }, "to": { "x": 128, "y": -40 }, "seconds": 1.4 }
+              "from": { "x": 88, "y": 156 }, "to": { "x": 88, "y": -40 }, "seconds": 1.4 }
         ]
     }
 }

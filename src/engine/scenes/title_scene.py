@@ -17,11 +17,12 @@ class TitleScene(Scene):
     """Título con menú: jugar, elegir nivel, instrucciones y créditos."""
 
     def do_create(self) -> None:
-        w, h = self.engine.screen.get_size()
-        self.area = self.engine.screen.get_rect()
+        stage = self.engine.viewport  # el campo de juego; a su derecha va la barra lateral
+        w, h = stage.size
+        self.area = stage
         cfg = self.engine.cfg_menu
         create_stars(self.world, self.engine.cfg_world, self.area)
-        create_image(self.world, "title", pygame.Vector2(w / 2, h * 0.35))
+        create_image(self.world, "title", pygame.Vector2(stage.centerx, h * 0.35))
         self.menu = Menu(cfg["title_items"], cfg["colors"], cfg["line_height"])
         self.menu_top = int(h * 0.62)
         self.idle = 0.0
@@ -62,4 +63,4 @@ class TitleScene(Scene):
     def do_draw(self, screen: pygame.Surface) -> None:
         system_star_rendering(self.world, screen)
         system_rendering(self.world, screen)
-        self.menu.draw(screen, screen.get_width() // 2, self.menu_top)
+        self.menu.draw(screen, self.engine.viewport.centerx, self.menu_top)
