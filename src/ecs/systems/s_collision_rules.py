@@ -1,6 +1,8 @@
 import esper
 import pygame
 
+from src.create.prefab_creator import create_score_popup
+from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_points import CPoints
@@ -18,7 +20,8 @@ def load_rules(collisions_cfg: dict) -> dict[tuple[str, str], dict]:
 
 def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]],
                            rules: dict[tuple[str, str], dict],
-                           world_size: pygame.Vector2 | None = None) -> int:
+                           world_size: pygame.Vector2 | None = None,
+                           popup_cfg: dict | None = None) -> int:
     """Aplica la regla que corresponde a cada par de entidades que chocan.
 
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
@@ -29,7 +32,8 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     puntos que corresponda (torreta, o base entera) y la bala se consume.
 
     Si la regla tiene "score": "a" o "b", esa entidad da sus CPoints al destruirse.
-    Devuelve los puntos ganados en el frame (una entidad solo puntúa una vez).
+    Devuelve los puntos ganados en el frame (una entidad solo puntúa una vez). Con `popup_cfg`
+    aparece además un cartel con los puntos donde se destruyó cada cosa.
     """
     points = 0
     for ent_a, ent_b in collisions:
@@ -46,7 +50,11 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
 
         scored = {"a": ent_a, "b": ent_b}.get(rule.get("score"))
         if scored is not None:
-            points += _points_if_new(world, scored)
+            gained = _points_if_new(world, scored)
+            points += gained
+            if gained and popup_cfg:
+                create_score_popup(world, world.component_for_entity(scored, CTransform).pos,
+                                   gained, popup_cfg)
 
         result = rule["result"]
         if result == "BOUNCE":
@@ -62,7 +70,20 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
             if world.has_component(ent_a, CDestroy):
                 continue  # la bala ya dio en otra parte en este frame
             shot = world.component_for_entity(ent_a, CVelocity).vel
-            points += damage_base_part(world, ent_b, shot.normalize() if shot.length() else shot)
+            part_pos = pygame.Vector2(world.component_for_entity(ent_b, CTransform).pos)
+            base_pos = pygame.Vector2(world.component_for_entity(
+                world.component_for_entity(ent_b, CBasePart).base, CTransform).pos)
+            c_points = world.try_component(ent_b, CPoints)
+            part_points = c_points.points if c_points is not None else 0
+            gained = damage_base_part(world, ent_b, shot.normalize() if shot.length() else shot)
+            points += gained
+            if popup_cfg and gained:
+                # La torreta y la base suman por separado: se ven como dos carteles.
+                if part_points and gained >= part_points:
+                    create_score_popup(world, part_pos, part_points, popup_cfg)
+                    gained -= part_points
+                if gained:
+                    create_score_popup(world, base_pos, gained, popup_cfg)
             _mark_destroy(world, ent_a)
     return points
 

@@ -151,7 +151,10 @@ def load_enemies() -> dict:
     spawn no negativo; al menos uno debe ser positivo para que pueda salir algún enemigo.
     """
     path = os.path.join(CFG_DIR, "enemies.json")
-    cfg = load_entity_cfg("enemies", ("deviation_degrees", "spawn", "types"))
+    cfg = load_entity_cfg("enemies", ("deviation_degrees", "spawn", "types", "heading_steps"))
+    steps = cfg["heading_steps"]
+    if not isinstance(steps, int) or steps < 8:
+        raise ConfigError(f"{path}: heading_steps debe ser un entero >= 8 (16 como el original)")
     require_keys(cfg["deviation_degrees"], ("easy", "hard"), f"{path} deviation_degrees")
     spawn = cfg["spawn"]
     require_keys(spawn, ("interval_seconds", "max_alive", "distance", "despawn_distance"),
