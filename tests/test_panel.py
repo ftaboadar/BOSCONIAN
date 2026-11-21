@@ -18,7 +18,7 @@ from src.ecs.systems.s_minimap import radar_point, radar_rect, system_minimap_re
 from src.engine.data_loader import load_json
 from src.engine.game_engine import GameEngine
 from src.engine.game_state import ALERTS, GameState
-from src.engine.hud import (BAR_H, BAR_Y, CONDITION_COLORS, ICON_SPACING, ICONS_Y, LETTER_ADVANCE,
+from src.engine.hud import (BAR_H, BAR_Y, CONDITION_COLORS, ICON_SPACING, ICONS_Y,
                             RED, ROWS, WHITE)
 from src.engine.service_locator import color_from_cfg
 
@@ -107,9 +107,16 @@ class OriginalLayoutTests(PanelTestCase):
         self.assertEqual(ROWS["round"] + 8, 208)  # pegado al borde de abajo
 
     def test_condition_cabe_en_la_barra_aunque_tenga_nueve_letras(self):
-        self.assertLessEqual(len("CONDITION") * LETTER_ADVANCE, self.panel.w)
         self.draw()
         self.assertTrue(lit(self.screen, pygame.Rect(self.panel.right - 8, ROWS["condition"], 8, 8)))  # llega a la última letra
+        self.assertFalse(lit(self.screen, pygame.Rect(self.panel.left - 8, ROWS["condition"], 8, 8)))  # sin salirse por la izquierda
+
+    def test_las_letras_de_condition_no_se_tocan(self):
+        self.draw()
+        row = pygame.Rect(self.panel.left, ROWS["condition"], self.panel.w, 8)
+        empty = [x for x in range(row.left, row.right) if not lit(self.screen, pygame.Rect(x, row.top, 1, 8))]
+        self.assertEqual(len(empty), len("CONDITION") - 1)  # una columna vacía entre cada par de letras
+        self.assertTrue(lit(self.screen, pygame.Rect(row.right - 1, row.top, 1, 8)))  # y la N acaba justo en el borde
 
 
 class LivesIconTests(PanelTestCase):

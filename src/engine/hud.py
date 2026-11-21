@@ -15,7 +15,10 @@ BLACK = pygame.Color(0, 0, 0)
 # Color de la barra de CONDITION para cada alerta (texto negro encima).
 CONDITION_COLORS = {"GREEN": pygame.Color(128, 255, 160), "YELLOW": pygame.Color(255, 225, 60),
                     "RED": pygame.Color(255, 80, 80)}
-LETTER_ADVANCE = 7  # CONDITION tiene 9 letras y debe caber en 64 px: el original las aprieta
+# CONDITION tiene 9 letras de 7 px y debe caber en 64 px. Para que no se toquen, cada letra se
+# recorta a su tinta y se separa 1 px; a la I se le quita 1 px de cada remate: 56 px + 8 huecos = 64.
+LETTER_GAP = 1
+TRIMMED = {"I": 1}  # letra -> columnas que pierde por cada lado
 ROWS = {"hi_label": 0, "hi_value": 8, "up_label": 16, "up_value": 24, "cheat": 36,
         "condition": 48, "round": 200}
 BAR_Y, BAR_H = 61, 15
@@ -40,8 +43,14 @@ class Hud:
 
     def _tight(self, screen: pygame.Surface, text: str, color: pygame.Color, y: int) -> None:
         """Texto con las letras más juntas, para que quepa en el ancho de la barra."""
-        for i, char in enumerate(text):
-            screen.blit(self.font.render(char, False, color), (self.panel.left + i * LETTER_ADVANCE, y))
+        x = self.panel.left
+        for char in text:
+            glyph = self.font.render(char, False, color)
+            ink = glyph.get_bounding_rect()
+            trim = TRIMMED.get(char, 0)
+            area = pygame.Rect(ink.left + trim, 0, ink.w - 2 * trim, glyph.get_height())
+            screen.blit(glyph, (x, y), area)
+            x += area.w + LETTER_GAP
 
     def draw(self, screen: pygame.Surface, state: GameState, round_number: int,
              show_lives: bool = True) -> None:
