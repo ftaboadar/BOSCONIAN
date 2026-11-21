@@ -10,6 +10,7 @@ from src.engine.scenes.end_scenes import DefeatScene, RecordScene, VictoryScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
+from src.engine.scenes.story_scenes import CutsceneScene, IntroScene
 from src.engine.scenes.title_scene import TitleScene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
@@ -18,6 +19,7 @@ class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
               "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
               "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene,
+              "INTRO": IntroScene, "CUTSCENE": CutsceneScene,
               "VICTORY": VictoryScene, "DEFEAT": DefeatScene, "RECORD": RecordScene}
 
     def __init__(self) -> None:
