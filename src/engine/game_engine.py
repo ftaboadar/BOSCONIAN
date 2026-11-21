@@ -2,12 +2,16 @@
 
 import asyncio
 
+import esper
 import pygame
 
+from src.create.prefab_ui import create_hud, create_shutter
+from src.ecs.components.c_hud import CHud
+from src.ecs.components.c_shutter import CShutter, ShutterState
+from src.ecs.systems.s_hud import system_cheat_rendering, system_hud_rendering
+from src.ecs.systems.s_shutter import shutter_start, system_shutter, system_shutter_rendering
 from src.engine.data_loader import load_json, load_resources
 from src.engine.game_state import GameState
-from src.engine.hud import Hud
-from src.engine.shutter import Shutter
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
 from src.engine.scenes.editor_scene import EditorScene
@@ -49,9 +53,15 @@ class GameEngine:
         # La barra lateral ocupa el resto de la pantalla, a la derecha del campo de juego.
         self.panel = pygame.Rect(self.viewport.right, 0, cfg_window["size"]["w"] - self.viewport.right,
                                  cfg_window["size"]["h"])
-        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon,
-                       self.panel)
-        self.shutter = Shutter(self.cfg_world["shutter"], self.viewport)  # persiana entre pantallas
+        # La barra y la persiana son las mismas en todas las pantallas: viven en un mundo ECS
+        # del motor, aparte del de cada escena.
+        self.ui_world = esper.World()
+        self.hud = self.ui_world.component_for_entity(
+            create_hud(self.ui_world, load_json("assets/cfg/hud.json"),
+                       ServiceLocator.fonts.get("main"), life_icon,
+                       self.state.cfg["life_icons_max"], self.panel), CHud)
+        self.shutter = self.ui_world.component_for_entity(
+            create_shutter(self.ui_world, self.cfg_world["shutter"], self.viewport), CShutter)
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
 
@@ -85,9 +95,8 @@ class GameEngine:
 
     def _request_scene(self, name: str) -> None:
         """Cambia de escena, con persiana si la escena de destino la pide (y no hay otra en curso)."""
-        if self.shutter.wants(name) and not self.shutter.busy:
-            self.shutter.close(name)  # la escena actual queda congelada hasta cubrir el campo
-            self._next_scene = None
+        if shutter_start(self.ui_world, name):
+            self._next_scene = None  # la escena actual queda congelada hasta cubrir el campo
         else:
             self._apply_scene_change(name)
 
@@ -127,7 +136,7 @@ class GameEngine:
             if event.type == pygame.QUIT:
                 self.is_running = False
                 continue
-            if self.shutter.closing:
+            if self.shutter.state == ShutterState.CLOSING:
                 continue  # sin teclas mientras la persiana se cierra
             if event.type == pygame.KEYDOWN:
                 self._current_scene.do_any_key()
@@ -136,12 +145,12 @@ class GameEngine:
                 self._current_scene.do_action(*command)
 
     def _update(self) -> None:
-        if self.shutter.closing:
-            if self.shutter.update(self.delta_time):  # el campo ya está cubierto: se cambia de escena
-                self._apply_scene_change(self.shutter.target)
-                self.shutter.open()
+        closing = self.shutter.state == ShutterState.CLOSING
+        covered_for = system_shutter(self.ui_world, self.delta_time)
+        if covered_for is not None:  # el campo ya está cubierto: se cambia de escena
+            self._apply_scene_change(covered_for)
+        if closing:
             return  # mientras se cierra, la escena actual no avanza
-        self.shutter.update(self.delta_time)
         self._current_scene.do_update(self.delta_time)
 
     def _draw(self) -> None:
@@ -149,7 +158,7 @@ class GameEngine:
         self.screen.fill(self.bg_color)
         scene.do_draw(self.screen)
         self.screen.set_clip(None)
-        self.shutter.draw(self.screen)  # sobre el campo de juego; la barra se dibuja después y no se mueve
+        system_shutter_rendering(self.ui_world, self.screen)  # sobre el campo de juego; la barra se dibuja después y no se mueve
         if scene.has_panel:
             self._draw_panel(scene)
         pygame.display.flip()
@@ -159,8 +168,9 @@ class GameEngine:
         self.screen.set_clip(None)
         self.screen.fill(self.bg_color, self.panel)  # tapa lo que la escena haya dibujado de más
         scene.draw_radar(self.screen)
-        self.hud.draw(self.screen, scene.panel_state(), scene.panel_round(), scene.panel_lives)
-        self.hud.draw_cheat(self.screen, self.state)
+        system_hud_rendering(self.ui_world, self.screen, scene.panel_state(), scene.panel_round(),
+                             scene.panel_lives)
+        system_cheat_rendering(self.ui_world, self.screen, self.state.cheat)
 
     def _clean(self) -> None:
         if self._current_scene is not None:

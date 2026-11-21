@@ -72,8 +72,9 @@ class StarTests(unittest.TestCase):
 
     def _star_world(self):
         w = esper.World()
-        e = w.create_entity(CTransform(pygame.Vector2(10, 10)),
-                            CStar(pygame.Color(255, 0, 0), 0.3, 0.0))
+        surf = pygame.Surface((1, 1), pygame.SRCALPHA)
+        surf.fill(pygame.Color(255, 0, 0))
+        e = w.create_entity(CTransform(pygame.Vector2(10, 10)), CStar(surf, 0.3, 0.0))
         return w, e
 
     def test_parallax_se_mueve_en_sentido_contrario_y_mas_lento(self):

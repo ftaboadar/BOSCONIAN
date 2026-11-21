@@ -1,8 +1,10 @@
 import pygame
 
+from src.create.prefab_creator import create_stars
 from src.ecs.components.c_arrival import CArrival
 from src.ecs.components.c_surface import CSurface
 from src.ecs.systems.s_rendering import system_rendering
+from src.ecs.systems.s_star import system_star_blink, system_star_fall, system_star_rendering
 from src.engine.data_loader import level_numbers, load_story
 from src.engine.input.command import Phase
 from src.engine.menu import Menu
@@ -12,11 +14,10 @@ from src.engine.timeline import Timeline
 
 # "Jugar" pasa por la cinemática del nivel, que al terminar o saltarse lleva al juego.
 SCENE_BY_ACTION = {"PLAY": "CUTSCENE", "INSTRUCTIONS": "INSTRUCTIONS", "CREDITS": "CREDITS"}
-BLINK_SECONDS = 0.5  # «PUSH BUTTON TO START» parpadea una vez que llegó a su sitio
 
 
 class TitleScene(Scene):
-    """Título sobre fondo verde, como el del original: el logo entra por la derecha, «PUSH BUTTON
+    """Título sobre fondo verde con estrellas: el logo entra por la derecha, «PUSH BUTTON
     TO START» por la izquierda y parpadea. Al pulsar un botón aparece el menú (jugar, elegir
     nivel, instrucciones y créditos) sobre el mismo fondo. Sus eventos viven en story.json."""
 
@@ -26,6 +27,9 @@ class TitleScene(Scene):
         cfg = self.engine.cfg_menu
         story = load_story()
         self.background = color_from_cfg(story["title"]["background"])
+        # «PUSH BUTTON TO START» parpadea con este período una vez que llegó a su sitio.
+        self.blink_seconds = story["title"]["push_blink_seconds"]
+        create_stars(self.world, self.engine.cfg_world, stage)
         self.timeline = Timeline(self.world, story["title"]["events"], cfg["colors"])
         self.menu = Menu(cfg["title_items"], cfg["colors"], cfg["line_height"])
         self.menu_top = story["title"]["menu_top"]
@@ -41,7 +45,8 @@ class TitleScene(Scene):
         ServiceLocator.music.play("title")
 
     def _refresh_level_label(self) -> None:
-        self.menu.set_label("LEVEL", f"NIVEL < {self.engine.level} >")
+        self.menu.set_label(
+            "LEVEL", self.engine.cfg_menu["level_label"].format(level=self.engine.level))
 
     def _cycle_level(self, step: int) -> None:
         index = self.levels.index(self.engine.level) if self.engine.level in self.levels else 0
@@ -80,6 +85,8 @@ class TitleScene(Scene):
         if self.idle >= self.engine.cfg_menu["attract"]["idle_seconds"]:
             self.engine.switch_scene("ATTRACT")  # inactividad: arranca el modo atractor
         self.timeline.update(delta_time)
+        system_star_blink(self.world, delta_time)
+        system_star_fall(self.world, self.area, self.engine.cfg_world["stars_menu_speed"], delta_time)
         self._blink_push(delta_time)
 
     def _blink_push(self, delta_time: float) -> None:
@@ -93,11 +100,12 @@ class TitleScene(Scene):
             c_s = self.world.component_for_entity(ent, CSurface)
             self._push_surfaces.setdefault(ent, c_s.surf)
             arrived = not self.world.has_component(ent, CArrival)
-            visible = (not arrived) or int(self.blink / BLINK_SECONDS) % 2 == 0
+            visible = (not arrived) or int(self.blink / self.blink_seconds) % 2 == 0
             c_s.surf = self._push_surfaces[ent] if visible else pygame.Surface((1, 1), pygame.SRCALPHA)
 
     def do_draw(self, screen: pygame.Surface) -> None:
         screen.fill(self.background, self.engine.viewport)
+        system_star_rendering(self.world, screen)
         system_rendering(self.world, screen)
         if self.mode == "menu":
             self.menu.draw(screen, self.engine.viewport.centerx, self.menu_top)

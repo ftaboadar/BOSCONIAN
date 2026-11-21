@@ -1,5 +1,6 @@
 {
     "grace_seconds": 0.3,
+    "logo": { "image": "title", "halo_max_alpha": 100, "halo_min_white": 240 },
     "splash": {
         "next": "LOGO_SLIDE",
         "skip_to": "TITLE",
@@ -18,8 +19,7 @@
         "next": "BYLINE",
         "skip_to": "TITLE",
         "duration": 3.4,
-        "stars_speed": 0,
-        "stars": false,
+        "stars_speed": 40,
         "background": { "r": 126, "g": 196, "b": 152 },
         "events": [
             { "at": 0.3, "type": "image", "image": "title", "width": 168,
@@ -44,6 +44,7 @@
     "title": {
         "background": { "r": 126, "g": 196, "b": 152 },
         "menu_top": 124,
+        "push_blink_seconds": 0.5,
         "events": [
             { "at": 0.0, "type": "image", "image": "title", "width": 168,
               "from": { "x": 288, "y": 84 }, "to": { "x": 96, "y": 84 }, "seconds": 1.6 },

@@ -227,7 +227,7 @@ class HitboxConfigTests(unittest.TestCase):
         ENGINE.state.level = 1
 
     def test_cada_hitbox_es_un_objeto_nuevo(self):
-        a, b = create_hitbox("base"), create_hitbox("base")
+        a, b = create_hitbox("player"), create_hitbox("player")
         a.size.x = 1
         self.assertNotEqual(b.size.x, 1)
 
@@ -238,7 +238,7 @@ class SceneTests(unittest.TestCase):
         ENGINE._next_scene = None
         ENGINE._apply_scene_change("PLAY")
         self.scene = ENGINE._current_scene
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
 
     def test_el_nivel_crea_sus_obstaculos(self):
         layers = [hb.layer for _, hb in self.scene.world.get_component(CHitBox)]

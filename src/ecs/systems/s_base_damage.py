@@ -6,14 +6,11 @@ import pygame
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
 from src.ecs.components.c_base_part import CBasePart
+from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_surface import CSurface
-from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
-from src.engine.sfx import play_sound
-
-# Evento de esper: el handler recibe la entidad de la base (ya borrada) y dónde estaba.
-BASE_DESTROYED = "base_destroyed"
+from src.ecs.systems.s_alert import alert_base_destroyed
 
 
 def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) -> int:
@@ -23,10 +20,11 @@ def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) ->
     Una torreta siempre se destruye; al caer la sexta cae la base entera. El núcleo solo
     es vulnerable a disparos en la dirección de la orientación de la base o en diagonal
     (un único disparo la destruye); en la dirección perpendicular, o si está cerrado, no
-    le pasa nada. Al destruirse la base se emite el evento BASE_DESTROYED. Una parte ya
-    destruida (dos balas en el mismo frame) no da puntos.
+    le pasa nada. Lo destruido queda marcado con CDestroy: explota y suena con
+    system_explode y lo borra system_destroy. Una parte ya destruida (dos balas en el
+    mismo frame) no da puntos.
     """
-    if not world.entity_exists(part):
+    if not world.entity_exists(part) or world.has_component(part, CDestroy):
         return 0
     c_part = world.component_for_entity(part, CBasePart)
     base = c_part.base
@@ -43,16 +41,16 @@ def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) ->
     # Si estaba abierta se repone cerrada antes: sus restos no deben conservar ese cuadro.
     draw_turret(surf, c_part.offset, world.component_for_entity(part, CTurret).frames, 0)
     draw_base_part(surf, c_part.offset, c_base.turret_wreck, c_base.turret_radius)
-    world.delete_entity(part, immediate=True)
-    play_sound("turret_hit")
-    if not _parts_of(world, base, "turret"):
+    world.add_component(part, CDestroy())
+    standing = [ent for ent in _parts_of(world, base)
+                if world.has_component(ent, CTurret) and not world.has_component(ent, CDestroy)]
+    if not standing:
         points += _destroy_base(world, base)
     return points
 
 
-def _parts_of(world: esper.World, base: int, kind: str | None = None) -> list[int]:
-    return [ent for ent, c_p in world.get_component(CBasePart)
-            if c_p.base == base and kind in (None, c_p.kind)]
+def _parts_of(world: esper.World, base: int) -> list[int]:
+    return [ent for ent, c_p in world.get_component(CBasePart) if c_p.base == base]
 
 
 def draw_base_part(surf: pygame.Surface, offset: pygame.Vector2, sprite: pygame.Surface,
@@ -76,11 +74,20 @@ def draw_turret(surf: pygame.Surface, offset: pygame.Vector2, frames: list[pygam
 
 
 def _destroy_base(world: esper.World, base: int) -> int:
-    """Quita la base con todas sus partes, avisa y devuelve los puntos de la base."""
-    points = world.component_for_entity(base, CPoints).points
-    pos = pygame.Vector2(world.component_for_entity(base, CTransform).pos)
-    for ent in _parts_of(world, base) + [base]:
-        world.delete_entity(ent, immediate=True)
-    esper.dispatch_event(BASE_DESTROYED, base, pos)
-    play_sound("base_destroyed")
-    return points
+    """Marca para destruir la base, que explota, y sus partes, que desaparecen con ella
+    (la torreta que acaba de caer conserva su propia explosión). Devuelve los puntos de la base."""
+    world.add_component(base, CDestroy())
+    for ent in _parts_of(world, base):
+        if not world.has_component(ent, CDestroy):
+            world.add_component(ent, CDestroy(explodes=False))
+    return world.component_for_entity(base, CPoints).points
+
+
+def system_bases_destroyed(world: esper.World) -> list[int]:
+    """Bases que caen en este frame: devuelve su índice en el nivel, para que la partida
+    recuerde que no vuelven. Si quedan otras en pie, la alerta baja un rato a VERDE (con la
+    última el nivel termina). Debe correr antes de system_destroy, mientras siguen marcadas."""
+    fallen = [c_base.index for _, (c_base, _c_d) in world.get_components(CBase, CDestroy)]
+    if fallen and len(world.get_component(CBase)) > len(fallen):
+        alert_base_destroyed(world)
+    return fallen

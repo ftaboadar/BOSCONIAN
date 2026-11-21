@@ -15,7 +15,7 @@ from src.ecs.components.c_star import CStar
 from src.ecs.components.c_transform import CTransform
 from src.ecs.systems.s_minimap import radar_rect
 from src.engine.data_loader import load_json
-from src.engine.hud import BAR_H, BAR_Y, ICONS_Y, ROWS
+from hud_cfg import BAR_H, BAR_Y, ICONS_Y, ROWS
 from src.engine.game_engine import GameEngine
 from src.engine.service_locator import color_from_cfg
 
@@ -143,7 +143,7 @@ class StageLayoutTests(unittest.TestCase):
         for key in ("instructions", "credits", "victory", "defeat", "record"):
             for line in MENU[key]["lines"] + [MENU[key]["title"]]:
                 self.assertLessEqual(len(line), STAGE_LETTERS, f"{key}: «{line}»")
-        for line in MENU["exit_confirm"]:
+        for line in MENU["exit_confirm"]["lines"]:
             self.assertLessEqual(len(line), STAGE_LETTERS, line)
         self.assertLessEqual(len(MENU["attract"]["hint"]), STAGE_LETTERS)
         for item in MENU["title_items"]:

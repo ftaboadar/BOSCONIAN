@@ -210,7 +210,7 @@ class InGameTests(SpriteTestCase):
         from src.ecs.components.c_invulnerable import CInvulnerable
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
-        scene.blast_left = 0
+        scene.clock.blast_left = 0
         scene.world.add_component(scene.player, CInvulnerable())
         for _, c_sp in scene.world.get_component(CEnemySpawner):
             c_sp.interval = 0.5

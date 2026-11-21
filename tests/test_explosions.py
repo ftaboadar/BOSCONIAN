@@ -127,7 +127,7 @@ class PlayerDeathTests(unittest.TestCase):
         ENGINE._next_scene = None
         ENGINE._apply_scene_change("PLAY")
         self.scene = ENGINE._current_scene
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
 
     def run_until_scene_change(self, max_frames=600):
         for frame in range(1, max_frames):

@@ -91,13 +91,13 @@ tools/build_web.py       arma la versión web para itch.io
 ```
 
 Patrones usados:
-- **ECS** con Esper: cada escena tiene su propio mundo.
+- **ECS** con Esper: cada escena tiene su propio mundo. La barra lateral (`CHud`, `s_hud.py`) y la persiana entre pantallas (`CShutter`, `s_shutter.py`) son las mismas en todas las escenas y viven en un mundo aparte del motor. La cuenta de BLAST OFF! y la espera tras morir (`CLevelClock`, `s_level.py`) y el input de la nave (`system_player_input`) también son sistemas.
 - **Game loop** a framerate fijo en `GameEngine`.
 - **Command** simplificado: tecla física → acción lógica, según `input.json`.
 - **Service locator**: acceso único a imágenes, sonidos, música y fuentes.
 - **Escena**: título, instrucciones, créditos, nivel y modo atractor.
 - **Archivos de configuración**: leídos y validados por `src/engine/data_loader.py`. Incluyen el panel lateral (`hud.json`), los textos de menús, pausa y finales (`menu.json`) y las reglas de colisión (`collisions.json`).
-- **Colisiones**: AABB entre componentes `CHitBox` (`s_collision.py`); qué pasa en cada choque lo decide una tabla de reglas por capas en `collisions.json` (`s_collision_rules.py`). Todo lo que se destruye pasa por `CDestroy` y explota (`s_explode.py`).
+- **Colisiones**: AABB entre componentes `CHitBox` (`s_collision.py`); qué pasa en cada choque lo decide una tabla de reglas por capas en `collisions.json` (`s_collision_rules.py`). Todo lo que se destruye pasa por `CDestroy` y lo borra `s_destroy.py`; lo destruido en un choque explota (`s_explode.py`), y lo que solo sale de la pantalla, se aleja o agota su tiempo se marca con `explodes=False` y desaparece sin más. Una regla puede traer `"explosion"` para que explote algo que no es explosivo (una bala contra una roca indestructible). La base no choca como un rectángulo: cada pieza sólida de su cuerpo es una hitbox (`hitboxes.base.boxes`).
 - **State**: IA de los enemigos (`s_enemy_state.py`). Cada tipo tiene su máquina de estados, definida en `enemies.json` (`initial_state` y `after_chase`): I persigue y luego se va (CHASE → LEAVE), P persigue y pronto deambula (CHASE → WANDER) y E va derecho (STRAIGHT).
 - **Steering behaviours**: cada estado usa seek, flee o wander (`src/engine/steering.py`) con velocidad constante, siempre mayor que la del jugador (`speed_factor` > 1 en `enemies.json`). La `difficulty` del nivel (0 a 1) define cuánto se desvían al perseguir.
 - **Enemigos I, P y E** (`s_enemy_spawner.py`): salen al azar desde cualquier dirección, fuera de la pantalla y rumbo al jugador. Valen 50, 60 y 70 puntos (`CPoints`). Con más `difficulty` salen más seguido y se permiten más a la vez; los que se alejan demasiado desaparecen. Ritmo, tope, distancias, puntos y proporción de cada tipo están en la sección `spawn` y en cada tipo de `enemies.json`.

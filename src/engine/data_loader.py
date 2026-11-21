@@ -270,7 +270,8 @@ def load_story() -> dict:
     evento que lo causa, y no a mitad de la animación.
     """
     path = os.path.join(CFG_DIR, "story.json")
-    cfg = load_entity_cfg("story", ("grace_seconds",) + STORY_SECTIONS)
+    cfg = load_entity_cfg("story", ("grace_seconds", "logo") + STORY_SECTIONS)
+    require_keys(cfg["logo"], ("image", "halo_max_alpha", "halo_min_white"), f"{path} logo")
     colors = load_json(os.path.join(CFG_DIR, "menu.json"))["colors"]
     for name in STORY_SECTIONS:
         scene = cfg[name]

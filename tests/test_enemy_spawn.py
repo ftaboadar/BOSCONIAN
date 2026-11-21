@@ -22,6 +22,9 @@ from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_animation import CAnimation
+from src.ecs.systems.s_destroy import system_destroy
+from src.ecs.systems.s_explode import system_explode
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.engine.camera import wrap_delta
 from src.engine import data_loader
@@ -122,6 +125,10 @@ class EnemySpawnTests(unittest.TestCase):
         far = create_enemy(self.world, "I", pygame.Vector2(400, 1000), pygame.Vector2(1, 0),
                            CFG, PLAYER_SPEED, 1.0, self.rng)    # a 380 px
         system_enemy_despawn(self.world, self.player, WORLD, CFG["spawn"]["despawn_distance"])
+        self.assertEqual(len(self.world.get_component(CAnimation)), 0)  # se van sin explotar
+        system_explode(self.world, load_json("assets/cfg/explosions.json"))
+        system_destroy(self.world)
+        self.assertEqual(len(self.world.get_component(CAnimation)), 0)
         self.assertTrue(self.world.entity_exists(near))
         self.assertFalse(self.world.entity_exists(far))
 
@@ -206,13 +213,13 @@ class PlaySceneEnemyTests(unittest.TestCase):
         from src.engine.input.command import Phase
         self.run_for(self.engine.cfg_world["blast_off"]["seconds"] - 0.1)
         self.assertEqual(self.enemies(), 0)
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         self.scene.do_action("PAUSE", Phase.START)
         self.run_for(30.0)
         self.assertEqual(self.enemies(), 0)
 
     def test_en_el_nivel_salen_enemigos_y_se_mueven(self):
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         # La nave no puede morir (sin ella no salen enemigos) y los enemigos pueden chocar con
         # obstáculos y desaparecer: se mira el máximo, fotograma a fotograma, no el final.
         self.scene.world.add_component(self.scene.player, CInvulnerable())

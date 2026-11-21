@@ -60,7 +60,7 @@ class CombatCycleTestCase(unittest.TestCase):
             self.engine = GameEngine()
             self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         self.world = self.scene.world
         self.state = self.engine.state
         for _, c_sp in self.world.get_component(CEnemySpawner):
@@ -171,17 +171,17 @@ class LevelProgressTests(unittest.TestCase):
         self.engine._next_scene = None
         self.engine._apply_scene_change("PLAY")
         scene = self.engine._current_scene
-        scene.blast_left = 0
+        scene.clock.blast_left = 0
         return scene
 
     def destroy_first_base(self):
-        base = next(b for b, i in self.scene.base_index.items() if i == 0)
+        base = next(b for b, c_b in self.scene.world.get_component(CBase) if c_b.index == 0)
         core = next(ent for ent, c_p in self.scene.world.get_component(CBasePart)
                     if c_p.base == base and c_p.kind == "core")
         along = UP if self.scene.world.component_for_entity(base, CBase).orientation == "vertical" \
             else pygame.Vector2(1, 0)
         damage_base_part(self.scene.world, core, along)
-        self.scene._explode_destroyed_bases()
+        self.scene.do_update(0.0)  # el frame en que cae: el nivel lo anota en la partida
 
     def test_la_base_destruida_no_vuelve_al_perder_una_vida(self):
         total = self.scene.bases_remaining()
@@ -190,7 +190,7 @@ class LevelProgressTests(unittest.TestCase):
         self.assertEqual(after_player_died(self.state), "PLAY")
         self.scene = self.open()
         self.assertEqual(self.scene.bases_remaining(), total - 1)
-        self.assertNotIn(0, self.scene.base_index.values())
+        self.assertNotIn(0, [c_b.index for _, c_b in self.scene.world.get_component(CBase)])
 
     def test_el_reloj_de_la_alerta_roja_no_se_reinicia_al_perder_una_vida(self):
         self.scene.do_update(1.0)
@@ -216,7 +216,7 @@ class LevelProgressTests(unittest.TestCase):
         self.state.bases_destroyed.add(0)
         self.engine._apply_scene_change("ATTRACT")
         demo = self.engine._current_scene
-        self.assertIn(0, demo.base_index.values())
+        self.assertIn(0, [c_b.index for _, c_b in demo.world.get_component(CBase)])
         demo.do_update(1.0)
         self.assertEqual(self.state.level_seconds, 0.0)
 

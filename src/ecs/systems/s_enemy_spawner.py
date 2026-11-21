@@ -6,6 +6,7 @@ import esper
 import pygame
 
 from src.create.prefab_creator import create_enemy
+from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_transform import CTransform
@@ -43,8 +44,9 @@ def system_enemy_spawner(world: esper.World, player_pos: pygame.Vector2,
 
 def system_enemy_despawn(world: esper.World, player_pos: pygame.Vector2,
                          world_size: pygame.Vector2, max_distance: float) -> None:
-    """Quita los enemigos que se alejaron del jugador más de `max_distance` px."""
-    gone = [ent for ent, (c_t, _c_s) in world.get_components(CTransform, CEnemyState)
-            if wrap_delta(c_t.pos - player_pos, world_size).length() > max_distance]
-    for ent in gone:
-        world.delete_entity(ent, immediate=True)
+    """Marca con CDestroy (sin explosión) los enemigos que se alejaron del jugador más de
+    `max_distance` px."""
+    for ent, (c_t, _c_s) in world.get_components(CTransform, CEnemyState):
+        if (wrap_delta(c_t.pos - player_pos, world_size).length() > max_distance
+                and not world.has_component(ent, CDestroy)):
+            world.add_component(ent, CDestroy(explodes=False))

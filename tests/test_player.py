@@ -74,7 +74,7 @@ class PlaySceneInputTests(unittest.TestCase):
         self.engine = GameEngine()
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
-        self.scene.blast_left = 0.0  # sin cuenta regresiva
+        self.scene.clock.blast_left = 0.0  # sin cuenta regresiva
         self.ship = self.scene.world.component_for_entity(self.scene.player, CPlayerShip)
         # Estas pruebas miden el movimiento: los enemigos que salen no deben matar la nave.
         self.scene.world.add_component(self.scene.player, CInvulnerable())

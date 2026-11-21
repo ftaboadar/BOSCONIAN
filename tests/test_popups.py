@@ -17,6 +17,7 @@ from src.ecs.components.c_lifetime import CLifetime
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.systems.s_destroy import system_destroy
 from src.ecs.systems.s_lifetime import system_lifetime
 from src.ecs.systems.s_movement import system_movement
 from src.engine.data_loader import load_enemies, load_json
@@ -53,12 +54,14 @@ class PopupPrefabTests(unittest.TestCase):
         for _ in range(round(POPUP["seconds"] / 2 / DT)):
             system_lifetime(self.world, DT)
             system_movement(self.world, DT)
+            system_destroy(self.world)
         self.assertTrue(self.world.entity_exists(ent))
         y = self.world.component_for_entity(ent, CTransform).pos.y
         self.assertAlmostEqual(y, 100 - POPUP["rise_speed"] * POPUP["seconds"] / 2, delta=1.0)
         for _ in range(round(POPUP["seconds"] / DT)):
             system_lifetime(self.world, DT)
             system_movement(self.world, DT)
+            system_destroy(self.world)
         self.assertFalse(self.world.entity_exists(ent))
 
     def test_el_color_sale_de_la_configuracion(self):

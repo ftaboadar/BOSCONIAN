@@ -28,7 +28,7 @@ from src.ecs.components.c_enemy_spawner import CEnemySpawner
 from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
-from src.ecs.systems.s_base_damage import damage_base_part
+from base_helpers import hit_base_part
 from src.ecs.systems.s_collision import system_collision
 from src.ecs.systems.s_collision_rules import load_rules, system_collision_rules
 from src.ecs.systems.s_destroy import system_destroy
@@ -161,7 +161,7 @@ class TurretTests(BehaviorTestCase):
     def test_una_torreta_destruida_no_dispara_ni_tapa_sus_restos(self):
         base = create_base(self.world, POS, "vertical", self.cfg, rng=self.rng)
         for turret in self.parts(base, "turret")[1:]:
-            damage_base_part(self.world, turret, pygame.Vector2(0, -1))
+            hit_base_part(self.world, turret, pygame.Vector2(0, -1))
         self.run_turrets(2.1, POS + pygame.Vector2(-30, -80))  # del lado de la que queda
         self.assertIn(len(self.bullets()), (1, 2, 3))  # solo dispara esa
 
@@ -173,7 +173,7 @@ class TurretTests(BehaviorTestCase):
             self.run_turrets(0.5, player)
             for turret in self.parts(base, "turret"):
                 if len(self.parts(base, "turret")) > 1:
-                    damage_base_part(self.world, turret, pygame.Vector2(0, -1))
+                    hit_base_part(self.world, turret, pygame.Vector2(0, -1))
             self.run_turrets(DT, FAR)  # la que queda vuelve a cerrarse
             images.append(self.image(base))
         self.assertEqual(images[0], images[1])
@@ -267,7 +267,7 @@ class CoreTests(BehaviorTestCase):
         self.run_cores(20.0)
         self.assertEqual(self.image(base), opened)
         self.assertEqual(self.enemies(), [])
-        self.assertEqual(damage_base_part(self.world, self.parts(base, "core")[0], UP), 1500)
+        self.assertEqual(hit_base_part(self.world, self.parts(base, "core")[0], UP), 1500)
 
     def test_el_nucleo_con_ciclo_se_cierra_y_se_vuelve_a_abrir(self):
         base = create_base(self.world, POS, "vertical", self.cfg, "cycle", 1.0, self.rng)
@@ -309,10 +309,10 @@ class CoreTests(BehaviorTestCase):
         base = create_base(self.world, POS, "vertical", self.cfg, "cycle", 1.0, self.rng)
         core = self.parts(base, "core")[0]
         self.run_cores(1.0)
-        self.assertEqual(damage_base_part(self.world, core, UP), 0)
+        self.assertEqual(hit_base_part(self.world, core, UP), 0)
         self.assertTrue(self.world.entity_exists(base))
         self.run_cores(1.6)
-        self.assertEqual(damage_base_part(self.world, core, UP), 1500)
+        self.assertEqual(hit_base_part(self.world, core, UP), 1500)
 
     def test_con_mas_dificultad_pasa_menos_tiempo_cerrado(self):
         create_base(self.world, POS, "vertical", self.cfg, "cycle", 0.0, self.rng)
@@ -324,7 +324,7 @@ class CoreTests(BehaviorTestCase):
     def test_una_base_destruida_deja_de_disparar(self):
         base = create_base(self.world, POS, "vertical", self.cfg, "cycle", 1.0, self.rng)
         for turret in self.parts(base, "turret"):
-            damage_base_part(self.world, turret, UP)
+            hit_base_part(self.world, turret, UP)
         self.run_cores(10.0)
         self.assertEqual(self.enemies(), [])
 
@@ -389,7 +389,7 @@ class PlaySceneBehaviorTests(unittest.TestCase):
             self.addCleanup(engine._clean)
             engine._apply_scene_change("PLAY")
         self.scene = engine._current_scene
-        self.scene.blast_left = 0
+        self.scene.clock.blast_left = 0
         # Sin enemigos del spawner: los que haya salieron de un núcleo.
         self.scene.cfg_enemies["spawn"]["interval_seconds"] = {"easy": 999, "hard": 999}
         for _, c_sp in self.scene.world.get_component(CEnemySpawner):

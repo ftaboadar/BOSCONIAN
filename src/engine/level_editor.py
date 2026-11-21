@@ -24,8 +24,8 @@ class LevelEditor:
         self.world_size = pygame.Vector2(world_size)
         self.tracks = list(tracks)  # pistas de música disponibles para el nivel
         self.difficulties = sorted(int(k) for k in load_json("assets/cfg/difficulty.json")["levels"])
-        hitbox = load_json("assets/cfg/collisions.json")["hitboxes"]["base"]["size"]
-        self.base_size = pygame.Vector2(hitbox["w"], hitbox["h"])  # de la base vertical
+        rect = load_json("assets/cfg/bases.json")["rect"]
+        self.base_size = pygame.Vector2(rect["w"], rect["h"])  # de la base vertical
         self.orientation = "vertical"  # con la que se ponen las bases nuevas
         self.cursor = self.world_size / 2
         self.number = number

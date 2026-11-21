@@ -2,6 +2,7 @@ import esper
 import pygame
 
 from src.create.prefab_creator import create_player_bullet
+from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_player_bullet import CPlayerBullet
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_transform import CTransform
@@ -39,8 +40,9 @@ def bullet_offscreen(delta: pygame.Vector2, viewport: pygame.Rect, margin: float
 
 
 def system_bullet_cleanup(world: esper.World, camera: Camera, margin: float) -> None:
-    """Las balas amigas se destruyen al salir de la pantalla (no dan la vuelta al mundo)."""
+    """Las balas amigas que salen de la pantalla se marcan con CDestroy, sin explosión (no dan
+    la vuelta al mundo)."""
     for ent, (c_t, _c_b) in world.get_components(CTransform, CPlayerBullet):
         delta = wrap_delta(c_t.pos - camera.pos, camera.world_size)
-        if bullet_offscreen(delta, camera.viewport, margin):
-            world.delete_entity(ent, immediate=True)
+        if bullet_offscreen(delta, camera.viewport, margin) and not world.has_component(ent, CDestroy):
+            world.add_component(ent, CDestroy(explodes=False))

@@ -34,7 +34,7 @@ class WeaponSceneTests(unittest.TestCase):
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
         self.world = self.scene.world
-        self.scene.blast_left = 0  # sin la cuenta de BLAST OFF!, que congela el juego
+        self.scene.clock.blast_left = 0  # sin la cuenta de BLAST OFF!, que congela el juego
         # Estas pruebas cubren el disparo básico; el especial tiene su propia clase.
         self.world.component_for_entity(self.scene.player, CWeapon).special = False
 
@@ -117,7 +117,7 @@ class SpecialShotTests(unittest.TestCase):
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene
         self.world = self.scene.world
-        self.scene.blast_left = 0  # sin la cuenta de BLAST OFF!, que congela el juego
+        self.scene.clock.blast_left = 0  # sin la cuenta de BLAST OFF!, que congela el juego
 
     def tearDown(self):
         self.engine._clean()

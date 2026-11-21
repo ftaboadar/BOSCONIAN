@@ -11,7 +11,11 @@ from src.engine.scenes.info_scene import InfoScene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 class _EndScene(InfoScene):
-    HINT = "PULSA UNA TECLA"
+    """Página de fin de partida: a sus líneas les siguen las cifras de la partida (`stats` en
+    menu.json, con campos de GameState entre llaves)."""
+
+    def hint_text(self) -> str:
+        return self.engine.cfg_menu["end_hint"]
 
     def do_create(self) -> None:
         super().do_create()
@@ -23,8 +27,10 @@ class _EndScene(InfoScene):
     def page(self) -> dict:
         base = self.engine.cfg_menu[self.CFG_KEY]
         s = self.engine.state
-        extra = ["", f"PUNTAJE {s.score}", f"VIDAS {s.lives}", f"CONTINUACIONES {s.continues_used}"]
-        return {"title": base["title"], "lines": base["lines"] + extra}
+        fields = {"score": s.score, "hi_score": s.hi_score, "lives_used": s.lives_used,
+                  "continues_used": s.continues_used}
+        stats = [text.format(**fields) for text in base["stats"]]
+        return {"title": base["title"], "lines": base["lines"] + [""] + stats}
 
 
 class VictoryScene(_EndScene):
@@ -55,11 +61,6 @@ class RecordScene(VictoryScene):
 
     CFG_KEY = "record"
 
-    def page(self) -> dict:
-        base = self.engine.cfg_menu[self.CFG_KEY]
-        s = self.engine.state
-        return {"title": base["title"], "lines": base["lines"] + ["", f"HI-SCORE {s.hi_score}"]}
-
     def do_create(self) -> None:
         super().do_create()
         play_sound("extra_life")
@@ -78,6 +79,7 @@ class DefeatScene(_EndScene):
         super().do_create()
         self.remaining = float(self.engine.state.cfg["continue_seconds"])
         cfg = self.engine.cfg_menu
+        self.cfg_defeat = cfg[self.CFG_KEY]
         self.font = ServiceLocator.fonts.get("main")
         self.color = color_from_cfg(cfg["colors"]["selected"])
         self.hint = self.font.render("", False, self.color)  # la cuenta se dibuja cada frame
@@ -100,6 +102,8 @@ class DefeatScene(_EndScene):
     def do_draw(self, screen: pygame.Surface) -> None:
         super().do_draw(screen)
         seconds = max(0, math.ceil(self.remaining))
-        text = self.font.render(f"ENTER: CONTINUAR {seconds}", False, self.color)
+        text = self.font.render(self.cfg_defeat["continue_text"].format(seconds=seconds), False,
+                                self.color)
         stage = self.engine.viewport
-        screen.blit(text, text.get_rect(center=(stage.centerx, stage.bottom - 32)))
+        screen.blit(text, text.get_rect(
+            center=(stage.centerx, stage.bottom - self.cfg_defeat["continue_bottom"])))

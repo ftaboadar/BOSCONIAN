@@ -8,12 +8,15 @@
         "subtitle": { "r": 96, "g": 16, "b": 16 }
     },
     "line_height": 14,
+    "level_label": "NIVEL < {level} >",
+    "page": { "title_y": 24, "lines_top": 52, "hint_bottom": 16, "hint": "ENTER: VOLVER" },
     "attract": {
         "idle_seconds": 15,
         "demo_seconds": 12,
         "instructions_seconds": 8,
         "turn_every": 1.5,
-        "hint": "PULSA UNA TECLA"
+        "hint": "PULSA UNA TECLA",
+        "hint_bottom": 8
     },
     "title_items": [
         { "label": "JUGAR", "action": "PLAY" },
@@ -33,26 +36,34 @@
         "title": "JUEGO PAUSADO",
         "title_y": 48,
         "menu_top": 80,
-        "page_hint": "ENTER: VOLVER",
         "extra_items": [
             { "label": "SALIR AL TITULO", "action": "EXIT" }
         ]
     },
     "end_grace_seconds": 0.5,
+    "end_hint": "PULSA UNA TECLA",
     "victory": {
         "title": "VICTORIA",
         "music": "starshooter",
-        "lines": ["HAS COMPLETADO TODOS", "LOS NIVELES"]
+        "lines": ["HAS COMPLETADO TODOS", "LOS NIVELES"],
+        "stats": ["PUNTAJE {score}", "VIDAS USADAS {lives_used}", "CONTINUACIONES {continues_used}"]
     },
     "record": {
         "title": "NUEVO RECORD",
         "music": "starshooter",
-        "lines": ["FELICITACIONES", "SUPERASTE EL HI-SCORE"]
+        "lines": ["FELICITACIONES", "SUPERASTE EL HI-SCORE"],
+        "stats": ["HI-SCORE {hi_score}"]
     },
     "defeat": {
         "title": "GAME OVER",
         "music": "night_tune",
-        "lines": ["TE QUEDASTE SIN VIDAS"]
+        "lines": ["TE QUEDASTE SIN VIDAS"],
+        "stats": ["PUNTAJE {score}", "VIDAS USADAS {lives_used}", "CONTINUACIONES {continues_used}"],
+        "continue_text": "ENTER: CONTINUAR {seconds}",
+        "continue_bottom": 32
     },
-    "exit_confirm": ["SALIR AL TITULO?", "SE PERDERA", "EL PROGRESO", "ENTER: SI", "ESC: NO"]
+    "exit_confirm": {
+        "top": -32,
+        "lines": ["SALIR AL TITULO?", "SE PERDERA", "EL PROGRESO", "ENTER: SI", "ESC: NO"]
+    }
 }

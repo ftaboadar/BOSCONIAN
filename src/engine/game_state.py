@@ -31,6 +31,7 @@ class GameState:
         self.lives = self.cfg["lives"]
         self.score = 0
         self.continues_used = 0
+        self.lives_used = 0  # naves perdidas en la partida (se muestra al terminar)
         self.game_over = False
         self.next_extra_life = self.cfg["extra_life_first"]
         self.record_to_beat = self.hi_score  # el récord con el que empieza esta partida (#43)
@@ -64,6 +65,7 @@ class GameState:
     def lose_life(self) -> int:
         """Descuenta una vida. Con el contador en 0 aún queda la última nave: solo se acaba
         la partida al morir estando en 0 (4 vidas + la del cero = 5 intentos)."""
+        self.lives_used += 1
         if self.lives == 0:
             self.game_over = True
         else:
