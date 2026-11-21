@@ -1,10 +1,8 @@
 {
     "round": 1,
     "difficulty": 1,
-    "player_start": {
-        "x": 512,
-        "y": 512
-    },
+    "core_mode": "open",
+    "player_start": { "x": 512, "y": 512 },
     "bases": [
         {
             "x": 300,
