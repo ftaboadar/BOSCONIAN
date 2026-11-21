@@ -14,7 +14,7 @@ class InfoScene(Scene):
     HINT = "ENTER: VOLVER"
 
     def do_create(self) -> None:
-        self.area = self.engine.screen.get_rect()
+        self.area = self.engine.viewport  # el campo de juego; a su derecha va la barra lateral
         create_stars(self.world, self.engine.cfg_world, self.area)
         cfg = self.engine.cfg_menu
         page = self.page()
@@ -43,10 +43,10 @@ class InfoScene(Scene):
 
     def do_draw(self, screen: pygame.Surface) -> None:
         system_star_rendering(self.world, screen)
-        cx = screen.get_width() // 2
+        cx = self.engine.viewport.centerx
         for surf, y in self.lines:
             screen.blit(surf, surf.get_rect(center=(cx, y)))
-        screen.blit(self.hint, self.hint.get_rect(center=(cx, screen.get_height() - 16)))
+        screen.blit(self.hint, self.hint.get_rect(center=(cx, self.engine.viewport.bottom - 16)))
 
 
 class InstructionsScene(InfoScene):

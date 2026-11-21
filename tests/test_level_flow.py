@@ -91,22 +91,19 @@ class SceneIntegrationTests(unittest.TestCase):
         self.assertEqual(self.engine._next_scene, "PLAY")
 
     def test_hud_se_dibuja_y_cambia_con_el_puntaje(self):
-        screen = pygame.Surface((256, 208))
-        self.scene.do_draw(screen)
-        before = pygame.image.tobytes(screen, "RGB")
+        """La barra lateral la dibuja el motor tras la escena: se mira la pantalla completa."""
+        self.engine._draw()
+        before = pygame.image.tobytes(self.engine.screen, "RGB")
         self.engine.state.add_score(1230)
-        screen.fill((0, 0, 0))
-        self.scene.do_draw(screen)
-        self.assertNotEqual(before, pygame.image.tobytes(screen, "RGB"))
+        self.engine._draw()
+        self.assertNotEqual(before, pygame.image.tobytes(self.engine.screen, "RGB"))
 
     def test_hud_con_mas_de_cuatro_vidas_muestra_el_total(self):
-        screen = pygame.Surface((256, 208))
-        self.scene.do_draw(screen)
-        base = pygame.image.tobytes(screen, "RGB")
+        self.engine._draw()
+        base = pygame.image.tobytes(self.engine.screen, "RGB")
         self.engine.state.lives = 6
-        screen.fill((0, 0, 0))
-        self.scene.do_draw(screen)
-        self.assertNotEqual(base, pygame.image.tobytes(screen, "RGB"))
+        self.engine._draw()
+        self.assertNotEqual(base, pygame.image.tobytes(self.engine.screen, "RGB"))
 
     def test_jugar_desde_el_titulo_reinicia_la_partida_y_conserva_record(self):
         s = self.engine.state

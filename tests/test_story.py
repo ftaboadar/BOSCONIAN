@@ -72,6 +72,12 @@ class StoryConfigTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             story_with(lambda c: c["intro"]["events"].append(bad))
 
+    def test_el_ancho_de_una_imagen_debe_ser_un_entero_positivo(self):
+        for bad in (0, -5, "156", 1.5):
+            with self.assertRaises(ConfigError, msg=str(bad)):
+                story_with(lambda c: c["intro"]["events"][0].update(width=bad))
+        self.assertEqual(story_with(lambda c: c["intro"]["events"][0].update(width=100))["intro"]["events"][0]["width"], 100)
+
     def test_duracion_no_positiva_falla(self):
         with self.assertRaises(ConfigError):
             story_with(lambda c: c["cutscene"].update(duration=0))

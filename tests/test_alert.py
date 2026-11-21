@@ -26,6 +26,7 @@ from src.ecs.systems.s_base_damage import damage_base_part
 from src.engine.data_loader import level_numbers, load_bases, load_enemies, load_level
 from src.engine.difficulty import difficulty_params
 from src.engine.game_engine import GameEngine
+from src.engine.hud import BAR_Y, CONDITION_COLORS
 from src.engine.service_locator import ServiceLocator
 
 GameEngine()  # inicia pygame y los servicios
@@ -269,17 +270,52 @@ class PlaySceneAlertTests(Recorder, unittest.TestCase):
         self.assertEqual(self.alert.level, AlertLevel.GREEN)
         self.assertIn("alert_green", self.played)
 
+    def bar_color(self):
+        """Color de la barra CONDITION en la pantalla completa (la dibuja el motor tras la escena)."""
+        self.engine._draw()
+        panel = self.engine.hud.panel
+        return tuple(self.engine.screen.get_at((panel.left + 1, BAR_Y + 1)))[:3]
+
     def test_el_panel_muestra_la_alerta_con_su_color(self):
         self.scene.blast_left = 0
         seen = []
         for level in AlertLevel:
             self.alert.level = level
-            screen = pygame.Surface((256, 208))
-            self.scene.do_draw(screen)
-            panel = screen.subsurface(pygame.Rect(176, 163, 80, 8))
-            colors = {tuple(panel.get_at((x, y)))[:3] for x in range(80) for y in range(8)}
-            seen.append(colors - {(0, 0, 0)})
-        self.assertEqual(seen, [{(0, 255, 0)}, {(255, 220, 0)}, {(255, 60, 60)}])
+            self.scene.do_update(DT)  # la escena le pasa a la barra el nivel de la alerta
+            seen.append(self.bar_color())
+        self.assertEqual(seen, [tuple(CONDITION_COLORS[level.name])[:3] for level in AlertLevel])
+        self.assertEqual(len(set(seen)), 3)  # tres colores distintos
+
+    def test_el_nombre_de_la_barra_sigue_a_la_alerta_del_nivel(self):
+        self.scene.blast_left = 0
+        for level in AlertLevel:
+            self.alert.level = level
+            self.scene.do_update(DT)
+            self.assertEqual(self.engine.state.alert, level.name)
+
+    def test_la_barra_empieza_en_verde_y_pasa_a_amarilla_al_cumplirse_el_tiempo(self):
+        self.run_for(self.engine.cfg_world["blast_off"]["seconds"] + 0.1)
+        self.assertEqual(self.engine.state.alert, "GREEN")
+        self.assertEqual(self.bar_color(), tuple(CONDITION_COLORS["GREEN"])[:3])
+        self.run_for(self.params["yellow_after"] + 0.5)
+        self.assertEqual(self.alert.level, AlertLevel.YELLOW)
+        self.assertEqual(self.engine.state.alert, "YELLOW")
+        self.assertEqual(self.bar_color(), tuple(CONDITION_COLORS["YELLOW"])[:3])
+
+    def test_al_destruir_una_base_la_barra_vuelve_a_verde_y_en_roja_ya_no_baja(self):
+        self.run_for(self.engine.cfg_world["blast_off"]["seconds"] + self.params["yellow_after"] + 0.5)
+        self.assertEqual(self.engine.state.alert, "YELLOW")
+        alert_base_destroyed(self.world)
+        self.scene.do_update(DT)
+        self.assertEqual(self.engine.state.alert, "GREEN")
+        self.alert.level = AlertLevel.RED
+        alert_base_destroyed(self.world)
+        self.scene.do_update(DT)
+        self.assertEqual(self.engine.state.alert, "RED")
+
+    def test_el_indicador_de_texto_antiguo_ya_no_existe(self):
+        """La condición se muestra solo en la barra del original, no con un texto aparte."""
+        self.assertFalse(hasattr(self.engine.hud, "draw_alert"))
 
 
 if __name__ == "__main__":

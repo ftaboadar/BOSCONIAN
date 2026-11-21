@@ -8,6 +8,7 @@ import esper
 import pygame
 
 from src.ecs.components.c_alert import CAlert
+from src.ecs.components.c_angle_sprites import CAngleSprites
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_base_core import CBaseCore
@@ -31,17 +32,25 @@ from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
-from src.ecs.systems.s_enemy_sprite import heading_key
+from src.ecs.systems.s_enemy_sprite import heading_index
 from src.ecs.systems.s_enemy_state import INITIAL_STATE
 from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
-def create_image(world: esper.World, image_name: str, center: pygame.Vector2) -> int:
-    return world.create_entity(
-        CTransform(center),
-        CSurface(ServiceLocator.images.get(image_name)),
-    )
+def scaled_to_width(surf: pygame.Surface, width: int) -> pygame.Surface:
+    """La imagen a `width` px de ancho, conservando la proporción y suavizando el escalado."""
+    height = max(1, round(surf.get_height() * width / surf.get_width()))
+    return pygame.transform.smoothscale(surf, (width, height))
+
+
+def create_image(world: esper.World, image_name: str, center: pygame.Vector2,
+                 width: int | None = None) -> int:
+    """Imagen de interfaz centrada en `center`; con `width` se reduce (o amplía) a ese ancho."""
+    surf = ServiceLocator.images.get(image_name)
+    if width is not None:
+        surf = scaled_to_width(surf, width)
+    return world.create_entity(CTransform(center), CSurface(surf))
 
 
 def create_text(world: esper.World, text: str, color: pygame.Color, center: pygame.Vector2) -> int:
@@ -57,6 +66,18 @@ def create_special_shot_message(world: esper.World, cfg: dict, active: bool, cen
                          pygame.Vector2(center_x, m["y"]))
     world.add_component(entity, CLifetime(m["duration"]))
     return entity
+
+
+def create_score_popup(world: esper.World, pos: pygame.Vector2, points: int, cfg: dict) -> int:
+    """Cartel con los puntos ganados, en el lugar donde se destruyó algo.
+
+    Sube despacio y desaparece solo pasado `cfg["seconds"]`. Es una entidad del mundo: se
+    mueve con la cámara, no con la pantalla."""
+    surf = ServiceLocator.fonts.get("main").render(str(points), False, color_from_cfg(cfg["color"]))
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(0, -cfg["rise_speed"])),
+        CSurface(surf), CWorld(), CLifetime(cfg["seconds"]),
+    )
 
 
 def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
@@ -99,6 +120,12 @@ def heading_sprites(base: pygame.Surface) -> dict[tuple[int, int], pygame.Surfac
         (dx, dy): pygame.transform.rotate(base, round(math.degrees(math.atan2(-dx, -dy))))
         for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)
     }
+
+
+def angle_sprites(base: pygame.Surface, steps: int) -> list[pygame.Surface]:
+    """`steps` variantes de un sprite que mira hacia arriba, girado en pasos iguales en sentido
+    horario (con 16, cada 22,5 grados)."""
+    return [pygame.transform.rotate(base, -k * 360 / steps) for k in range(steps)]
 
 
 def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
@@ -171,7 +198,8 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
     r = type_cfg["sprite"]
     sprite = ServiceLocator.images.get("ships").subsurface(
         pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
-    sprites = heading_sprites(sprite)
+    steps = cfg["heading_steps"]
+    sprites = angle_sprites(sprite, steps)
     max_dev = _by_difficulty(cfg["deviation_degrees"], difficulty)
     deviation = rng.choice((-1, 1)) * rng.uniform(max_dev / 2, max_dev)
     heading = pygame.Vector2(direction)
@@ -180,7 +208,7 @@ def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: 
     return world.create_entity(
         CTransform(pygame.Vector2(pos)),
         CVelocity(heading.normalize() * speed),
-        CSurface(sprites[heading_key(heading)]), CHeadingSprites(sprites), CWorld(),
+        CSurface(sprites[heading_index(heading, steps)]), CAngleSprites(sprites), CWorld(),
         CSteering(type_cfg.get("turn_rate", 0), deviation, type_cfg.get("wander")),
         CEnemyState(kind, INITIAL_STATE[kind], type_cfg.get("chase_seconds", 0)),
         CPoints(type_cfg["points"]), create_hitbox("enemy"), CExplosive("simple"),

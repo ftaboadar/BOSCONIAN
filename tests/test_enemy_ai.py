@@ -29,6 +29,7 @@ DT = 1 / 60
 SPRITE = {"x": 0, "y": 111, "w": 14, "h": 14}  # una nave de naves.png
 
 CFG = {
+    "heading_steps": 16,
     "deviation_degrees": {"easy": 60, "hard": 0},
     "types": {
         "I": {"speed_factor": 1.2, "turn_rate": 180, "chase_seconds": 3.0, "points": 50,
