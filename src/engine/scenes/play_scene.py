@@ -264,7 +264,8 @@ class PlayScene(Scene):
         system_enemy_bullets(self.world, self.engine.world_size, delta_time)
         collisions = system_collision(self.world, self.engine.world_size)
         points = system_collision_rules(self.world, collisions, self.collision_rules,
-                                        self.engine.world_size)
+                                        self.engine.world_size,
+                                        self.engine.cfg_world["score_popup"])
         if points:
             lives = self.engine.state.lives
             self.engine.state.add_score(points)

@@ -48,6 +48,7 @@ class EnemyPointsTests(unittest.TestCase):
 SPRITE = {"x": 0, "y": 111, "w": 14, "h": 14}  # una nave de naves.png
 
 CFG = {
+    "heading_steps": 16,
     "deviation_degrees": {"easy": 60, "hard": 0},
     "spawn": {
         "interval_seconds": {"easy": 2.0, "hard": 0.5},

@@ -1,4 +1,5 @@
 {
+    "heading_steps": 16,
     "deviation_degrees": { "easy": 50, "hard": 5 },
     "spawn": {
         "interval_seconds": { "easy": 5.0, "hard": 1.0 },
