@@ -1,5 +1,6 @@
 """Cargadores de datos: leen y validan los archivos JSON de assets/cfg."""
 
+import copy
 import json
 import os
 import re
@@ -53,7 +54,13 @@ def level_numbers() -> list[int]:
 def load_level(number: int) -> dict:
     """Carga y valida el nivel `number` (1 = level_01.json)."""
     path = level_path(number)
-    level = load_json(path)
+    return validate_level(load_json(path), path)
+
+
+def validate_level(level: dict, path: str) -> dict:
+    """Valida un nivel (cargado o armado por el editor) y le pone los valores por defecto.
+
+    `path` solo sirve para nombrar el origen en los mensajes de error."""
     require_keys(level, ("round", "player_start", "bases"), path)
     require_keys(level["player_start"], ("x", "y"), f"{path} player_start")
     if "difficulty" in level and (not isinstance(level["difficulty"], int) or level["difficulty"] < 1):
@@ -80,6 +87,46 @@ def load_level(number: int) -> dict:
     if level["core_mode"] not in CORE_MODES:
         raise ConfigError(f"{path}: core_mode debe ser {' o '.join(CORE_MODES)}")
     return level
+
+
+LEVEL_KEY_ORDER = ("round", "difficulty", "core_mode", "player_start", "bases", "obstacles",
+                   "special_shot", "music")
+
+
+def _point(p: dict) -> str:
+    return "{ " + ", ".join(f'"{k}": {json.dumps(v)}' for k, v in p.items()) + " }"
+
+
+def format_level(level: dict) -> str:
+    """Texto JSON de un nivel con el mismo estilo que los archivos de assets/cfg/levels:
+    una línea por base y por punto, y las claves en un orden fijo."""
+    keys = [k for k in LEVEL_KEY_ORDER if k in level] + [k for k in level if k not in LEVEL_KEY_ORDER]
+    lines = []
+    for key in keys:
+        value = level[key]
+        if key == "bases":
+            rows = ",\n".join("        " + _point(b) for b in value)
+            lines.append(f'    "bases": [\n{rows}\n    ]' if value else '    "bases": []')
+        elif isinstance(value, dict):
+            lines.append(f'    "{key}": {_point(value)}')
+        else:
+            lines.append(f'    "{key}": {json.dumps(value)}')
+    return "{\n" + ",\n".join(lines) + "\n}\n"
+
+
+def save_level(number: int, level: dict) -> str:
+    """Valida y guarda el nivel `number` en su archivo (lo crea si no existe) y devuelve la ruta.
+
+    Si el nivel no es válido lanza ConfigError y no toca el archivo existente. La escritura es
+    atómica: el archivo nunca queda a medias."""
+    path = level_path(number)
+    validate_level(copy.deepcopy(level), path)
+    os.makedirs(LEVELS_DIR, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(format_level(level))
+    os.replace(tmp, path)
+    return path
 
 
 def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:

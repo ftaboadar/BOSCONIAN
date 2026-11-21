@@ -9,6 +9,15 @@
         "PAUSE": "K_p",
         "SELECT": "K_RETURN",
         "BACK": "K_ESCAPE",
-        "CHEAT": "K_F1"
+        "CHEAT": "K_F1",
+        "EDITOR": "K_F2",
+        "EDIT_SAVE": "K_s",
+        "EDIT_LOAD": "K_l",
+        "EDIT_PREV": "K_PAGEUP",
+        "EDIT_NEXT": "K_PAGEDOWN",
+        "EDIT_DIFFICULTY": "K_d",
+        "EDIT_MUSIC": "K_m",
+        "EDIT_SPECIAL": "K_t",
+        "EDIT_HELP": "K_h"
     }
 }

@@ -6,6 +6,7 @@ from src.engine.data_loader import load_json, load_resources
 from src.engine.game_state import GameState
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
+from src.engine.scenes.editor_scene import EditorScene
 from src.engine.scenes.end_scenes import DefeatScene, RecordScene, VictoryScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
@@ -19,7 +20,7 @@ class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
               "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
               "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene,
-              "INTRO": IntroScene, "CUTSCENE": CutsceneScene,
+              "INTRO": IntroScene, "CUTSCENE": CutsceneScene, "EDITOR": EditorScene,
               "VICTORY": VictoryScene, "DEFEAT": DefeatScene, "RECORD": RecordScene}
 
     def __init__(self) -> None:
