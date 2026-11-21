@@ -74,6 +74,7 @@ def load_level(number: int) -> dict:
             raise ConfigError(f"{path} obstacles: tipo desconocido {kind}")
         if not isinstance(count, int) or count < 0:
             raise ConfigError(f"{path} obstacles.{kind}: debe ser un entero >= 0")
+    level.setdefault("special_shot", False)
     # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
     level.setdefault("core_mode", "open")
     if level["core_mode"] not in CORE_MODES:

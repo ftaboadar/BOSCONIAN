@@ -20,6 +20,7 @@ from src.create.prefab_creator import create_base, create_enemy, create_enemy_bu
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_enemy_bullet import CEnemyBullet
 from src.ecs.components.c_surface import CSurface
+from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
 from src.ecs.components.c_enemy_spawner import CEnemySpawner
@@ -375,7 +376,9 @@ class PlaySceneBehaviorTests(unittest.TestCase):
             self.scene.do_update(DT)
 
     def put_player(self, pos):
-        self.scene.direction = pygame.Vector2()
+        # La nave avanza sola: se la deja quieta para que no se aleje de la posición dada.
+        ship = self.scene.world.component_for_entity(self.scene.player, CPlayerShip)
+        ship.speed = ship.max_speed = 0.0
         self.scene.world.component_for_entity(self.scene.player, CTransform).pos.update(pos)
 
     def test_las_torretas_disparan_al_jugador_cercano_y_las_balas_avanzan_y_caducan(self):
