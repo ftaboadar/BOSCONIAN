@@ -37,6 +37,18 @@ from src.engine.data_loader import load_json
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
+def logo_surface(width: int | None = None) -> pygame.Surface:
+    """El logo del juego listo para dibujar: sin el rectángulo blanco translúcido que trae la
+    imagen (se vería como una mancha sobre el verde) y, si se pide, a `width` px de ancho."""
+    surf = ServiceLocator.images.get("title").copy()
+    for x in range(surf.get_width()):
+        for y in range(surf.get_height()):
+            r, g, b, a = surf.get_at((x, y))
+            if 0 < a < 100 and r > 240 and g > 240 and b > 240:
+                surf.set_at((x, y), (0, 0, 0, 0))  # transparente y sin color: el blanco se colaría al reducir
+    return scaled_to_width(surf, width) if width and width != surf.get_width() else surf
+
+
 def scaled_to_width(surf: pygame.Surface, width: int) -> pygame.Surface:
     """La imagen a `width` px de ancho, conservando la proporción y suavizando el escalado."""
     height = max(1, round(surf.get_height() * width / surf.get_width()))

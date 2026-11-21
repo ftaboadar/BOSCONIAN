@@ -1,73 +1,74 @@
 {
     "grace_seconds": 0.3,
-    "intro": {
-        "next": "TITLE",
+    "splash": {
+        "next": "LOGO_SLIDE",
+        "skip_to": "TITLE",
         "music": "title",
-        "duration": 9.5,
-        "stars_speed": 170,
+        "duration": 7.0,
+        "stars_speed": 40,
+        "hud_zero": true,
+        "events": [
+            { "at": 0.0, "type": "text", "text": "UNIANDES", "color": "brand", "pos": { "x": 96, "y": 83 } },
+            { "at": 0.0, "type": "text", "text": "VIDEO GAME", "color": "normal", "pos": { "x": 96, "y": 99 } },
+            { "at": 0.0, "type": "text", "text": "DEVELOPMENT", "color": "normal", "pos": { "x": 96, "y": 115 } },
+            { "at": 0.0, "type": "text", "text": "COSMONIAN", "color": "normal", "pos": { "x": 96, "y": 139 } }
+        ]
+    },
+    "logo_slide": {
+        "next": "BYLINE",
+        "skip_to": "TITLE",
+        "duration": 3.4,
+        "stars_speed": 0,
+        "stars": false,
+        "background": { "r": 126, "g": 196, "b": 152 },
         "events": [
             { "at": 0.3, "type": "image", "image": "title", "width": 168,
-              "from": { "x": 96, "y": -40 }, "to": { "x": 96, "y": 56 }, "seconds": 1.8 },
-            { "at": 2.3, "type": "text", "text": "LA FLOTA ENEMIGA ATACA", "color": "normal",
-              "pos": { "x": 96, "y": 104 } },
-            { "at": 3.0, "type": "text", "text": "TU MISION: DESTRUIR", "color": "normal",
-              "pos": { "x": 96, "y": 116 } },
-            { "at": 3.0, "type": "text", "text": "TODAS SUS BASES", "color": "normal",
-              "pos": { "x": 96, "y": 128 } },
-
-            { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 56, "w": 72, "h": 64 },
-              "colorkey": { "r": 255, "g": 0, "b": 255 },
-              "from": { "x": 260, "y": 166 }, "to": { "x": 136, "y": 166 }, "seconds": 1.6, "life": 2.3 },
-            { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 },
-              "scale": 2, "rotate": -90,
-              "from": { "x": -30, "y": 166 }, "to": { "x": 52, "y": 166 }, "seconds": 1.6 },
-
-            { "at": 5.7, "type": "box", "size": { "w": 6, "h": 2 }, "color": { "r": 255, "g": 255, "b": 255 },
-              "from": { "x": 68, "y": 160 }, "to": { "x": 102, "y": 160 }, "seconds": 0.3, "life": 0.3 },
-            { "at": 5.7, "type": "box", "size": { "w": 6, "h": 2 }, "color": { "r": 255, "g": 255, "b": 255 },
-              "from": { "x": 68, "y": 172 }, "to": { "x": 102, "y": 172 }, "seconds": 0.3, "life": 0.3 },
-            { "at": 5.7, "type": "sound", "sound": "shoot" },
-
-            { "at": 6.0, "type": "frames", "image": "ships", "framerate": 12,
-              "rects": [
-                  { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
-                  { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
-                  { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 122, "y": 154 } },
-            { "at": 6.15, "type": "frames", "image": "ships", "framerate": 12,
-              "rects": [
-                  { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
-                  { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
-                  { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 144, "y": 172 } },
-            { "at": 6.3, "type": "frames", "image": "ships", "framerate": 12,
-              "rects": [
-                  { "x": 0, "y": 133, "w": 16, "h": 16 }, { "x": 16, "y": 133, "w": 16, "h": 16 },
-                  { "x": 32, "y": 133, "w": 16, "h": 16 }, { "x": 48, "y": 133, "w": 16, "h": 16 },
-                  { "x": 64, "y": 133, "w": 16, "h": 16 }, { "x": 80, "y": 133, "w": 16, "h": 16 }],
-              "pos": { "x": 130, "y": 184 } },
-            { "at": 6.0, "type": "sound", "sound": "explosion" },
-
-            { "at": 7.0, "type": "text", "text": "PULSA UNA TECLA", "color": "selected",
-              "pos": { "x": 96, "y": 196 } }
+              "from": { "x": 288, "y": 84 }, "to": { "x": 96, "y": 84 }, "seconds": 1.6 }
+        ]
+    },
+    "byline": {
+        "next": "TITLE",
+        "skip_to": "TITLE",
+        "duration": 9.0,
+        "stars_speed": 40,
+        "events": [
+            { "at": 0.0, "type": "image", "image": "title", "width": 168, "pos": { "x": 96, "y": 84 } },
+            { "at": 0.0, "type": "text", "text": "© 2026 COSMONIAN", "color": "normal", "pos": { "x": 96, "y": 135 } },
+            { "at": 0.0, "type": "text", "text": "ARRANGED BY", "color": "normal", "pos": { "x": 96, "y": 157 } },
+            { "at": 0.0, "type": "text", "text": "FTABOADAR", "color": "normal", "pos": { "x": 96, "y": 166 } },
+            { "at": 0.0, "type": "text", "text": "JDBU2002", "color": "normal", "pos": { "x": 96, "y": 175 } },
+            { "at": 0.0, "type": "text", "text": "JZARRUKE", "color": "normal", "pos": { "x": 96, "y": 184 } },
+            { "at": 0.0, "type": "text", "text": "SANTI8194", "color": "normal", "pos": { "x": 96, "y": 193 } }
+        ]
+    },
+    "title": {
+        "background": { "r": 126, "g": 196, "b": 152 },
+        "menu_top": 124,
+        "events": [
+            { "at": 0.0, "type": "image", "image": "title", "width": 168,
+              "from": { "x": 288, "y": 84 }, "to": { "x": 96, "y": 84 }, "seconds": 1.6 },
+            { "at": 1.6, "type": "text", "text": "SPACE DESTROYER", "color": "subtitle", "pos": { "x": 96, "y": 64 } },
+            { "at": 0.0, "type": "text", "text": "PUSH BUTTON TO START", "color": "normal", "group": "push",
+              "from": { "x": -100, "y": 163 }, "to": { "x": 96, "y": 163 }, "seconds": 1.6 },
+            { "at": 0.0, "type": "text", "text": "UNIANDES", "color": "brand", "pos": { "x": 96, "y": 182 } },
+            { "at": 0.0, "type": "text", "text": "MISO", "color": "level", "pos": { "x": 96, "y": 191 } }
         ]
     },
     "cutscene": {
         "next": "PLAY",
-        "duration": 5.6,
-        "stars_speed": 90,
+        "skip_to": "PLAY",
+        "duration": 5.0,
+        "stars_speed": 30,
+        "hud_lives": true,
         "events": [
-            { "at": 0.2, "type": "text", "text": "RONDA {round}", "color": "title",
-              "pos": { "x": 96, "y": 54 } },
-            { "at": 1.0, "type": "text", "text": "DESTRUYE LAS BASES", "color": "normal",
-              "pos": { "x": 96, "y": 82 } },
-            { "at": 1.8, "type": "text", "text": "ENEMIGAS", "color": "normal",
-              "pos": { "x": 96, "y": 94 } },
-
-            { "at": 0.4, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 2,
-              "from": { "x": 96, "y": 236 }, "to": { "x": 96, "y": 156 }, "seconds": 2.6, "life": 3.6 },
-            { "at": 4.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 2,
-              "from": { "x": 96, "y": 156 }, "to": { "x": 96, "y": -40 }, "seconds": 1.4 }
+            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 4,
+              "from": { "x": 24, "y": 184 }, "to": { "x": 24, "y": 176 }, "seconds": 5.0 },
+            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 4,
+              "from": { "x": 168, "y": 184 }, "to": { "x": 168, "y": 176 }, "seconds": 5.0 },
+            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 8,
+              "from": { "x": 96, "y": 166 }, "to": { "x": 96, "y": 150 }, "seconds": 5.0 },
+            { "at": 0.0, "type": "text", "text": "LEVEL {level}", "color": "level", "pos": { "x": 96, "y": 58 } },
+            { "at": 0.0, "type": "text", "text": "{subtitle}", "color": "level", "pos": { "x": 96, "y": 83 } }
         ]
     }
 }

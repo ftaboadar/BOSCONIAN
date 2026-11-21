@@ -61,6 +61,7 @@ from src.engine.sfx import play_sound
 class PlayScene(Scene):
     """Escena de nivel: mundo, cámara, estrellas, minimapa, bases y enemigos (jugador provisional)."""
 
+    panel_lives = True  # en partida se ven las vidas
     cheat_allowed = True  # la demo del modo atractor lo desactiva: ahí la nave sí puede morir
 
     def do_create(self) -> None:

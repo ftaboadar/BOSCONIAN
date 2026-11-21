@@ -23,8 +23,10 @@ CFG = load_json("assets/cfg/world.json")["minimap"]
 MENU = load_json("assets/cfg/menu.json")
 STORY = load_json("assets/cfg/story.json")
 STAGE_LETTERS = 24  # 192 px de campo de juego / 8 px por letra
-SCENES_WITH_PANEL = ("INTRO", "TITLE", "INSTRUCTIONS", "CREDITS", "CUTSCENE", "VICTORY", "DEFEAT",
-                     "RECORD", "ATTRACT_INFO", "PLAY", "ATTRACT")
+SCENES_WITH_PANEL = ("SPLASH", "LOGO_SLIDE", "BYLINE", "TITLE", "INSTRUCTIONS", "CREDITS", "CUTSCENE",
+                     "VICTORY", "DEFEAT", "RECORD", "ATTRACT_INFO", "PLAY", "ATTRACT")
+IN_GAME = ("CUTSCENE", "PLAY", "ATTRACT")  # aquí se ven las vidas; antes de la partida no
+TITLE_LOGO = next(e for e in STORY["title"]["events"] if e["type"] == "image")["width"]
 
 
 def panel_bytes(screen: pygame.Surface, engine: GameEngine) -> bytes:
@@ -53,7 +55,7 @@ class PanelEverywhereTests(unittest.TestCase):
         return scene
 
     def test_el_juego_arranca_en_una_pantalla_con_barra(self):
-        self.assertEqual(self.engine.cfg_scenes["start_scene"], "INTRO")
+        self.assertEqual(self.engine.cfg_scenes["start_scene"], "SPLASH")
         scene = self.open(self.engine.cfg_scenes["start_scene"])
         self.assertTrue(scene.has_panel)
         panel = self.engine.hud.panel
@@ -63,14 +65,30 @@ class PanelEverywhereTests(unittest.TestCase):
         for name, cls in GameEngine.SCENES.items():
             self.assertEqual(cls.has_panel, name != "EDITOR", name)
 
-    def test_la_barra_es_identica_en_todas_las_pantallas_que_no_son_el_nivel(self):
-        """Mismo estado de partida => misma barra, con el radar vacío, sin que se cuele nada de la escena."""
+    def test_la_barra_es_identica_en_todas_las_pantallas_previas_a_la_partida(self):
+        """Mismo estado de partida => misma barra, con el radar vacío y sin vidas, sin que se cuele nada
+        de la escena. La pantalla inicial (ceros) y la cinemática (con vidas) se comprueban aparte."""
         reference = None
-        for name in ("INTRO", "TITLE", "INSTRUCTIONS", "CREDITS", "CUTSCENE", "VICTORY", "DEFEAT", "RECORD", "ATTRACT_INFO"):
+        for name in ("LOGO_SLIDE", "BYLINE", "TITLE", "INSTRUCTIONS", "CREDITS", "VICTORY", "DEFEAT", "RECORD",
+                     "ATTRACT_INFO"):
             self.open(name)
             current = panel_bytes(self.engine.screen, self.engine)
             reference = reference or current
             self.assertEqual(current, reference, f"la barra de {name} es distinta")
+
+    def test_la_pantalla_inicial_muestra_la_barra_en_ceros_antes_de_cargar_nada(self):
+        self.engine.state.hi_score = 20000
+        self.open("SPLASH")
+        splash = panel_bytes(self.engine.screen, self.engine)
+        self.open("LOGO_SLIDE")
+        self.assertNotEqual(splash, panel_bytes(self.engine.screen, self.engine))  # ahí ya están los valores reales
+
+    def test_la_cinematica_y_el_juego_muestran_las_vidas_y_lo_anterior_no(self):
+        self.engine.state.lives = 3
+        icons = pygame.Rect(self.engine.hud.panel.left, ICONS_Y, self.engine.hud.panel.w, 17)
+        for name in SCENES_WITH_PANEL:
+            self.open(name)
+            self.assertEqual(lit(self.engine.screen, icons), name in IN_GAME, name)
 
     def test_todas_muestran_hi_score_puntaje_radar_condition_vidas_y_ronda(self):
         for name in SCENES_WITH_PANEL:
@@ -78,19 +96,24 @@ class PanelEverywhereTests(unittest.TestCase):
             screen, panel = self.engine.screen, self.engine.hud.panel
             radar = radar_rect(CFG)
             self.assertEqual(tuple(screen.get_at(radar.topleft))[:3], tuple(color_from_cfg(CFG["bg_color"]))[:3], name)
-            icons = pygame.Rect(panel.left, ICONS_Y, panel.w, 17)
             for label, area in (("HI-SCORE/1UP", pygame.Rect(panel.left, 0, panel.w, 32)),
                                 ("CONDITION", pygame.Rect(panel.left, BAR_Y, panel.w, BAR_H)),
-                                ("vidas", icons), ("ROUND", pygame.Rect(panel.left, ROWS["round"], panel.w, 8))):
+                                ("ROUND", pygame.Rect(panel.left, ROWS["round"], panel.w, 8))):
                 self.assertTrue(lit(screen, area), f"{name}: falta {label}")
 
-    def test_el_puntaje_y_las_vidas_se_ven_tambien_fuera_del_nivel(self):
+    def test_el_puntaje_se_ve_tambien_fuera_del_nivel_y_las_vidas_no(self):
+        self.engine.state.score = 100
+        self.open("TITLE")
+        low = panel_bytes(self.engine.screen, self.engine)
+        self.engine.state.score = 99999
+        self.open("TITLE")
+        self.assertNotEqual(low, panel_bytes(self.engine.screen, self.engine))   # el 1UP cambia
         self.engine.state.lives = 2
         self.open("TITLE")
         two = panel_bytes(self.engine.screen, self.engine)
         self.engine.state.lives = 4
         self.open("TITLE")
-        self.assertNotEqual(two, panel_bytes(self.engine.screen, self.engine))
+        self.assertEqual(two, panel_bytes(self.engine.screen, self.engine))      # las vidas no se muestran
 
     def test_el_modo_trampa_se_avisa_en_cualquier_pantalla(self):
         self.engine.state.cheat = True
@@ -127,21 +150,22 @@ class StageLayoutTests(unittest.TestCase):
             self.assertLessEqual(len("> " + item["label"]), STAGE_LETTERS, item["label"])
 
     def test_los_textos_de_las_escenas_de_historia_caben(self):
-        for name in ("intro", "cutscene"):
+        for name in ("splash", "logo_slide", "byline", "title", "cutscene"):
             for event in STORY[name]["events"]:
                 if event["type"] == "text":
-                    self.assertLessEqual(len(event["text"].format(round=10)), STAGE_LETTERS, event["text"])
+                    text = event["text"].format(level=10, round=10, subtitle="X" * 24)
+                    self.assertLessEqual(len(text), STAGE_LETTERS, text)
 
     def test_la_animacion_esta_centrada_en_el_campo_y_no_en_la_pantalla(self):
         """Ningún evento de historia usa el centro de la pantalla completa (x=128)."""
-        for name in ("intro", "cutscene"):
+        for name in ("splash", "logo_slide", "byline", "title", "cutscene"):
             for event in STORY[name]["events"]:
                 for point in (event.get("pos"), event.get("to")):
                     if point and event["type"] in ("text", "image"):
                         self.assertEqual(point["x"], self.engine.viewport.centerx, f"{name}: {event.get('text', event['type'])}")
 
     def test_las_estrellas_de_los_menus_nacen_en_el_campo_de_juego(self):
-        for name in ("TITLE", "INTRO", "CUTSCENE", "INSTRUCTIONS", "VICTORY"):
+        for name in ("SPLASH", "BYLINE", "CUTSCENE", "INSTRUCTIONS", "VICTORY"):
             self.engine._apply_scene_change(name)
             scene = self.engine._current_scene
             xs = [t.pos.x for _, (t, _s) in scene.world.get_components(CTransform, CStar)]
@@ -154,14 +178,13 @@ class StageLayoutTests(unittest.TestCase):
         from src.ecs.components.c_surface import CSurface
         self.engine._apply_scene_change(name)
         scene = self.engine._current_scene
-        if name == "INTRO":
-            scene.do_update(0.5)  # el logo es el primer evento
+        scene.do_update(0.5)  # el logo es de los primeros eventos
         surfs = [c.surf for _, c in scene.world.get_component(CSurface)]
         return max(surfs, key=lambda surf: surf.get_width())
 
     def test_el_logo_del_titulo_deja_margen_a_los_lados(self):
         surf = self.logo_surface("TITLE")
-        self.assertEqual(surf.get_width(), MENU["logo_width"])
+        self.assertEqual(surf.get_width(), TITLE_LOGO)
         self.assertLessEqual(surf.get_width(), self.engine.viewport.w - 2 * self.LOGO_MARGIN)
 
     def test_el_logo_conserva_su_proporcion(self):
@@ -170,16 +193,17 @@ class StageLayoutTests(unittest.TestCase):
         surf = self.logo_surface("TITLE")
         self.assertAlmostEqual(surf.get_height() / surf.get_width(), full.get_height() / full.get_width(), delta=0.02)
 
-    def test_el_intro_usa_el_mismo_logo_reducido(self):
-        self.assertEqual(self.logo_surface("INTRO").get_width(), MENU["logo_width"])
+    def test_el_verde_el_titulo_y_los_creditos_usan_el_mismo_logo(self):
+        widths = {name: self.logo_surface(name).get_width() for name in ("LOGO_SLIDE", "BYLINE", "TITLE")}
+        self.assertEqual(set(widths.values()), {TITLE_LOGO}, widths)
 
     def test_el_logo_ya_no_roza_los_bordes_del_campo(self):
         """Los píxeles del logo (cian) dejan libre una franja a ambos lados del campo de juego."""
-        self.engine._apply_scene_change("TITLE")
+        self.engine._apply_scene_change("BYLINE")
         self.engine._current_scene.do_update(0.1)
         self.engine._draw()
         screen = self.engine.screen
-        cyan = [x for y in range(30, 110) for x in range(self.engine.viewport.w)
+        cyan = [x for y in range(50, 120) for x in range(self.engine.viewport.w)
                 if screen.get_at((x, y))[1] > 200 and screen.get_at((x, y))[2] > 200 and screen.get_at((x, y))[0] < 60]
         self.assertTrue(cyan)
         self.assertGreaterEqual(min(cyan), self.LOGO_MARGIN - 2)
@@ -200,13 +224,23 @@ class StageLayoutTests(unittest.TestCase):
             self.assertAlmostEqual(self.centered(name, range(20, 28)), self.engine.viewport.centerx, delta=5, msg=name)
 
     def test_el_menu_del_titulo_esta_centrado_en_el_campo(self):
-        self.assertAlmostEqual(self.centered("TITLE", range(125, 134), "selected"), self.engine.viewport.centerx, delta=10)
+        self.engine._apply_scene_change("TITLE")
+        scene = self.engine._current_scene
+        scene.elapsed = 1.0
+        scene.do_any_key()  # un botón abre el menú
+        scene.do_update(0.1)
+        self.engine._draw()
+        top = STORY["title"]["menu_top"]
+        yellow = [x for y in range(top - 5, top + 5) for x in range(self.engine.viewport.w)
+                  if tuple(self.engine.screen.get_at((x, y)))[:3] == (255, 220, 0)]
+        self.assertTrue(yellow)
+        self.assertAlmostEqual((min(yellow) + max(yellow)) / 2, self.engine.viewport.centerx, delta=10)
 
     def test_el_hint_de_derrota_esta_centrado_en_el_campo(self):
         self.assertAlmostEqual(self.centered("DEFEAT", range(172, 180), "selected"), self.engine.viewport.centerx, delta=6)
 
     def test_todo_se_dibuja_sin_fallar_durante_toda_la_animacion(self):
-        for name in ("INTRO", "CUTSCENE"):
+        for name in ("SPLASH", "LOGO_SLIDE", "BYLINE", "CUTSCENE"):
             self.engine._apply_scene_change(name)
             scene = self.engine._current_scene
             for _ in range(round(STORY[name.lower()]["duration"] * 60)):

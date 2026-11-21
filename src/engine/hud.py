@@ -43,7 +43,8 @@ class Hud:
         for i, char in enumerate(text):
             screen.blit(self.font.render(char, False, color), (self.panel.left + i * LETTER_ADVANCE, y))
 
-    def draw(self, screen: pygame.Surface, state: GameState, round_number: int) -> None:
+    def draw(self, screen: pygame.Surface, state: GameState, round_number: int,
+             show_lives: bool = True) -> None:
         self._text(screen, "HI-SCORE", RED, ROWS["hi_label"])
         self._text(screen, str(state.hi_score), WHITE, ROWS["hi_value"], "right")
         self._text(screen, "1UP", WHITE, ROWS["up_label"])
@@ -54,10 +55,10 @@ class Hud:
         label = self.font.render(state.alert, False, BLACK)
         screen.blit(label, label.get_rect(center=bar.center))
         # El radar ocupa de y=80 a y=176 (lo dibuja s_minimap).
-        shown = min(state.lives, self.icons_max)
+        shown = min(state.lives, self.icons_max) if show_lives else 0  # sin partida no hay vidas
         for i in range(shown):  # alineadas a la izquierda, como en el original
             screen.blit(self.icon, (self.panel.left + i * ICON_SPACING, ICONS_Y))
-        if state.lives > self.icons_max:  # más vidas de las visibles: el total, abajo a la derecha
+        if show_lives and state.lives > self.icons_max:  # más vidas de las visibles: el total, abajo a la derecha
             total = self.font.render(str(state.lives), False, WHITE)
             spot = total.get_rect(bottomright=(self.panel.right, ICONS_Y + self.icon.get_height()))
             pygame.draw.rect(screen, BLACK, spot.inflate(2, 0))

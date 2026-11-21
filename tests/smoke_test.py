@@ -15,18 +15,30 @@ from src.engine.scenes.title_scene import TitleScene
 
 engine = GameEngine()
 assert engine.screen.get_size() == (256, 208), engine.screen.get_size()
-engine._apply_scene_change("TITLE")
+engine.delta_time = 1 / 60
+
+# El juego arranca como el original: pantalla inicial -> logo sobre el verde -> créditos -> título.
+engine._apply_scene_change(engine.cfg_scenes["start_scene"])
+seen = [type(engine._current_scene).__name__]
+for _ in range(60 * 40):
+    engine._frame()
+    name = type(engine._current_scene).__name__
+    if name != seen[-1]:
+        seen.append(name)
+    if name == "TitleScene" and not engine.shutter.busy:
+        break
+assert seen == ["SplashScene", "LogoSlideScene", "BylineScene", "TitleScene"], seen
 assert isinstance(engine._current_scene, TitleScene)
 
-for _ in range(5):
-    engine._calculate_time()
-    engine._process_events()
-    engine._update()
-    engine._draw()
-
+# En el título un botón abre el menú y Enter elige «JUGAR»: cinemática del nivel y luego el juego.
+for _ in range(60):
+    engine._frame()
+pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+engine._frame()
+assert engine._current_scene.mode == "menu"
 pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
 engine._process_events()
-assert engine._next_scene == "CUTSCENE"  # la cutscene (#37) precede al nivel
+assert engine._next_scene == "CUTSCENE"  # la cinemática de «LEVEL n» precede al nivel
 engine._apply_scene_change(engine._next_scene)
 pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
 engine._current_scene.elapsed = 1.0  # pasada la gracia, una tecla la salta

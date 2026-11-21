@@ -4,7 +4,7 @@ textos y animaciones descritos por eventos de story.json."""
 import esper
 import pygame
 
-from src.create.prefab_creator import scaled_to_width
+from src.create.prefab_creator import logo_surface, scaled_to_width
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_arrival import CArrival
 from src.ecs.components.c_lifetime import CLifetime
@@ -26,6 +26,8 @@ def _event_surface(event: dict, menu_colors: dict, fields: dict) -> pygame.Surfa
     """Superficie de un evento image, sprite, box o text (el tipo frames usa su primer cuadro)."""
     kind = event["type"]
     if kind == "image":
+        if event["image"] == "title":  # el logo del juego, sin su mancha translúcida
+            return logo_surface(event.get("width"))
         surf = ServiceLocator.images.get(event["image"])
         return scaled_to_width(surf, event["width"]) if "width" in event else surf
     if kind == "box":

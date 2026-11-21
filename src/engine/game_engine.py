@@ -13,7 +13,7 @@ from src.engine.scenes.end_scenes import DefeatScene, RecordScene, VictoryScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
-from src.engine.scenes.story_scenes import CutsceneScene, IntroScene
+from src.engine.scenes.story_scenes import BylineScene, CutsceneScene, LogoSlideScene, SplashScene
 from src.engine.scenes.title_scene import TitleScene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
@@ -22,7 +22,8 @@ class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
               "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
               "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene,
-              "INTRO": IntroScene, "CUTSCENE": CutsceneScene, "EDITOR": EditorScene,
+              "SPLASH": SplashScene, "LOGO_SLIDE": LogoSlideScene, "BYLINE": BylineScene,
+              "CUTSCENE": CutsceneScene, "EDITOR": EditorScene,
               "VICTORY": VictoryScene, "DEFEAT": DefeatScene, "RECORD": RecordScene}
 
     def __init__(self) -> None:
@@ -153,7 +154,7 @@ class GameEngine:
                             self.screen.get_height())
         self.screen.fill(self.bg_color, panel)  # tapa lo que la escena haya dibujado de más
         scene.draw_radar(self.screen)
-        self.hud.draw(self.screen, self.state, scene.panel_round())
+        self.hud.draw(self.screen, scene.panel_state(), scene.panel_round(), scene.panel_lives)
         self.hud.draw_cheat(self.screen, self.state)
 
     def _clean(self) -> None:
