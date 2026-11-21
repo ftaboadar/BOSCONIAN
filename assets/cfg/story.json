@@ -61,12 +61,8 @@
         "stars_speed": 30,
         "hud_lives": true,
         "events": [
-            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 4,
-              "from": { "x": 24, "y": 184 }, "to": { "x": 24, "y": 176 }, "seconds": 5.0 },
-            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 4,
-              "from": { "x": 168, "y": 184 }, "to": { "x": 168, "y": 176 }, "seconds": 5.0 },
-            { "at": 0.0, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 8,
-              "from": { "x": 96, "y": 166 }, "to": { "x": 96, "y": 150 }, "seconds": 5.0 },
+            { "at": 0.2, "type": "sprite", "rect": { "x": 124, "y": 8, "w": 15, "h": 17 }, "scale": 3,
+              "from": { "x": 96, "y": 250 }, "to": { "x": 96, "y": -50 }, "seconds": 4.4 },
             { "at": 0.0, "type": "text", "text": "LEVEL {level}", "color": "level", "pos": { "x": 96, "y": 58 } },
             { "at": 0.0, "type": "text", "text": "{subtitle}", "color": "level", "pos": { "x": 96, "y": 83 } }
         ]

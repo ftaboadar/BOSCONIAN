@@ -452,12 +452,36 @@ class CutsceneTests(StorySceneTestCase):
             names.append(subtitle)
         self.assertEqual(len(set(names)), len(names), "dos niveles se llaman igual")
 
-    def test_dibuja_la_nave_grande_y_las_dos_laterales(self):
+    def ships(self):
+        return [(ent, t, s) for ent, (t, s) in self.scene.world.get_components(CTransform, CSurface)
+                if s.surf.get_height() > 20]
+
+    def test_una_sola_nave_de_tamano_normal_cruza_la_pantalla_de_abajo_arriba(self):
         self.open("CUTSCENE")
-        self.run_for(0.2)
-        heights = sorted(s.get_height() for s in self.texts() if s.get_height() > 20)
-        self.assertEqual(len(heights), 3)
-        self.assertGreater(heights[-1], heights[0])  # la del centro es la más grande
+        self.run_for(0.3)
+        (ent, t, s), = self.ships()                      # una sola nave
+        self.assertEqual(s.surf.get_size(), (45, 51))    # la del jugador a tamaño medio, no la gigante
+        view = self.engine.viewport
+        self.assertGreater(t.pos.y, view.bottom)         # entra por abajo...
+        ys = []
+        for _ in range(round(4.5 / DT)):
+            self.scene.do_update(DT)
+            if self.scene.world.entity_exists(ent):
+                ys.append(t.pos.y)
+        self.assertEqual(ys, sorted(ys, reverse=True))   # ...y sube siempre
+        self.assertTrue(any(0 < y < view.bottom for y in ys))   # se la ve cruzar por el campo
+        self.assertLess(ys[-1], 0)                        # y sale por arriba
+        self.assertEqual(t.pos.x, view.centerx)
+
+    def test_el_texto_azul_se_queda_mientras_la_nave_pasa(self):
+        self.open("CUTSCENE")
+        before = len([s for _, s in self.scene.world.get_component(CSurface)])
+        self.run_for(0.3)
+        texts_now = [s.surf for _, s in self.scene.world.get_component(CSurface) if s.surf.get_height() <= 20]
+        self.run_for(3.0)
+        texts_later = [s.surf for _, s in self.scene.world.get_component(CSurface) if s.surf.get_height() <= 20]
+        self.assertEqual(len(texts_now), 2)       # «LEVEL n» y el nombre
+        self.assertEqual(len(texts_later), 2)
 
     def test_las_vidas_se_ven_en_la_cinematica_con_los_valores_reales(self):
         scene = self.open("CUTSCENE")
