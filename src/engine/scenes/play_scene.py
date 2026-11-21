@@ -1,6 +1,7 @@
 import pygame
 
 from src.create.prefab_creator import (
+    create_alert,
     create_base,
     create_enemy_spawner,
     create_player,
@@ -8,11 +9,13 @@ from src.create.prefab_creator import (
     create_stars,
 )
 from src.create.prefab_obstacles import create_obstacles
+from src.ecs.components.c_alert import CAlert
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_transform import CTransform
+from src.ecs.systems.s_alert import alert_base_destroyed, system_alert
 from src.ecs.systems.s_animation import system_animation
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
 from src.ecs.systems.s_camera import system_camera_follow
@@ -101,6 +104,9 @@ class PlayScene(Scene):
         # Enemigos I, P y E: salen alrededor del jugador a un ritmo que sube con la dificultad.
         self.cfg_enemies = load_enemies()
         create_enemy_spawner(self.world, self.cfg_enemies, factor)
+        # Alerta: VERDE al empezar (sin enemigos), AMARILLA al poco y ROJA si el nivel se alarga.
+        self.alert = self.world.component_for_entity(
+            create_alert(self.world, self.difficulty), CAlert)
         create_stars(self.world, eng.cfg_world, eng.viewport)
         self.round = level["round"]
         eng.state.alert = ALERTS[0]  # todo nivel empieza en verde
@@ -206,6 +212,8 @@ class PlayScene(Scene):
         for base in [b for b in self.base_positions if not self.world.entity_exists(b)]:
             create_explosion_group(self.world, self.base_positions.pop(base), pygame.Vector2(),
                                    self.explosions_cfg["base"], self.explosions_cfg)
+            if self.bases_remaining():  # con la última el nivel termina: sin cambio de alerta
+                alert_base_destroyed(self.world)  # un respiro: vuelve a VERDE por un rato
 
     def bases_remaining(self) -> int:
         return sum(1 for _, t in self.world.get_component(CMinimapTrack) if t.kind == "base")
@@ -244,6 +252,8 @@ class PlayScene(Scene):
             system_star_blink(self.world, delta_time)
             return
         system_lifetime(self.world, delta_time)
+        system_alert(self.world, delta_time)  # antes del spawner y los núcleos, que la consultan
+        self.engine.state.alert = self.alert.level.name  # la barra (CONDITION) muestra la alerta del nivel
         system_player_movement(self.world, delta_time)
         system_player_sprite(self.world)
         system_player_fire(self.world, delta_time)

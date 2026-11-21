@@ -7,6 +7,7 @@ import random
 import esper
 import pygame
 
+from src.ecs.components.c_alert import CAlert
 from src.ecs.components.c_angle_sprites import CAngleSprites
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_base import CBase
@@ -234,6 +235,13 @@ def create_enemy_spawner(world: esper.World, cfg: dict, difficulty: float) -> in
         _by_difficulty(spawn["interval_seconds"], difficulty),
         round(_by_difficulty(spawn["max_alive"], difficulty)),
         difficulty))
+
+
+def create_alert(world: esper.World, params: dict) -> int:
+    """Condición de alerta del nivel, con los tiempos de su dificultad (`difficulty_params`)."""
+    return world.create_entity(CAlert(
+        params["yellow_after"], params["red_after"], params["calm_seconds"],
+        params["red_speed_factor"], params["red_spawn_factor"]))
 
 
 def _sprite(cfg: dict, rect: dict, quarter_turns: int,
