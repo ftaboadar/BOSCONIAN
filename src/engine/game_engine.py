@@ -42,11 +42,14 @@ class GameEngine:
         r = load_json("assets/cfg/player.json")["sprite_rect"]
         life_icon = ServiceLocator.images.get("ships").subsurface(
             pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
-        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon)
+        v = self.cfg_world["viewport"]
+        self.viewport = pygame.Rect(v["x"], v["y"], v["w"], v["h"])  # el campo de juego
+        # La barra lateral ocupa el resto de la pantalla, a la derecha del campo de juego.
+        panel = pygame.Rect(self.viewport.right, 0, cfg_window["size"]["w"] - self.viewport.right,
+                            cfg_window["size"]["h"])
+        self.hud = Hud(ServiceLocator.fonts.get("main"), self.state.cfg["life_icons_max"], life_icon, panel)
         self.world_size = pygame.Vector2(self.cfg_world["world_size"]["w"],
                                          self.cfg_world["world_size"]["h"])
-        v = self.cfg_world["viewport"]
-        self.viewport = pygame.Rect(v["x"], v["y"], v["w"], v["h"])
 
         self.clock = pygame.time.Clock()
         self.delta_time = 0.0

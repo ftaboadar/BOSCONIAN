@@ -5,6 +5,7 @@
         "title": { "r": 118, "g": 255, "b": 3 }
     },
     "line_height": 14,
+    "logo_width": 168,
     "attract": {
         "idle_seconds": 15,
         "demo_seconds": 12,

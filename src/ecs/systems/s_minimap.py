@@ -40,7 +40,8 @@ def system_minimap_rendering(world: esper.World, screen: pygame.Surface, cfg: di
                              elapsed: float = 0.0) -> None:
     rect = radar_rect(cfg)
     screen.fill(color_from_cfg(cfg["bg_color"]), rect)
-    pygame.draw.rect(screen, color_from_cfg(cfg["border_color"]), rect, 1)
+    if "border_color" in cfg:  # el del original no tiene marco
+        pygame.draw.rect(screen, color_from_cfg(cfg["border_color"]), rect, 1)
     shown = blink_on(elapsed, cfg)
     for _, (c_t, c_m) in world.get_components(CTransform, CMinimapTrack):
         if c_m.kind == "player" and not shown:

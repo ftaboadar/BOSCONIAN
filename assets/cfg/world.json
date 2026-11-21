@@ -1,6 +1,6 @@
 {
     "world_size": { "w": 1024, "h": 1024 },
-    "viewport": { "x": 0, "y": 0, "w": 176, "h": 208 },
+    "viewport": { "x": 0, "y": 0, "w": 192, "h": 208 },
     "star_colors": [
         { "r": 213, "g": 0, "b": 0 },
         { "r": 118, "g": 255, "b": 3 },
@@ -12,11 +12,10 @@
     "stars_menu_speed": 40,
     "stars_blink_speed": 0.4,
     "minimap": {
-        "rect": { "x": 184, "y": 54, "w": 64, "h": 80 },
+        "rect": { "x": 192, "y": 80, "w": 64, "h": 96 },
         "scale": 8,
         "blink_seconds": 0.3,
-        "bg_color": { "r": 0, "g": 0, "b": 40 },
-        "border_color": { "r": 255, "g": 255, "b": 255 },
+        "bg_color": { "r": 148, "g": 142, "b": 246 },
         "dot_colors": {
             "player": { "r": 255, "g": 255, "b": 255 },
             "base": { "r": 255, "g": 64, "b": 64 },

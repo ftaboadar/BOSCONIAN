@@ -269,6 +269,8 @@ def load_story() -> dict:
             require_keys(event, STORY_EVENT_KEYS[event["type"]], where)
             if event["at"] < 0 or event["at"] > scene["duration"]:
                 raise ConfigError(f"{where}: at debe estar entre 0 y la duración de la escena")
+            if "width" in event and (not isinstance(event["width"], int) or event["width"] <= 0):
+                raise ConfigError(f"{where}: width debe ser un entero mayor que 0")
             if event["type"] in MOVING_EVENT_TYPES and "to" in event:
                 require_keys(event, ("from", "seconds"), where)
                 if event["seconds"] <= 0:

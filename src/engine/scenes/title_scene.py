@@ -22,7 +22,7 @@ class TitleScene(Scene):
         self.area = stage
         cfg = self.engine.cfg_menu
         create_stars(self.world, self.engine.cfg_world, self.area)
-        create_image(self.world, "title", pygame.Vector2(stage.centerx, h * 0.35))
+        create_image(self.world, "title", pygame.Vector2(stage.centerx, h * 0.35), cfg["logo_width"])
         self.menu = Menu(cfg["title_items"], cfg["colors"], cfg["line_height"])
         self.menu_top = int(h * 0.62)
         self.idle = 0.0

@@ -25,7 +25,7 @@ from src.ecs.components.c_velocity import CVelocity
 from src.ecs.systems.s_enemy_spawner import system_enemy_despawn, system_enemy_spawner
 from src.engine.camera import wrap_delta
 from src.engine import data_loader
-from src.engine.data_loader import ConfigError, load_enemies
+from src.engine.data_loader import ConfigError, load_enemies, load_json
 from src.engine.game_engine import GameEngine
 
 WORLD = pygame.Vector2(1024, 1024)
@@ -124,7 +124,8 @@ class EnemySpawnTests(unittest.TestCase):
 
     def test_la_config_real_trae_el_spawn_fuera_de_la_pantalla(self):
         spawn = load_enemies()["spawn"]
-        half_diagonal = pygame.Vector2(176, 208).length() / 2  # viewport de world.json
+        view = load_json("assets/cfg/world.json")["viewport"]
+        half_diagonal = pygame.Vector2(view["w"], view["h"]).length() / 2  # viewport de world.json
         self.assertGreater(spawn["distance"], half_diagonal)
         self.assertGreater(spawn["despawn_distance"], spawn["distance"])
         self.assertLess(spawn["interval_seconds"]["hard"], spawn["interval_seconds"]["easy"])
