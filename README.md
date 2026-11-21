@@ -38,8 +38,8 @@ python main.py
 | Z | Disparar (adelante y atrás) |
 | X | Habilidad especial |
 | P | Pausar / reanudar el nivel |
-| Enter | Elegir una opción del menú; en pausa, volver al título |
-| Esc | Volver desde instrucciones y créditos |
+| Enter | Elegir una opción del menú; en pausa, pide confirmar la salida al título |
+| Esc | Volver desde instrucciones y créditos; en el nivel (jugando o en pausa), pide confirmar la salida al título (Enter: sí, Esc: no) |
 | F1 | Modo trampa |
 
 Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. El gamepad es un bono y aún no está implementado.
@@ -48,7 +48,7 @@ Disparo y habilidad especial se activan al completarse el hito 3. Por ahora la p
 
 ## Modo trampa
 
-La tecla F1 queda reservada para el modo trampa, que permitirá recorrer el juego sin morir. **Todavía no está implementado** (tarea #34); cuando lo esté, aquí se documenta qué hace exactamente.
+F1 activa o desactiva el modo trampa durante el nivel (también en pausa). Mientras está activo aparece **CHEAT** en rojo en el panel derecho y el jugador es **invulnerable**: la muerte se ignora, así que no pierde vidas ni se llega a la derrota y se puede recorrer cada nivel y ver todos sus elementos. Se apaga solo al empezar una partida nueva. Para saltar a otro nivel usa el selector NIVEL del menú.
 
 ## Arquitectura
 
