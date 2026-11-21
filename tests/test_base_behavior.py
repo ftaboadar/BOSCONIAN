@@ -403,6 +403,7 @@ class PlaySceneBehaviorTests(unittest.TestCase):
 
     def test_en_un_nivel_con_ciclo_el_nucleo_lanza_enemigos_e(self):
         world = self.start("cycle")
+        self.scene.alert.green_left = 0  # ya en alerta AMARILLA: en VERDE el núcleo no lanza (#26)
         self.put_player((300, 470))
         seen = set()
         for _ in range(12):

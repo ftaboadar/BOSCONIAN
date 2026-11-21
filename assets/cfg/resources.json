@@ -4,6 +4,7 @@
         "ships": "assets/img/naves.png"
     },
     "sounds": {
+        "alert_green": "assets/snd/alert_green.ogg",
         "alert_red": "assets/snd/alert_red.ogg",
         "alert_yellow": "assets/snd/alert_yellow.ogg",
         "base_destroyed": "assets/snd/base_destroyed.ogg",

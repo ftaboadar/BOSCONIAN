@@ -277,6 +277,7 @@ class CyclingCoreTests(CombatCycleTestCase):
     def test_el_enemigo_que_sale_del_nucleo_no_se_queda_atrapado_en_la_base(self):
         self.park_player((BASE_POS.x, BASE_POS.y + 200))  # debajo de la base: el E sale hacia abajo
         self.world.add_component(self.player, CInvulnerable())
+        self.scene.alert.green_left = 0  # ya en alerta AMARILLA: en VERDE el núcleo no lanza (#26)
         seen = None
         for _ in range(round(12.0 / DT)):
             self.scene.do_update(DT)

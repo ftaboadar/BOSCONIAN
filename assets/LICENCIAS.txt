@@ -21,3 +21,9 @@
  * Creados para este proyecto por Jacobo Zarruk con sfxr.me (jsfxr)
  * Licencia: CC0
  * URL: https://sfxr.me/
+
+# Efecto de sonido alert_green.ogg (assets/snd)
+
+ * Creado para este proyecto usando sfxr.me (jsfxr)
+ * Licencia: CC0
+ * URL: https://sfxr.me/

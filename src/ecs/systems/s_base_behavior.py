@@ -12,6 +12,7 @@ from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
+from src.ecs.systems.s_alert import enemy_pace
 from src.ecs.systems.s_base_damage import draw_base_part, draw_turret
 from src.engine.camera import wrap_delta
 from src.engine.sfx import play_sound
@@ -50,7 +51,9 @@ def system_base_cores(world: esper.World, player_pos: pygame.Vector2,
                       world_size: pygame.Vector2, cfg_enemies: dict, player_speed: float,
                       delta_time: float) -> None:
     """Avanza el ciclo de los núcleos que se abren y cierran. Al quedar abierto, el núcleo
-    lanza un enemigo E por la abertura de la base que da hacia el jugador."""
+    lanza un enemigo E por la abertura de la base que da hacia el jugador, salvo en alerta
+    VERDE (no salen enemigos); en ROJA el E sale más rápido."""
+    rate, speed = enemy_pace(world)
     for _, (c_t, c_part, c_core) in world.get_components(CTransform, CBasePart, CBaseCore):
         c_base = world.component_for_entity(c_part.base, CBase)
         c_core.timer += delta_time
@@ -60,7 +63,7 @@ def system_base_cores(world: esper.World, player_pos: pygame.Vector2,
         c_core.frame = frame
         draw_base_part(world.component_for_entity(c_part.base, CSurface).surf, c_part.offset,
                        c_base.core_frames[frame], c_base.core_radius)
-        if frame == len(c_base.core_frames) - 1:
+        if frame == len(c_base.core_frames) - 1 and rate > 0:
             to_player = wrap_delta(player_pos - c_t.pos, world_size)
             if c_base.orientation == "vertical":
                 direction = pygame.Vector2(0, 1 if to_player.y >= 0 else -1)
@@ -73,7 +76,7 @@ def system_base_cores(world: esper.World, player_pos: pygame.Vector2,
             reach += create_hitbox("enemy").size.x / 2 + 1  # medio enemigo, para nacer fuera
             # El E va derecho: la dificultad (desviación al perseguir) no le afecta.
             create_enemy(world, "E", c_t.pos + direction * reach, direction, cfg_enemies,
-                         player_speed, 0.0)
+                         player_speed * speed, 0.0)
 
 
 def _core_frame(c_core: CBaseCore, n_frames: int) -> int:

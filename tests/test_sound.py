@@ -56,7 +56,7 @@ class ResourcesTests(unittest.TestCase):
 
     def test_estan_los_sonidos_del_juego(self):
         for name in ("shoot", "enemy_shoot", "explosion", "player_death", "turret_hit",
-                     "base_destroyed", "extra_life", "alert_yellow", "alert_red",
+                     "base_destroyed", "extra_life", "alert_green", "alert_yellow", "alert_red",
                      "blast_off", "menu_select"):
             self.assertIn(name, RESOURCES["sounds"])
 
