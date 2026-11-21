@@ -252,13 +252,45 @@ class RadarMathTests(unittest.TestCase):
         self.assertGreater(self.RECT.h * self.SCALE, 208)
 
 
+class RadarReachTests(unittest.TestCase):
+    """El radar sirve para encontrar las bases: debe mostrarlas todas desde el inicio de cada nivel."""
+
+    def test_todas_las_bases_de_cada_nivel_se_ven_en_el_radar_desde_el_inicio(self):
+        import glob
+        files = sorted(glob.glob("assets/cfg/levels/level_*.json"))
+        self.assertGreaterEqual(len(files), 10)
+        rect = radar_rect(CFG)
+        for path in files:
+            level = load_json(path)
+            start = pygame.Vector2(level["player_start"]["x"], level["player_start"]["y"])
+            for base in level["bases"]:
+                point = radar_point(pygame.Vector2(base["x"], base["y"]), start, WORLD, rect, CFG["scale"])
+                self.assertIsNotNone(point, f"{os.path.basename(path)}: la base {base} queda fuera del radar")
+
+    def test_el_zoom_aleja_el_radar_mas_que_la_version_anterior(self):
+        self.assertGreater(CFG["scale"], 8)  # con 8 solo el nivel 1 mostraba todas sus bases
+
+    def test_a_esta_escala_cada_base_se_ve_una_sola_vez(self):
+        """El mundo no se repite en el radar: 4 bases son 4 puntos, no más."""
+        world = esper.World()
+        for pos in ((300, 400), (760, 300), (620, 800), (100, 900)):
+            world.create_entity(CTransform(pygame.Vector2(pos)), CMinimapTrack("base"))
+        screen = pygame.Surface((256, 208)); screen.fill(BLACK)
+        system_minimap_rendering(world, screen, CFG, WORLD, pygame.Vector2(512, 512), 0.0)
+        rect = radar_rect(CFG)
+        core = tuple(color_from_cfg(CFG["base_core_color"]))[:3]
+        cores = sum(1 for x in range(rect.left, rect.right) for y in range(rect.top, rect.bottom)
+                    if tuple(screen.get_at((x, y)))[:3] == core)
+        self.assertEqual(cores, 4)
+
+
 class RadarRenderTests(PanelTestCase):
-    def render(self, entities, center=(512, 512), elapsed=0.0):
+    def render(self, entities, center=(512, 512), elapsed=0.0, cfg=CFG):
         world = esper.World()
         for kind, pos in entities:
             world.create_entity(CTransform(pygame.Vector2(pos)), CMinimapTrack(kind))
         self.screen.fill(BLACK)
-        system_minimap_rendering(world, self.screen, CFG, WORLD, pygame.Vector2(center), elapsed)
+        system_minimap_rendering(world, self.screen, cfg, WORLD, pygame.Vector2(center), elapsed)
         return self.screen
 
     def test_la_nave_se_ve_en_el_centro_y_parpadea(self):
@@ -276,16 +308,28 @@ class RadarRenderTests(PanelTestCase):
         self.assertEqual(tuple(screen.get_at(point))[:3], tuple(color_from_cfg(CFG["base_core_color"]))[:3])
 
     def test_una_base_fuera_del_alcance_no_se_dibuja(self):
-        rect = radar_rect(CFG)
+        # Con el zoom lejano del proyecto el radar abarca medio mundo y nada queda fuera de alcance
+        # (lo lejano aparece por el otro lado), así que se prueba con una escala más cercana.
+        near = {**CFG, "scale": 8}
+        rect = radar_rect(near)
         before = pygame.Surface((256, 208)); before.fill(BLACK)
-        system_minimap_rendering(esper.World(), before, CFG, WORLD, pygame.Vector2(512, 512), 0.0)
-        far = self.render([("base", (512 + 400, 512))])
+        system_minimap_rendering(esper.World(), before, near, WORLD, pygame.Vector2(512, 512), 0.0)
+        reach = (rect.w // 2 + 4) * near["scale"]  # unos píxeles más allá del borde derecho del radar
+        far = self.render([("base", (512 + reach, 512))], center=(512, 512), cfg=near)
         self.assertEqual(pygame.image.tobytes(far.subsurface(rect), "RGB"),
                          pygame.image.tobytes(before.subsurface(rect), "RGB"))
 
     def test_una_base_al_otro_lado_del_borde_del_mundo_se_ve_cerca_de_la_nave(self):
         screen = self.render([("base", (10, 512))], center=(1000, 512))
         self.assertIn((255, 64, 64), colors(screen, radar_rect(CFG)))
+
+    def test_con_el_zoom_lejano_lo_que_esta_mas_alla_de_medio_mundo_aparece_por_el_otro_lado(self):
+        screen = self.render([("base", (512 + 600, 512))])  # 600 a la derecha = 424 a la izquierda en un mundo de 1024
+        rect = radar_rect(CFG)
+        xs = [x for x in range(rect.left, rect.right) for y in range(rect.top, rect.bottom)
+              if tuple(screen.get_at((x, y)))[:3] == (255, 64, 64)]
+        self.assertTrue(xs)
+        self.assertLess(max(xs), rect.centerx)  # quedó a la izquierda de la nave
 
     def test_el_radar_sigue_el_centro_se_mueve_con_la_nave(self):
         base = ("base", (700, 512))
