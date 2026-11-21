@@ -1,6 +1,7 @@
 """Pruebas del movimiento del jugador: avance automático, aceleración y 8 direcciones."""
 
 import os
+import random
 import unittest
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -66,6 +67,9 @@ class MovementTests(unittest.TestCase):
 
 class PlaySceneInputTests(unittest.TestCase):
     def setUp(self):
+        # Los obstáculos del nivel se reparten al azar: con semilla fija la nave no choca
+        # con uno durante la prueba y el resultado no depende del orden de las pruebas.
+        random.seed(0)
         self.engine = GameEngine()
         self.engine._apply_scene_change("PLAY")
         self.scene = self.engine._current_scene

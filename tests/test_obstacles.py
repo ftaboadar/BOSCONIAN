@@ -13,6 +13,7 @@ sys.path.insert(0, os.getcwd())
 import esper
 import pygame
 
+from src.create.prefab_creator import create_hitbox
 from src.create.prefab_obstacles import (create_mine, create_obstacles, create_rock,
                                          create_solid_rock)
 from src.ecs.components.c_animation import CAnimation
@@ -210,6 +211,25 @@ class LevelTests(unittest.TestCase):
     def test_cantidad_negativa_es_error(self):
         with self.assertRaises(ConfigError):
             self._load_with({"rock": -1})
+
+
+class HitboxConfigTests(unittest.TestCase):
+    def test_collisions_json_se_lee_una_sola_vez(self):
+        from unittest import mock
+        from src.create import prefab_creator
+        prefab_creator._hitboxes_cfg.cache_clear()
+        real = prefab_creator.load_json
+        with mock.patch.object(prefab_creator, "load_json", side_effect=real) as spy:
+            ENGINE.state.level = 10
+            ENGINE._apply_scene_change("PLAY")
+        reads = [c for c in spy.call_args_list if c.args[0].endswith("collisions.json")]
+        self.assertEqual(len(reads), 1)
+        ENGINE.state.level = 1
+
+    def test_cada_hitbox_es_un_objeto_nuevo(self):
+        a, b = create_hitbox("base"), create_hitbox("base")
+        a.size.x = 1
+        self.assertNotEqual(b.size.x, 1)
 
 
 class SceneTests(unittest.TestCase):

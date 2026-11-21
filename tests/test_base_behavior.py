@@ -358,7 +358,8 @@ class BehaviorConfigTests(unittest.TestCase):
 
 class PlaySceneBehaviorTests(unittest.TestCase):
     def start(self, core):
-        level = dict(load_level(1), core_mode=core)
+        # Sin obstáculos: están repartidos al azar y la nave podría chocar con uno.
+        level = dict(load_level(1), core_mode=core, obstacles={})
         with mock.patch.object(play_scene, "load_level", return_value=level):
             engine = GameEngine()
             self.addCleanup(engine._clean)

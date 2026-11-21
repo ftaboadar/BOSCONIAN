@@ -1,10 +1,13 @@
 import esper
 
 from src.ecs.components.c_animation import CAnimation
-from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_destroy import CDestroy
+from src.ecs.components.c_surface import CSurface
+
 
 def system_animation(world: esper.World, delta_time: float) -> None:
+    """Avanza las animaciones cuadro a cuadro; una animación sin loop que termina
+    marca su entidad con CDestroy."""
     for ent, (c_s, c_a) in world.get_components(CSurface, CAnimation):
         c_a.curr_time += delta_time
         if c_a.curr_time < c_a.frame_time:

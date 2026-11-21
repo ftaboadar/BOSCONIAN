@@ -1,5 +1,6 @@
 """Funciones que ensamblan entidades a partir de componentes."""
 
+import functools
 import math
 import random
 
@@ -70,9 +71,19 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         )
 
 
+@functools.cache
+def _hitboxes_cfg() -> dict:
+    """Sección "hitboxes" de collisions.json, leída de disco una sola vez."""
+    return load_json("assets/cfg/collisions.json")["hitboxes"]
+
+
 def create_hitbox(kind: str) -> CHitBox:
-    """Crea la CHitBox de un tipo de entidad según la sección "hitboxes" de collisions.json."""
-    cfg = load_json("assets/cfg/collisions.json")["hitboxes"][kind]
+    """Crea la CHitBox de un tipo de entidad según la sección "hitboxes" de collisions.json.
+
+    Cada llamada devuelve una CHitBox nueva (create_base, por ejemplo, gira su tamaño),
+    pero el JSON se lee de disco una sola vez.
+    """
+    cfg = _hitboxes_cfg()[kind]
     offset = cfg.get("offset", {"x": 0, "y": 0})
     return CHitBox(pygame.Vector2(cfg["size"]["w"], cfg["size"]["h"]),
                    pygame.Vector2(offset["x"], offset["y"]),

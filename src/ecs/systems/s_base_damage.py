@@ -10,6 +10,7 @@ from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_turret import CTurret
+from src.engine.sfx import play_sound
 
 # Evento de esper: el handler recibe la entidad de la base (ya borrada) y dónde estaba.
 BASE_DESTROYED = "base_destroyed"
@@ -43,6 +44,7 @@ def damage_base_part(world: esper.World, part: int, shot_dir: pygame.Vector2) ->
     draw_turret(surf, c_part.offset, world.component_for_entity(part, CTurret).frames, 0)
     draw_base_part(surf, c_part.offset, c_base.turret_wreck, c_base.turret_radius)
     world.delete_entity(part, immediate=True)
+    play_sound("turret_hit")
     if not _parts_of(world, base, "turret"):
         points += _destroy_base(world, base)
     return points
@@ -80,4 +82,5 @@ def _destroy_base(world: esper.World, base: int) -> int:
     for ent in _parts_of(world, base) + [base]:
         world.delete_entity(ent, immediate=True)
     esper.dispatch_event(BASE_DESTROYED, base, pos)
+    play_sound("base_destroyed")
     return points

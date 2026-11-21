@@ -39,6 +39,9 @@ class _Music:
         self._paths = paths
         self._current: str | None = None
 
+    def has(self, name: str) -> bool:
+        return name in self._paths
+
     def play(self, name: str, loops: int = -1) -> None:
         if name == self._current:
             return

@@ -4,6 +4,7 @@ import pygame
 
 from src.engine.input.command import Phase
 from src.engine.service_locator import ServiceLocator, color_from_cfg
+from src.engine.sfx import play_sound
 
 
 class Menu:
@@ -31,9 +32,12 @@ class Menu:
             return None
         if action == "UP":
             self.selected = (self.selected - 1) % len(self.items)
+            play_sound("menu_select")
         elif action == "DOWN":
             self.selected = (self.selected + 1) % len(self.items)
+            play_sound("menu_select")
         elif action == "SELECT":
+            play_sound("menu_select")
             return self.current_action
         return None
 
