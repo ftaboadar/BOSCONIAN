@@ -10,7 +10,7 @@ sys.path.insert(0, os.getcwd())
 
 import pygame
 
-from src.engine.data_loader import ConfigError, load_level
+from src.engine.data_loader import ConfigError, level_numbers, load_level
 from src.engine.difficulty import difficulty_params
 from src.engine.game_engine import GameEngine
 from src.engine.game_state import GameState
@@ -77,7 +77,13 @@ class SceneIntegrationTests(unittest.TestCase):
 
     def test_nivel_superado_pide_la_siguiente_escena(self):
         self.scene.level_cleared()
-        self.assertEqual(self.engine._next_scene, "VICTORY")  # solo existe el nivel 1
+        self.assertEqual(self.engine._next_scene, "PLAY")
+        self.assertEqual(self.engine.state.level, 2)
+
+    def test_superar_el_ultimo_nivel_es_victoria(self):
+        self.engine.state.level = level_numbers()[-1]
+        self.scene.level_cleared()
+        self.assertEqual(self.engine._next_scene, "VICTORY")
 
     def test_muerte_descuenta_vida_y_repite(self):
         self.scene.player_died()

@@ -220,11 +220,16 @@ def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: 
     turns = 0 if orientation == "vertical" else 1
     turret, core = cfg["turret"], cfg["core"]
     core_frames = [_sprite(cfg, r, turns) for r in core["frames"]]
+    # La hitbox de collisions.json es la de la base vertical; la horizontal está girada.
+    hitbox = create_hitbox("base")
+    if turns:
+        hitbox.size = pygame.Vector2(hitbox.size.y, hitbox.size.x)
     base = world.create_entity(
         CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
         CMinimapTrack("base"), CPoints(cfg["points"]["base"]), create_hitbox("base"),
         CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
               core_frames, core["radius"]),
+        hitbox,
     )
     for off in turret["offsets"]:
         offset = pygame.Vector2(off["x"], off["y"]).rotate(-90 * turns)

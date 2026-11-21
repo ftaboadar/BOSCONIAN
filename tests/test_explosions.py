@@ -15,7 +15,7 @@ from src.create.prefab_creator import create_explosion
 from src.ecs.components.c_animation import CAnimation
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_explosive import CExplosive
-from src.ecs.components.c_minimap_track import CMinimapTrack
+from src.ecs.components.c_hitbox import CHitBox
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -148,9 +148,9 @@ class PlayerDeathTests(unittest.TestCase):
         self.assertEqual(ENGINE.state.lives, 2)
 
     def test_jugador_muere_al_chocar_con_una_base(self):
-        base_pos = next(c_t.pos for _, (c_t, c_m) in
-                        self.scene.world.get_components(CTransform, CMinimapTrack)
-                        if c_m.kind == "base")
+        base_pos = next(c_t.pos for _, (c_t, c_hb) in
+                        self.scene.world.get_components(CTransform, CHitBox)
+                        if c_hb.layer == "BASE")
         self.scene.world.component_for_entity(self.scene.player, CTransform).pos = \
             pygame.Vector2(base_pos)
         self.scene.do_update(1 / 60)

@@ -1,0 +1,15 @@
+{
+    "round": 7,
+    "difficulty": 4,
+    "player_start": { "x": 512, "y": 512 },
+    "bases": [
+        { "x": 420, "y": 850, "orientation": "horizontal" },
+        { "x": 900, "y": 250, "orientation": "vertical" },
+        { "x": 870, "y": 920, "orientation": "horizontal" },
+        { "x": 410, "y": 70, "orientation": "vertical" },
+        { "x": 80, "y": 570, "orientation": "horizontal" }
+    ],
+    "obstacles": { "rock": 16, "mine": 8, "solid_rock": 5 },
+    "special_shot": false,
+    "music": "xenostar"
+}

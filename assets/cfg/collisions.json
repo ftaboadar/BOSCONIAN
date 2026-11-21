@@ -6,7 +6,7 @@
             "mask": ["ENEMY", "ENEMY_BULLET", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
         },
         "base": {
-            "size": { "w": 24, "h": 24 },
+            "size": { "w": 72, "h": 64 },
             "layer": "BASE",
             "mask": []
         },

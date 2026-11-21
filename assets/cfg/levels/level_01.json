@@ -20,6 +20,7 @@
             "orientation": "horizontal"
         }
     ],
+    "obstacles": { "rock": 10, "mine": 4, "solid_rock": 2 },
     "special_shot": true,
-    "obstacles": { "rock": 10, "mine": 4, "solid_rock": 2 }
+    "music": "confrontation"
 }

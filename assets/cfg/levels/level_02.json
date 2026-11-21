@@ -1,0 +1,13 @@
+{
+    "round": 2,
+    "difficulty": 1,
+    "player_start": { "x": 512, "y": 512 },
+    "bases": [
+        { "x": 760, "y": 150, "orientation": "horizontal" },
+        { "x": 500, "y": 820, "orientation": "vertical" },
+        { "x": 830, "y": 420, "orientation": "horizontal" }
+    ],
+    "obstacles": { "rock": 12, "mine": 4, "solid_rock": 2 },
+    "special_shot": false,
+    "music": "delayed_chips"
+}
