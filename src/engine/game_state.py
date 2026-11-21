@@ -2,6 +2,8 @@
 
 from src.engine.data_loader import load_entity_cfg
 
+ALERTS = ("GREEN", "YELLOW", "RED")  # indicador CONDITION; el sistema de alertas (#26) lo cambia
+
 REQUIRED = ("lives", "hi_score", "extra_life_first", "extra_life_step", "life_icons_max",
             "continue_seconds")
 
@@ -22,6 +24,7 @@ class GameState:
         self.game_over = False
         self.next_extra_life = self.cfg["extra_life_first"]
         self.record_to_beat = self.hi_score  # el récord con el que empieza esta partida (#43)
+        self.alert = ALERTS[0]  # todo nivel empieza en verde
         self.cheat = False  # modo trampa (F1): invulnerable; se apaga al empezar partida nueva
 
     @property

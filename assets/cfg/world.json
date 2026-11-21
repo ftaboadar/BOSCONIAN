@@ -12,13 +12,17 @@
     "stars_menu_speed": 40,
     "stars_blink_speed": 0.4,
     "minimap": {
-        "rect": { "x": 184, "y": 64, "w": 64, "h": 64 },
+        "rect": { "x": 184, "y": 54, "w": 64, "h": 80 },
+        "scale": 8,
+        "blink_seconds": 0.3,
         "bg_color": { "r": 0, "g": 0, "b": 40 },
         "border_color": { "r": 255, "g": 255, "b": 255 },
         "dot_colors": {
             "player": { "r": 255, "g": 255, "b": 255 },
             "base": { "r": 255, "g": 64, "b": 64 },
             "formation": { "r": 255, "g": 220, "b": 0 }
-        }
+        },
+        "dot_sizes": { "player": 2, "base": 5, "formation": 2 },
+        "base_core_color": { "r": 255, "g": 220, "b": 0 }
     }
 }

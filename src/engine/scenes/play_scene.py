@@ -50,6 +50,7 @@ from src.engine.data_loader import (
       load_level
     )
 from src.engine.difficulty import difficulty_factor, difficulty_params
+from src.engine.game_state import ALERTS
 from src.engine.hud import Hud
 from src.engine.level_flow import after_level_cleared, after_player_died
 from src.engine.input.command import Phase
@@ -102,7 +103,12 @@ class PlayScene(Scene):
         create_enemy_spawner(self.world, self.cfg_enemies, factor)
         create_stars(self.world, eng.cfg_world, eng.viewport)
         self.round = level["round"]
-        self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
+        r = self.player_cfg["sprite_rect"]
+        life_icon = ServiceLocator.images.get("ships").subsurface(
+            pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+        self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"], life_icon)
+        self.radar_time = 0.0  # para el parpadeo de la nave en el radar
+        eng.state.alert = ALERTS[0]  # todo nivel empieza en verde
         self.level_total_bases = len(level["bases"])
         self._sync_invulnerable()  # la nave se recrea en cada nivel o vida: hereda el modo trampa
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
@@ -233,6 +239,7 @@ class PlayScene(Scene):
         return False
 
     def do_update(self, delta_time: float) -> None:
+        self.radar_time += delta_time
         # La pausa va primero: congela también la cuenta de BLAST OFF!.
         if self.paused or self.confirm_exit:
             # En pausa solo las estrellas siguen brillando, quietas (sin parallax ni movimiento).
@@ -312,7 +319,7 @@ class PlayScene(Scene):
         system_world_rendering(self.world, screen, self.camera)
         system_rendering(self.world, screen)
         system_minimap_rendering(self.world, screen, self.engine.cfg_world["minimap"],
-                                 self.engine.world_size)
+                                 self.engine.world_size, self.camera.pos, self.radar_time)
         self.hud.draw(screen, self.engine.state, self.round)
         self.hud.draw_cheat(screen, self.engine.state)
         if self.blast_left > 0:
