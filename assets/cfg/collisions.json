@@ -1,0 +1,8 @@
+{
+    "rules": [
+        { "a": "ENEMY", "b": "ENEMY", "result": "BOUNCE" },
+        { "a": "ENEMY", "b": "BASE", "result": "BOUNCE_A" },
+        { "a": "PLAYER", "b": "ENEMY", "result": "DESTROY_BOTH" },
+        { "a": "PLAYER", "b": "ENEMY_BULLET", "result": "DESTROY_BOTH" }
+    ]
+}

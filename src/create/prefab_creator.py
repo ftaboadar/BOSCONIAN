@@ -1,17 +1,32 @@
 """Funciones que ensamblan entidades a partir de componentes."""
 
+import math
 import random
 
 import esper
 import pygame
 
+from src.ecs.components.c_base import CBase
+from src.ecs.components.c_base_core import CBaseCore
+from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_camera_target import CCameraTarget
+from src.ecs.components.c_enemy_bullet import CEnemyBullet
+from src.ecs.components.c_enemy_spawner import CEnemySpawner
+from src.ecs.components.c_enemy_state import CEnemyState
 from src.ecs.components.c_minimap_track import CMinimapTrack
+from src.ecs.components.c_points import CPoints
+from src.ecs.components.c_lifetime import CLifetime
+from src.ecs.components.c_player_bullet import CPlayerBullet
+from src.ecs.components.c_player_ship import CHeadingSprites, CPlayerShip
 from src.ecs.components.c_star import CStar
+from src.ecs.components.c_steering import CSteering
 from src.ecs.components.c_surface import CSurface
 from src.ecs.components.c_transform import CTransform
+from src.ecs.components.c_turret import CTurret
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.components.c_weapon import CWeapon
 from src.ecs.components.c_world import CWorld
+from src.ecs.systems.s_enemy_state import INITIAL_STATE
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
 
@@ -25,6 +40,16 @@ def create_image(world: esper.World, image_name: str, center: pygame.Vector2) ->
 def create_text(world: esper.World, text: str, color: pygame.Color, center: pygame.Vector2) -> int:
     surf = ServiceLocator.fonts.get("main").render(text, False, color)
     return world.create_entity(CTransform(center), CSurface(surf))
+
+
+def create_special_shot_message(world: esper.World, cfg: dict, active: bool, center_x: float) -> int:
+    """Aviso temporal al inicio del nivel que indica si el disparo especial está activo."""
+    m = cfg["special_message"]
+    key = "active" if active else "inactive"
+    entity = create_text(world, m[f"{key}_text"], color_from_cfg(m[f"{key}_color"]),
+                         pygame.Vector2(center_x, m["y"]))
+    world.add_component(entity, CLifetime(m["duration"]))
+    return entity
 
 
 def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
@@ -41,20 +66,174 @@ def create_stars(world: esper.World, cfg: dict, area: pygame.Rect) -> None:
         )
 
 
-def create_player_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
-    """Nave provisional (hito 3 la reemplaza): triángulo blanco de 12x12."""
-    surf = pygame.Surface((12, 12), pygame.SRCALPHA)
-    pygame.draw.polygon(surf, (255, 255, 255), [(6, 0), (12, 12), (0, 12)])
+def create_player(world: esper.World, pos: pygame.Vector2, cfg: dict, special: bool = False) -> int:
+    """Nave del jugador: sprite único hacia arriba, rotado en pasos de 45 grados.
+
+    `special` activa el disparo especial (lo define el nivel)."""
+    r = cfg["sprite_rect"]
+    base = ServiceLocator.images.get("ships").subsurface(
+        pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+    # Ángulo antihorario de pygame.transform.rotate para cada (dx, dy) con "arriba" = (0, -1).
+    sprites = {
+        (dx, dy): pygame.transform.rotate(base, round(math.degrees(math.atan2(-dx, -dy))))
+        for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)
+    }
+    w = cfg["weapon"]
+    heading = (cfg["start_heading"]["x"], cfg["start_heading"]["y"])
     return world.create_entity(
-        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(surf),
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2()), CSurface(sprites[heading]),
         CWorld(), CCameraTarget(), CMinimapTrack("player"),
+        CPlayerShip(heading, cfg["max_speed"], cfg["acceleration"]), CHeadingSprites(sprites),
+        CWeapon(w["cooldown"], w["bullet_speed"], w["muzzle_offset"], _bullet_sprites(w),
+                 special, w["special_spread"]),
     )
 
 
-def create_base_placeholder(world: esper.World, pos: pygame.Vector2) -> int:
-    """Base provisional (hito 4 la reemplaza): cuadro rojo de 24x24."""
-    surf = pygame.Surface((24, 24))
-    surf.fill((200, 40, 40))
+def _bullet_sprites(weapon_cfg: dict) -> dict[tuple[int, int], pygame.Surface]:
+    """Sprite de bala para cada una de las 8 direcciones a partir de vertical, horizontal y diagonal."""
+    sheet = ServiceLocator.images.get("ships")
+
+    def cut(name: str) -> pygame.Surface:
+        r = weapon_cfg["bullet_sprites"][name]
+        return sheet.subsurface(pygame.Rect(r["x"], r["y"], r["w"], r["h"])).copy()
+
+    vertical, horizontal, diagonal = cut("vertical"), cut("horizontal"), cut("diagonal")
+    sprites = {}
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if (dx, dy) == (0, 0):
+                continue
+            if dx == 0:
+                sprites[(dx, dy)] = vertical
+            elif dy == 0:
+                sprites[(dx, dy)] = horizontal
+            else:  # el sprite diagonal original es "/" (arriba-derecha / abajo-izquierda)
+                sprites[(dx, dy)] = diagonal if dx * dy < 0 else pygame.transform.flip(diagonal, True, False)
+    return sprites
+
+
+def create_player_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                         surf: pygame.Surface) -> int:
     return world.create_entity(
-        CTransform(pygame.Vector2(pos)), CSurface(surf), CWorld(), CMinimapTrack("base"),
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
+        CWorld(), CPlayerBullet(),
+    )
+
+
+def _by_difficulty(span: dict, difficulty: float) -> float:
+    """Valor entre `easy` (dificultad 0) y `hard` (dificultad 1)."""
+    return span["easy"] * (1 - difficulty) + span["hard"] * difficulty
+
+
+def create_enemy(world: esper.World, kind: str, pos: pygame.Vector2, direction: pygame.Vector2,
+                 cfg: dict, player_speed: float, difficulty: float,
+                 rng: random.Random | None = None) -> int:
+    """Enemigo de tipo I, P o E (cuadro de color provisional) con su IA de estados.
+
+    Va a `speed_factor` veces la velocidad del jugador. `difficulty` (0..1) fija cuánto
+    se desvía al perseguir: entre la mitad y el máximo del rango, hacia un lado al azar.
+    """
+    rng = rng or random.Random()
+    type_cfg = cfg["types"][kind]
+    speed = player_speed * type_cfg["speed_factor"]
+    surf = pygame.Surface((type_cfg["size"], type_cfg["size"]))
+    surf.fill(color_from_cfg(type_cfg["color"]))
+    max_dev = _by_difficulty(cfg["deviation_degrees"], difficulty)
+    deviation = rng.choice((-1, 1)) * rng.uniform(max_dev / 2, max_dev)
+    heading = pygame.Vector2(direction)
+    if heading.length_squared() == 0:
+        heading = pygame.Vector2(1, 0).rotate(rng.uniform(0, 360))
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)),
+        CVelocity(heading.normalize() * speed),
+        CSurface(surf), CWorld(),
+        CSteering(type_cfg.get("turn_rate", 0), deviation, type_cfg.get("wander")),
+        CEnemyState(kind, INITIAL_STATE[kind], type_cfg.get("chase_seconds", 0)),
+        CPoints(type_cfg["points"]),
+    )
+
+
+def create_enemy_spawner(world: esper.World, cfg: dict, difficulty: float) -> int:
+    """Generador de enemigos del nivel. Con más `difficulty` (0..1) salen más seguido
+    y se permiten más enemigos vivos a la vez."""
+    spawn = cfg["spawn"]
+    return world.create_entity(CEnemySpawner(
+        _by_difficulty(spawn["interval_seconds"], difficulty),
+        round(_by_difficulty(spawn["max_alive"], difficulty)),
+        difficulty))
+
+
+def _sprite(cfg: dict, rect: dict, quarter_turns: int,
+            flip_x: bool = False, flip_y: bool = False) -> pygame.Surface:
+    """Recorte de la hoja de sprites de las bases, con el colorkey transparente, espejado
+    (si se pide) y girado."""
+    sheet = ServiceLocator.images.get(cfg["image"])
+    surf = sheet.subsurface(pygame.Rect(rect["x"], rect["y"], rect["w"], rect["h"])).copy()
+    key = color_from_cfg(cfg["colorkey"])
+    pixels = pygame.PixelArray(surf)
+    pixels.replace(key, pygame.Color(0, 0, 0, 0))
+    pixels.close()
+    return pygame.transform.rotate(pygame.transform.flip(surf, flip_x, flip_y), 90 * quarter_turns)
+
+
+def _turret_frames(cfg: dict, off: dict, turns: int) -> list[pygame.Surface]:
+    """Cuadros de la torreta que está en `off`: cerrada, abierta y a punto de disparar.
+
+    Cerrada es tal cual viene dibujada en el sprite de la base; los otros cuadros de la
+    hoja son los de la torreta de arriba a la izquierda, espejados para las demás.
+    """
+    closed, *others = cfg["turret"]["frames"]
+    center = pygame.Rect(cfg["rect"]["x"], cfg["rect"]["y"], cfg["rect"]["w"], cfg["rect"]["h"]).center
+    in_base = {"x": center[0] + off["x"] - closed["w"] // 2,
+               "y": center[1] + off["y"] - closed["h"] // 2, "w": closed["w"], "h": closed["h"]}
+    return [_sprite(cfg, in_base, turns)] + [
+        _sprite(cfg, r, turns, off["x"] > 0, off["y"] > 0) for r in others]
+
+
+def create_base(world: esper.World, pos: pygame.Vector2, orientation: str, cfg: dict,
+                core_mode: str = "open", difficulty: float = 0.0,
+                rng: random.Random | None = None) -> int:
+    """Base enemiga quieta en `pos`: una entidad con el sprite completo más una entidad
+    por cada una de sus seis torretas y otra por el núcleo (sin sprite propio).
+
+    bases.json describe la base vertical (abierta arriba y abajo, así que el núcleo
+    se alcanza con un disparo vertical); la horizontal es la misma girada 90 grados.
+    Cada torreta dispara a un intervalo propio, al azar dentro de `turret.fire_interval`.
+    Con `core_mode` "cycle" el núcleo se abre y se cierra (pasa menos tiempo cerrado
+    con más `difficulty`, 0..1); con "open" queda siempre abierto.
+    """
+    rng = rng or random.Random()
+    turns = 0 if orientation == "vertical" else 1
+    turret, core = cfg["turret"], cfg["core"]
+    core_frames = [_sprite(cfg, r, turns) for r in core["frames"]]
+    base = world.create_entity(
+        CTransform(pygame.Vector2(pos)), CSurface(_sprite(cfg, cfg["rect"], turns)), CWorld(),
+        CMinimapTrack("base"), CPoints(cfg["points"]["base"]),
+        CBase(orientation, _sprite(cfg, turret["wreck_rect"], turns), turret["radius"],
+              core_frames, core["radius"]),
+    )
+    for off in turret["offsets"]:
+        offset = pygame.Vector2(off["x"], off["y"]).rotate(-90 * turns)
+        interval = rng.uniform(turret["fire_interval"]["min"], turret["fire_interval"]["max"])
+        world.create_entity(CTransform(pos + offset), CWorld(),
+                            CBasePart(base, "turret", offset), CPoints(cfg["points"]["turret"]),
+                            CTurret(interval, _turret_frames(cfg, off, turns)))
+    core_ent = world.create_entity(CTransform(pygame.Vector2(pos)), CWorld(),
+                                   CBasePart(base, "core", pygame.Vector2()))
+    if core_mode == "cycle":
+        # El sprite de la base trae el núcleo abierto: empieza en el último cuadro.
+        world.add_component(core_ent, CBaseCore(
+            _by_difficulty(core["closed_seconds"], difficulty), core["open_seconds"],
+            core["frame_seconds"], len(core_frames) - 1))
+    return base
+
+
+def create_enemy_bullet(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector2,
+                        cfg: dict) -> int:
+    """Bala pequeña de torreta (cuadro de color) que dura `seconds`."""
+    surf = pygame.Surface((cfg["size"], cfg["size"]))
+    surf.fill(color_from_cfg(cfg["color"]))
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CVelocity(pygame.Vector2(vel)), CSurface(surf),
+        CWorld(), CEnemyBullet(cfg["seconds"]),
     )

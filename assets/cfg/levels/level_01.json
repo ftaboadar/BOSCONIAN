@@ -1,10 +1,24 @@
 {
     "round": 1,
     "difficulty": 1,
+    "core_mode": "open",
     "player_start": { "x": 512, "y": 512 },
     "bases": [
-        { "x": 300, "y": 400, "orientation": "horizontal" },
-        { "x": 760, "y": 300, "orientation": "vertical" },
-        { "x": 620, "y": 800, "orientation": "horizontal" }
-    ]
+        {
+            "x": 300,
+            "y": 400,
+            "orientation": "horizontal"
+        },
+        {
+            "x": 760,
+            "y": 300,
+            "orientation": "vertical"
+        },
+        {
+            "x": 620,
+            "y": 800,
+            "orientation": "horizontal"
+        }
+    ],
+    "special_shot": true
 }

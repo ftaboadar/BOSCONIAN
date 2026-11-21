@@ -8,6 +8,9 @@ CFG_DIR = "assets/cfg"
 LEVELS_DIR = os.path.join(CFG_DIR, "levels")
 LEVEL_FILE = re.compile(r"^level_(\d{2})\.json$")
 ORIENTATIONS = ("horizontal", "vertical")
+TURRETS_PER_BASE = 6
+TURRET_FRAMES = 3  # cerrada, abierta y a punto de disparar
+CORE_MODES = ("open", "cycle")  # siempre abierto sin disparar, o se abre y cierra
 RESOURCE_SECTIONS = ("images", "sounds", "music", "fonts")
 
 
@@ -61,6 +64,11 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    level.setdefault("special_shot", False)
+    # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
+    level.setdefault("core_mode", "open")
+    if level["core_mode"] not in CORE_MODES:
+        raise ConfigError(f"{path}: core_mode debe ser {' o '.join(CORE_MODES)}")
     return level
 
 
@@ -69,6 +77,94 @@ def load_entity_cfg(name: str, required: tuple[str, ...] = ()) -> dict:
     path = os.path.join(CFG_DIR, f"{name}.json")
     cfg = load_json(path)
     require_keys(cfg, required, path)
+    return cfg
+
+
+ENEMY_TYPE_KEYS = {
+    "I": ("speed_factor", "turn_rate", "chase_seconds", "points", "spawn_weight", "size", "color"),
+    "P": ("speed_factor", "turn_rate", "chase_seconds", "wander", "points", "spawn_weight", "size", "color"),
+    "E": ("speed_factor", "points", "spawn_weight", "size", "color"),
+}
+
+
+def load_enemies() -> dict:
+    """Carga enemies.json: tipos I, P y E y la sección `spawn`.
+
+    Cada tipo debe ir más rápido que el jugador (speed_factor > 1) y tener un peso de
+    spawn no negativo; al menos uno debe ser positivo para que pueda salir algún enemigo.
+    """
+    path = os.path.join(CFG_DIR, "enemies.json")
+    cfg = load_entity_cfg("enemies", ("deviation_degrees", "spawn", "types"))
+    require_keys(cfg["deviation_degrees"], ("easy", "hard"), f"{path} deviation_degrees")
+    spawn = cfg["spawn"]
+    require_keys(spawn, ("interval_seconds", "max_alive", "distance", "despawn_distance"),
+                 f"{path} spawn")
+    for key in ("interval_seconds", "max_alive"):
+        require_keys(spawn[key], ("easy", "hard"), f"{path} spawn.{key}")
+    if min(spawn["interval_seconds"]["easy"], spawn["interval_seconds"]["hard"]) <= 0:
+        raise ConfigError(f"{path} spawn: interval_seconds debe ser mayor que 0")
+    if min(spawn["max_alive"]["easy"], spawn["max_alive"]["hard"]) < 1:
+        raise ConfigError(f"{path} spawn: max_alive debe ser al menos 1")
+    if spawn["despawn_distance"] <= spawn["distance"]:
+        raise ConfigError(f"{path} spawn: despawn_distance debe ser mayor que distance")
+    require_keys(cfg["types"], tuple(ENEMY_TYPE_KEYS), f"{path} types")
+    unknown = [k for k in cfg["types"] if k not in ENEMY_TYPE_KEYS]
+    if unknown:
+        raise ConfigError(f"{path} types: tipos desconocidos {', '.join(unknown)}")
+    for kind, keys in ENEMY_TYPE_KEYS.items():
+        where = f"{path} types.{kind}"
+        require_keys(cfg["types"][kind], keys, where)
+        if cfg["types"][kind]["speed_factor"] <= 1:
+            raise ConfigError(f"{where}: speed_factor debe ser mayor que 1")
+    weights = [t["spawn_weight"] for t in cfg["types"].values()]
+    if min(weights) < 0 or sum(weights) <= 0:
+        raise ConfigError(f"{path} types: spawn_weight no puede ser negativo ni todos cero")
+    require_keys(cfg["types"]["P"]["wander"], ("distance", "radius", "jitter"),
+                 f"{path} types.P.wander")
+    return cfg
+
+
+def _require_rects(rects: list, source: str) -> None:
+    for i, rect in enumerate(rects):
+        require_keys(rect, ("x", "y", "w", "h"), f"{source}[{i}]")
+
+
+def load_bases() -> dict:
+    """Carga bases.json: puntos, sprite de la base, sus seis torretas (con sus cuadros y
+    su disparo), las balas y el núcleo (cuadros y ciclo de apertura)."""
+    path = os.path.join(CFG_DIR, "bases.json")
+    cfg = load_entity_cfg("bases", ("points", "image", "colorkey", "rect", "turret",
+                                    "bullet", "core"))
+    require_keys(cfg["points"], ("base", "turret"), f"{path} points")
+    require_keys(cfg["colorkey"], ("r", "g", "b"), f"{path} colorkey")
+    require_keys(cfg["rect"], ("x", "y", "w", "h"), f"{path} rect")
+    turret = cfg["turret"]
+    require_keys(turret, ("radius", "wreck_rect", "offsets", "frames", "range",
+                          "fire_interval", "warn_seconds"), f"{path} turret")
+    require_keys(turret["wreck_rect"], ("x", "y", "w", "h"), f"{path} turret.wreck_rect")
+    if not isinstance(turret["offsets"], list) or len(turret["offsets"]) != TURRETS_PER_BASE:
+        raise ConfigError(f"{path} turret.offsets: deben ser {TURRETS_PER_BASE} torretas")
+    for i, offset in enumerate(turret["offsets"]):
+        require_keys(offset, ("x", "y"), f"{path} turret.offsets[{i}]")
+    if not isinstance(turret["frames"], list) or len(turret["frames"]) != TURRET_FRAMES:
+        raise ConfigError(f"{path} turret.frames: deben ser {TURRET_FRAMES} cuadros")
+    _require_rects(turret["frames"], f"{path} turret.frames")
+    require_keys(turret["fire_interval"], ("min", "max"), f"{path} turret.fire_interval")
+    if not 0 < turret["fire_interval"]["min"] <= turret["fire_interval"]["max"]:
+        raise ConfigError(f"{path} turret.fire_interval: debe cumplirse 0 < min <= max")
+    require_keys(cfg["bullet"], ("speed", "seconds", "size", "color"), f"{path} bullet")
+    require_keys(cfg["bullet"]["color"], ("r", "g", "b"), f"{path} bullet.color")
+    core = cfg["core"]
+    require_keys(core, ("radius", "frames", "closed_seconds", "open_seconds", "frame_seconds"),
+                 f"{path} core")
+    if not isinstance(core["frames"], list) or len(core["frames"]) < 2:
+        raise ConfigError(f"{path} core.frames: al menos 2 cuadros (cerrado y abierto)")
+    _require_rects(core["frames"], f"{path} core.frames")
+    require_keys(core["closed_seconds"], ("easy", "hard"), f"{path} core.closed_seconds")
+    if min(core["frame_seconds"], core["open_seconds"]) <= 0:
+        raise ConfigError(f"{path} core: frame_seconds y open_seconds deben ser mayores que 0")
+    if min(core["closed_seconds"]["easy"], core["closed_seconds"]["hard"]) < 0:
+        raise ConfigError(f"{path} core: closed_seconds no puede ser negativo")
     return cfg
 
 
