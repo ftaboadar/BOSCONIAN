@@ -7,10 +7,11 @@ from src.engine.game_state import GameState
 from src.engine.input.command import CommandMap
 from src.engine.scenes.attract_scene import AttractInstructionsScene, AttractScene
 from src.engine.scenes.editor_scene import EditorScene
-from src.engine.scenes.end_scenes import DefeatScene, VictoryScene
+from src.engine.scenes.end_scenes import DefeatScene, RecordScene, VictoryScene
 from src.engine.scenes.info_scene import CreditsScene, InstructionsScene
 from src.engine.scenes.play_scene import PlayScene
 from src.engine.scenes.scene import Scene
+from src.engine.scenes.story_scenes import CutsceneScene, IntroScene
 from src.engine.scenes.title_scene import TitleScene
 from src.engine.service_locator import ServiceLocator, color_from_cfg
 
@@ -19,7 +20,8 @@ class GameEngine:
     SCENES = {"TITLE": TitleScene, "PLAY": PlayScene,
               "INSTRUCTIONS": InstructionsScene, "CREDITS": CreditsScene,
               "ATTRACT": AttractScene, "ATTRACT_INFO": AttractInstructionsScene,
-              "VICTORY": VictoryScene, "DEFEAT": DefeatScene, "EDITOR": EditorScene}
+              "INTRO": IntroScene, "CUTSCENE": CutsceneScene, "EDITOR": EditorScene,
+              "VICTORY": VictoryScene, "DEFEAT": DefeatScene, "RECORD": RecordScene}
 
     def __init__(self) -> None:
         pygame.init()

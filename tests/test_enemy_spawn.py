@@ -18,6 +18,7 @@ import pygame
 
 from src.create.prefab_creator import create_enemy, create_enemy_spawner
 from src.ecs.components.c_enemy_state import CEnemyState
+from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
@@ -195,9 +196,12 @@ class PlaySceneEnemyTests(unittest.TestCase):
 
     def test_en_el_nivel_salen_enemigos_y_se_mueven(self):
         self.scene.blast_left = 0
+        # La nave no puede morir (sin ella no salen enemigos) y los enemigos pueden chocar con
+        # obstáculos y desaparecer: se mira el máximo, fotograma a fotograma, no el final.
+        self.scene.world.add_component(self.scene.player, CInvulnerable())
         seen = 0
-        for _ in range(20):  # los que se alejan desaparecen: se mira el máximo, no el final
-            self.run_for(1.0)
+        for _ in range(round(20.0 / DT)):
+            self.scene.do_update(DT)
             seen = max(seen, self.enemies())
         self.assertGreater(seen, 0)
         screen = pygame.Surface((256, 208))

@@ -26,6 +26,11 @@ for _ in range(5):
 
 pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
 engine._process_events()
+assert engine._next_scene == "CUTSCENE"  # la cutscene (#37) precede al nivel
+engine._apply_scene_change(engine._next_scene)
+pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+engine._current_scene.elapsed = 1.0  # pasada la gracia, una tecla la salta
+engine._process_events()
 assert engine._next_scene == "PLAY"
 engine._apply_scene_change(engine._next_scene)
 assert isinstance(engine._current_scene, PlayScene)

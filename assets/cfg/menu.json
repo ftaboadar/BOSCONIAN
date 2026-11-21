@@ -47,6 +47,10 @@
         "title": "VICTORIA",
         "lines": ["HAS COMPLETADO TODOS", "LOS NIVELES"]
     },
+    "record": {
+        "title": "NUEVO RECORD",
+        "lines": ["FELICITACIONES", "SUPERASTE EL HI-SCORE"]
+    },
     "defeat": {
         "title": "GAME OVER",
         "lines": ["TE QUEDASTE SIN VIDAS"]

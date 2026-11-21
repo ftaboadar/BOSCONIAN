@@ -9,7 +9,8 @@ from src.engine.menu import Menu
 from src.engine.scenes.scene import Scene
 from src.engine.service_locator import ServiceLocator
 
-SCENE_BY_ACTION = {"PLAY": "PLAY", "INSTRUCTIONS": "INSTRUCTIONS", "CREDITS": "CREDITS"}
+# "Jugar" pasa por la cutscene (#37), que al terminar o saltarse lleva al nivel.
+SCENE_BY_ACTION = {"PLAY": "CUTSCENE", "INSTRUCTIONS": "INSTRUCTIONS", "CREDITS": "CREDITS"}
 
 
 class TitleScene(Scene):

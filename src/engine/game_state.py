@@ -10,6 +10,7 @@ class GameState:
     def __init__(self, cfg: dict | None = None) -> None:
         self.cfg = cfg or load_entity_cfg("game", REQUIRED)
         self.hi_score = self.cfg["hi_score"]
+        self.record_to_beat = self.hi_score
         self.reset()
 
     def reset(self, level: int = 1) -> None:
@@ -20,7 +21,14 @@ class GameState:
         self.continues_used = 0
         self.game_over = False
         self.next_extra_life = self.cfg["extra_life_first"]
+        self.record_to_beat = self.hi_score  # el récord con el que empieza esta partida (#43)
         self.cheat = False  # modo trampa (F1): invulnerable; se apaga al empezar partida nueva
+
+    @property
+    def broke_record(self) -> bool:
+        """True si en esta partida se superó el HI-SCORE con el que empezó (sigue siendo True
+        tras continuar: el récord ya quedó subido)."""
+        return self.hi_score > self.record_to_beat
 
     def add_score(self, points: int) -> None:
         """Suma puntos, actualiza el HI-SCORE y concede vidas extra al cruzar cada umbral."""
