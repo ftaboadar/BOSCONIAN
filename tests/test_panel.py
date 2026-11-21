@@ -55,9 +55,9 @@ class PanelTestCase(unittest.TestCase):
     def row(self, name, height=8):
         return pygame.Rect(self.panel.left, ROWS[name], self.panel.w, height)
 
-    def icon_rect(self, i, shown):
-        left = self.panel.centerx - shown * ICON_SPACING // 2
-        return pygame.Rect(left + i * ICON_SPACING, ICONS_Y, *self.icon_size)
+    def icon_rect(self, i, shown=None):
+        """Las mini-naves van alineadas a la izquierda de la barra, pegadas bajo el radar."""
+        return pygame.Rect(self.panel.left + i * ICON_SPACING, ICONS_Y, *self.icon_size)
 
 
 class OriginalLayoutTests(PanelTestCase):
@@ -75,7 +75,7 @@ class OriginalLayoutTests(PanelTestCase):
         self.assertNotIn("border_color", CFG)
         screen = pygame.Surface((256, 208))
         screen.fill(BLACK)
-        system_minimap_rendering(esper.World(), screen, CFG, WORLD, pygame.Vector2(), 0.0)
+        system_minimap_rendering(esper.World(), screen, CFG, WORLD)
         radar = radar_rect(CFG)
         self.assertEqual(colors(screen, radar), {tuple(color_from_cfg(CFG["bg_color"]))[:3]})
         self.assertFalse(lit(screen, pygame.Rect(0, 0, 192, 208)))
@@ -118,32 +118,38 @@ class LivesIconTests(PanelTestCase):
             self.state.lives = lives
             self.draw()
             for i in range(lives):
-                self.assertTrue(lit(self.screen, self.icon_rect(i, lives)), (lives, i))
+                self.assertTrue(lit(self.screen, self.icon_rect(i)), (lives, i))
 
     def test_cuatro_mini_naves_llenan_justo_el_ancho_de_la_barra(self):
         self.assertEqual(4 * ICON_SPACING, self.panel.w)
         self.state.lives = 4
         self.draw()
-        self.assertEqual(self.icon_rect(0, 4).left, self.panel.left)
+        self.assertEqual(self.icon_rect(0).left, self.panel.left)
 
-    def test_con_menos_vidas_no_se_dibujan_las_demas(self):
+    def test_las_vidas_van_a_la_izquierda_y_con_menos_vidas_no_se_dibujan_las_demas(self):
         self.state.lives = 2
         self.draw()
-        self.assertFalse(lit(self.screen, pygame.Rect(self.icon_rect(0, 2).left - 24, ICONS_Y, 20, 17)))
+        self.assertTrue(lit(self.screen, self.icon_rect(0)))
+        self.assertTrue(lit(self.screen, self.icon_rect(1)))
+        self.assertFalse(lit(self.screen, self.icon_rect(2)))  # la tercera no está
+        self.assertFalse(lit(self.screen, self.icon_rect(3)))
+
+    def test_las_vidas_quedan_pegadas_bajo_el_radar(self):
+        self.assertEqual(ICONS_Y, radar_rect(CFG).bottom)
 
     def test_la_mini_nave_es_el_sprite_de_la_nave_y_no_un_triangulo(self):
         self.state.lives = 1
         self.draw()
-        rect = self.icon_rect(0, 1)
+        rect = self.icon_rect(0)
         self.assertGreater(len(colors(self.screen, rect)), 3)
         self.assertGreaterEqual(rect.width, 14)
 
     def test_con_mas_vidas_que_iconos_se_ve_el_total_y_solo_los_iconos_maximos(self):
         self.state.lives = 7
         self.draw()
-        fourth = self.icon_rect(3, 4)
+        fourth = self.icon_rect(3)
         self.assertTrue(lit(self.screen, fourth))
-        self.assertFalse(lit(self.screen, pygame.Rect(self.panel.left - 16, ICONS_Y, 16, self.icon_size[1])))  # no hay quinto icono
+        self.assertFalse(lit(self.screen, pygame.Rect(self.panel.left - 16, ICONS_Y, 16, self.icon_size[1])))  # nada fuera de la barra
         total = pygame.Rect(self.panel.right - 10, ICONS_Y + self.icon_size[1] - 8, 10, 8)
         self.assertIn((255, 255, 255), colors(self.screen, total))  # el 7, en blanco, abajo a la derecha
 
@@ -205,7 +211,7 @@ class LayoutTests(PanelTestCase):
         self.draw()
         world = esper.World()
         world.create_entity(CTransform(pygame.Vector2(512, 512)), CMinimapTrack("player"))
-        system_minimap_rendering(world, self.screen, CFG, WORLD, pygame.Vector2(512, 512), 0.0)
+        system_minimap_rendering(world, self.screen, CFG, WORLD)
         self.assertFalse(lit(self.screen, pygame.Rect(0, 0, self.engine.viewport.w, 208)), "el panel invade el campo de juego")
 
     def test_las_filas_van_en_orden_sin_encimarse_y_caben_en_pantalla(self):
@@ -236,112 +242,106 @@ class LayoutTests(PanelTestCase):
 
 
 class RadarMathTests(unittest.TestCase):
-    """Radar centrado en la nave (ver s_minimap)."""
+    """El radar es un mapa FIJO del mundo entero (ver s_minimap)."""
 
     RECT = radar_rect(CFG)
-    SCALE = CFG["scale"]
 
-    def point(self, pos, center=(500, 400)):
-        return radar_point(pygame.Vector2(pos), pygame.Vector2(center), WORLD, self.RECT, self.SCALE)
+    def point(self, pos):
+        return radar_point(pygame.Vector2(pos), WORLD, self.RECT)
 
-    def test_el_centro_del_radar_es_la_nave(self):
-        self.assertEqual(self.point((500, 400)), self.RECT.center)
+    def test_las_esquinas_del_mundo_son_las_esquinas_del_radar(self):
+        self.assertEqual(self.point((0, 0)), self.RECT.topleft)
+        self.assertEqual(self.point((WORLD.x - 1, WORLD.y - 1)), (self.RECT.right - 1, self.RECT.bottom - 1))
 
-    def test_el_radar_alcanza_mas_que_la_pantalla_de_juego(self):
-        self.assertGreater(self.RECT.w * self.SCALE, 192)
-        self.assertGreater(self.RECT.h * self.SCALE, 208)
+    def test_el_mundo_se_reparte_por_todo_el_radar_que_es_mas_alto_que_ancho(self):
+        self.assertEqual(self.point((WORLD.x / 2, WORLD.y / 2)), self.RECT.center)
+        x, y = self.point((WORLD.x * 0.75, WORLD.y * 0.25))
+        self.assertAlmostEqual((x - self.RECT.left) / self.RECT.w, 0.75, delta=0.02)
+        self.assertAlmostEqual((y - self.RECT.top) / self.RECT.h, 0.25, delta=0.02)
 
+    def test_el_mapa_no_depende_de_donde_este_la_nave(self):
+        """Lo fijo del mapa: la posición de una base en el radar es siempre la misma."""
+        self.assertEqual(self.point((300, 400)), self.point((300, 400)))
+        a, b = self.point((300, 400)), self.point((760, 300))
+        self.assertNotEqual(a, b)
 
-class RadarReachTests(unittest.TestCase):
-    """El radar sirve para encontrar las bases: debe mostrarlas todas desde el inicio de cada nivel."""
+    def test_al_salir_por_un_borde_reaparece_por_el_lado_opuesto(self):
+        near_right = self.point((WORLD.x - 1, 500))
+        wrapped = self.point((WORLD.x + 10, 500))          # se pasó del borde derecho
+        self.assertEqual(near_right[0], self.RECT.right - 1)
+        self.assertLessEqual(wrapped[0], self.RECT.left + 2)  # aparece junto al borde izquierdo
+        self.assertEqual(wrapped[1], self.point((10, 500))[1])
+        self.assertEqual(self.point((-10, 500)), self.point((WORLD.x - 10, 500)))   # y por la izquierda
+        self.assertEqual(self.point((500, -10)), self.point((500, WORLD.y - 10)))   # arriba y abajo
 
-    def test_todas_las_bases_de_cada_nivel_se_ven_en_el_radar_desde_el_inicio(self):
-        import glob
-        files = sorted(glob.glob("assets/cfg/levels/level_*.json"))
-        self.assertGreaterEqual(len(files), 10)
-        rect = radar_rect(CFG)
-        for path in files:
-            level = load_json(path)
-            start = pygame.Vector2(level["player_start"]["x"], level["player_start"]["y"])
-            for base in level["bases"]:
-                point = radar_point(pygame.Vector2(base["x"], base["y"]), start, WORLD, rect, CFG["scale"])
-                self.assertIsNotNone(point, f"{os.path.basename(path)}: la base {base} queda fuera del radar")
-
-    def test_el_zoom_aleja_el_radar_mas_que_la_version_anterior(self):
-        self.assertGreater(CFG["scale"], 8)  # con 8 solo el nivel 1 mostraba todas sus bases
-
-    def test_a_esta_escala_cada_base_se_ve_una_sola_vez(self):
-        """El mundo no se repite en el radar: 4 bases son 4 puntos, no más."""
-        world = esper.World()
-        for pos in ((300, 400), (760, 300), (620, 800), (100, 900)):
-            world.create_entity(CTransform(pygame.Vector2(pos)), CMinimapTrack("base"))
-        screen = pygame.Surface((256, 208)); screen.fill(BLACK)
-        system_minimap_rendering(world, screen, CFG, WORLD, pygame.Vector2(512, 512), 0.0)
-        rect = radar_rect(CFG)
-        core = tuple(color_from_cfg(CFG["base_core_color"]))[:3]
-        cores = sum(1 for x in range(rect.left, rect.right) for y in range(rect.top, rect.bottom)
-                    if tuple(screen.get_at((x, y)))[:3] == core)
-        self.assertEqual(cores, 4)
+    def test_siempre_cae_dentro_del_radar(self):
+        for x in (-5000, -1, 0, 1, 511, 1023, 1024, 99999):
+            for y in (-5000, -1, 0, 1, 511, 1023, 1024, 99999):
+                self.assertTrue(self.RECT.collidepoint(self.point((x, y))), (x, y))
 
 
 class RadarRenderTests(PanelTestCase):
-    def render(self, entities, center=(512, 512), elapsed=0.0, cfg=CFG):
+    def render(self, entities):
         world = esper.World()
         for kind, pos in entities:
             world.create_entity(CTransform(pygame.Vector2(pos)), CMinimapTrack(kind))
         self.screen.fill(BLACK)
-        system_minimap_rendering(world, self.screen, cfg, WORLD, pygame.Vector2(center), elapsed)
+        system_minimap_rendering(world, self.screen, CFG, WORLD)
         return self.screen
 
-    def test_la_nave_se_ve_en_el_centro_y_parpadea(self):
-        centre = radar_rect(CFG).center
-        on = self.render([("player", (512, 512))], elapsed=0.0)
-        self.assertEqual(tuple(on.get_at(centre))[:3], (255, 255, 255))
-        off = self.render([("player", (512, 512))], elapsed=CFG["blink_seconds"] + 0.01)
-        self.assertNotEqual(tuple(off.get_at(centre))[:3], (255, 255, 255))
+    def test_las_bases_son_puntos_verdes_pequenos_y_la_nave_blanca(self):
+        self.assertEqual(tuple(CFG["dot_colors"]["base"].values()), (128, 255, 160))
+        screen = self.render([("base", (300, 400)), ("player", (700, 800))])
+        base = radar_point(pygame.Vector2(300, 400), WORLD, radar_rect(CFG))
+        ship = radar_point(pygame.Vector2(700, 800), WORLD, radar_rect(CFG))
+        self.assertEqual(tuple(screen.get_at(base))[:3], (128, 255, 160))
+        self.assertEqual(tuple(screen.get_at(ship))[:3], (255, 255, 255))
+        green = [(x, y) for x in range(192, 256) for y in range(80, 176) if tuple(screen.get_at((x, y)))[:3] == (128, 255, 160)]
+        self.assertLessEqual(len(green), 4)  # un punto de 2x2
 
-    def test_una_base_aparece_a_escala_y_con_el_nucleo_de_otro_color(self):
-        pos = (512 + 80, 512 - 160)
-        point = radar_point(pygame.Vector2(pos), pygame.Vector2(512, 512), WORLD, radar_rect(CFG), CFG["scale"])
-        screen = self.render([("base", pos)])
-        self.assertEqual(tuple(screen.get_at((point[0] + 1, point[1])))[:3], (255, 64, 64))
-        self.assertEqual(tuple(screen.get_at(point))[:3], tuple(color_from_cfg(CFG["base_core_color"]))[:3])
+    def test_el_radar_muestra_todas_las_bases_siempre(self):
+        """No hay alcance: todas las bases de cada nivel están a la vista a la vez."""
+        import glob
+        for path in sorted(glob.glob("assets/cfg/levels/level_*.json")):
+            level = load_json(path)
+            screen = self.render([("base", (b["x"], b["y"])) for b in level["bases"]])
+            greens = colors(screen, radar_rect(CFG)) & {(128, 255, 160)}
+            self.assertEqual(len(greens), 1, os.path.basename(path))
+            for b in level["bases"]:
+                pt = radar_point(pygame.Vector2(b["x"], b["y"]), WORLD, radar_rect(CFG))
+                self.assertEqual(tuple(screen.get_at(pt))[:3], (128, 255, 160), (os.path.basename(path), b))
 
-    def test_una_base_fuera_del_alcance_no_se_dibuja(self):
-        # Con el zoom lejano del proyecto el radar abarca medio mundo y nada queda fuera de alcance
-        # (lo lejano aparece por el otro lado), así que se prueba con una escala más cercana.
-        near = {**CFG, "scale": 8}
-        rect = radar_rect(near)
-        before = pygame.Surface((256, 208)); before.fill(BLACK)
-        system_minimap_rendering(esper.World(), before, near, WORLD, pygame.Vector2(512, 512), 0.0)
-        reach = (rect.w // 2 + 4) * near["scale"]  # unos píxeles más allá del borde derecho del radar
-        far = self.render([("base", (512 + reach, 512))], center=(512, 512), cfg=near)
-        self.assertEqual(pygame.image.tobytes(far.subsurface(rect), "RGB"),
-                         pygame.image.tobytes(before.subsurface(rect), "RGB"))
-
-    def test_una_base_al_otro_lado_del_borde_del_mundo_se_ve_cerca_de_la_nave(self):
-        screen = self.render([("base", (10, 512))], center=(1000, 512))
-        self.assertIn((255, 64, 64), colors(screen, radar_rect(CFG)))
-
-    def test_con_el_zoom_lejano_lo_que_esta_mas_alla_de_medio_mundo_aparece_por_el_otro_lado(self):
-        screen = self.render([("base", (512 + 600, 512))])  # 600 a la derecha = 424 a la izquierda en un mundo de 1024
+    def test_la_nave_se_mueve_por_el_mapa_y_las_bases_no(self):
+        a = self.render([("base", (300, 400)), ("player", (100, 100))]).copy()
+        b = self.render([("base", (300, 400)), ("player", (900, 900))])
         rect = radar_rect(CFG)
-        xs = [x for x in range(rect.left, rect.right) for y in range(rect.top, rect.bottom)
-              if tuple(screen.get_at((x, y)))[:3] == (255, 64, 64)]
-        self.assertTrue(xs)
-        self.assertLess(max(xs), rect.centerx)  # quedó a la izquierda de la nave
+        base = radar_point(pygame.Vector2(300, 400), WORLD, rect)
+        self.assertEqual(tuple(a.get_at(base))[:3], tuple(b.get_at(base))[:3])      # la base no se movió
+        ship_a = radar_point(pygame.Vector2(100, 100), WORLD, rect)
+        ship_b = radar_point(pygame.Vector2(900, 900), WORLD, rect)
+        self.assertNotEqual(ship_a, ship_b)
+        self.assertEqual(tuple(a.get_at(ship_a))[:3], (255, 255, 255))
+        self.assertEqual(tuple(b.get_at(ship_b))[:3], (255, 255, 255))
 
-    def test_el_radar_sigue_el_centro_se_mueve_con_la_nave(self):
-        base = ("base", (700, 512))
-        a = self.render([base], center=(512, 512)).copy()
-        b = self.render([base], center=(600, 512))
-        self.assertNotEqual(pygame.image.tobytes(a, "RGB"), pygame.image.tobytes(b, "RGB"))
+    def test_la_nave_no_parpadea(self):
+        pos = radar_point(pygame.Vector2(500, 500), WORLD, radar_rect(CFG))
+        seen = {tuple(self.render([("player", (500, 500))]).get_at(pos))[:3] for _ in range(5)}
+        self.assertEqual(seen, {(255, 255, 255)})
 
-    def test_nada_se_dibuja_fuera_del_radar_aunque_la_marca_este_en_el_borde(self):
+    def test_la_nave_sale_por_el_otro_lado(self):
         rect = radar_rect(CFG)
-        edge = (512 + (rect.w // 2 - 3) * CFG["scale"], 512)
-        screen = self.render([("base", edge)])
-        self.assertFalse(lit(screen, pygame.Rect(rect.left - 8, rect.top, 8, rect.height)))  # el campo de juego sigue vacío
+        a = radar_point(pygame.Vector2(WORLD.x - 1, 500), WORLD, rect)
+        b = radar_point(pygame.Vector2(WORLD.x + 20, 500), WORLD, rect)   # ya cruzó el borde
+        screen = self.render([("player", (WORLD.x + 20, 500))])
+        self.assertLess(b[0], a[0])
+        self.assertEqual(tuple(screen.get_at(b))[:3], (255, 255, 255))
+
+    def test_el_radar_es_lavanda_sin_marco_y_solo_dibuja_dentro(self):
+        screen = self.render([("base", (0, 0)), ("player", (WORLD.x - 1, WORLD.y - 1))])  # en las esquinas
+        rect = radar_rect(CFG)
+        self.assertFalse(lit(screen, pygame.Rect(0, 0, rect.left, 208)))         # nada fuera, a la izquierda
+        self.assertFalse(lit(screen, pygame.Rect(rect.left, rect.bottom, rect.w, 208 - rect.bottom)))  # ni debajo
+        self.assertEqual(tuple(screen.get_at((rect.left + 20, rect.top + 40)))[:3], tuple(color_from_cfg(CFG["bg_color"]))[:3])
 
 
 class PlaySceneIntegrationTests(PanelTestCase):

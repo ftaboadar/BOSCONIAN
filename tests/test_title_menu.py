@@ -47,6 +47,11 @@ class TitleSceneTests(unittest.TestCase):
         self.engine = GameEngine()
         self.engine._apply_scene_change("TITLE")
         self.scene = self.engine._current_scene
+        # En el título primero se ve «PUSH BUTTON TO START»; un botón abre el menú que se prueba aquí.
+        self.scene.elapsed = 1.0
+        self.scene.do_any_key()
+        self.scene.do_update(1 / 60)
+        assert self.scene.mode == "menu"
 
     def press(self, action: str) -> None:
         self.scene.do_action(action, Phase.START)

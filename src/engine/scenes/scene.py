@@ -12,6 +12,7 @@ class Scene:
     # pantalla del juego: el motor la dibuja tras cada escena que la tenga. La escena solo
     # dibuja el campo de juego (engine.viewport); lo que se pase de ahí queda tapado.
     has_panel = True
+    panel_lives = False  # las mini-naves solo se ven una vez empezada la partida
 
     def __init__(self, engine) -> None:
         self.engine = engine
@@ -32,6 +33,10 @@ class Scene:
     def do_draw(self, screen: pygame.Surface) -> None:
         """Dibuja la escena."""
 
+    def panel_state(self):
+        """Los valores que muestra la barra (HI-SCORE, 1UP...); por defecto los de la partida."""
+        return self.engine.state
+
     def panel_round(self) -> int:
         """Número que muestra la barra en ROUND."""
         return self.engine.level
@@ -39,7 +44,7 @@ class Scene:
     def draw_radar(self, screen: pygame.Surface) -> None:
         """Radar de la barra lateral. Por defecto, vacío: solo el marco."""
         system_minimap_rendering(esper.World(), screen, self.engine.cfg_world["minimap"],
-                                 self.engine.world_size, pygame.Vector2(), 0.0)
+                                 self.engine.world_size)
 
     def do_clean(self) -> None:
         """Libera la escena."""

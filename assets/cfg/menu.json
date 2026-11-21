@@ -2,10 +2,12 @@
     "colors": {
         "normal": { "r": 255, "g": 255, "b": 255 },
         "selected": { "r": 255, "g": 220, "b": 0 },
-        "title": { "r": 118, "g": 255, "b": 3 }
+        "title": { "r": 118, "g": 255, "b": 3 },
+        "brand": { "r": 255, "g": 60, "b": 40 },
+        "level": { "r": 64, "g": 128, "b": 255 },
+        "subtitle": { "r": 96, "g": 16, "b": 16 }
     },
     "line_height": 14,
-    "logo_width": 168,
     "attract": {
         "idle_seconds": 15,
         "demo_seconds": 12,

@@ -1,15 +1,14 @@
-"""Radar del panel lateral: centrado en la nave, a escala, con el mundo toroidal.
+"""Radar del panel lateral, como el del Bosconian original: un mapa FIJO del mundo entero.
 
-La nave está siempre en el centro (parpadeando) y las demás marcas se ven donde quedan
-respecto a ella, tomando el camino más corto: un objeto al otro lado del borde del mundo
-aparece cerca. Lo que queda fuera del alcance del radar no se dibuja."""
+No se mueve con la nave: las bases se ven siempre en su sitio y la nave es un punto que recorre
+el mapa. Como el mundo es toroidal, al llegar a un borde el punto sale por el lado opuesto.
+El mundo se reparte linealmente por todo el radar (que es más alto que ancho)."""
 
 import esper
 import pygame
 
 from src.ecs.components.c_minimap_track import CMinimapTrack
 from src.ecs.components.c_transform import CTransform
-from src.engine.camera import wrap_delta
 from src.engine.service_locator import color_from_cfg
 
 
@@ -18,40 +17,22 @@ def radar_rect(cfg: dict) -> pygame.Rect:
     return pygame.Rect(r["x"], r["y"], r["w"], r["h"])
 
 
-def radar_point(world_pos: pygame.Vector2, center: pygame.Vector2, world_size: pygame.Vector2,
-                rect: pygame.Rect, scale: float) -> tuple[int, int] | None:
-    """Punto del radar de una posición del mundo, o None si queda fuera del alcance.
-
-    `center` es lo que está en el centro del radar (la nave); `scale` son píxeles del mundo
-    por píxel del radar. El borde del marco no cuenta como alcance."""
-    delta = wrap_delta(pygame.Vector2(world_pos) - center, world_size)
-    point = (rect.centerx + round(delta.x / scale), rect.centery + round(delta.y / scale))
-    return point if rect.inflate(-2, -2).collidepoint(point) else None
-
-
-def blink_on(elapsed: float, cfg: dict) -> bool:
-    """La marca de la nave parpadea: visible la mitad del tiempo."""
-    period = cfg["blink_seconds"]
-    return elapsed % (2 * period) < period
+def radar_point(world_pos: pygame.Vector2, world_size: pygame.Vector2,
+                rect: pygame.Rect) -> tuple[int, int]:
+    """Punto del radar de una posición del mundo. Un punto que se sale del mundo reaparece por
+    el lado opuesto (el mundo se repite). La esquina (0, 0) del mundo es la de arriba a la izquierda."""
+    x = (world_pos.x % world_size.x) / world_size.x
+    y = (world_pos.y % world_size.y) / world_size.y
+    return (rect.left + min(int(x * rect.width), rect.width - 1),
+            rect.top + min(int(y * rect.height), rect.height - 1))
 
 
 def system_minimap_rendering(world: esper.World, screen: pygame.Surface, cfg: dict,
-                             world_size: pygame.Vector2, center: pygame.Vector2,
-                             elapsed: float = 0.0) -> None:
+                             world_size: pygame.Vector2) -> None:
     rect = radar_rect(cfg)
     screen.fill(color_from_cfg(cfg["bg_color"]), rect)
-    if "border_color" in cfg:  # el del original no tiene marco
-        pygame.draw.rect(screen, color_from_cfg(cfg["border_color"]), rect, 1)
-    shown = blink_on(elapsed, cfg)
     for _, (c_t, c_m) in world.get_components(CTransform, CMinimapTrack):
-        if c_m.kind == "player" and not shown:
-            continue
-        point = radar_point(c_t.pos, center, world_size, rect, cfg["scale"])
-        if point is None:
-            continue
         size = cfg["dot_sizes"][c_m.kind]
         mark = pygame.Rect(0, 0, size, size)
-        mark.center = point
-        screen.fill(color_from_cfg(cfg["dot_colors"][c_m.kind]), mark.clip(rect.inflate(-2, -2)))
-        if c_m.kind == "base" and size >= 5:  # el núcleo de la base, de otro color
-            screen.set_at(point, color_from_cfg(cfg["base_core_color"]))
+        mark.center = radar_point(c_t.pos, world_size, rect)
+        screen.fill(color_from_cfg(cfg["dot_colors"][c_m.kind]), mark.clip(rect))

@@ -8,6 +8,16 @@ REQUIRED = ("lives", "hi_score", "extra_life_first", "extra_life_step", "life_ic
             "continue_seconds")
 
 
+class BlankState:
+    """Lo que muestra la barra antes de cargar nada: todo en ceros (la pantalla inicial del original)."""
+
+    hi_score = 0
+    score = 0
+    lives = 0
+    alert = ALERTS[0]
+    cheat = False
+
+
 class GameState:
     def __init__(self, cfg: dict | None = None) -> None:
         self.cfg = cfg or load_entity_cfg("game", REQUIRED)

@@ -14,7 +14,7 @@ import pygame
 from src.engine.data_loader import ConfigError, load_json
 from src.engine.game_engine import GameEngine
 from src.engine.input.command import Phase
-from src.engine.scenes.story_scenes import CutsceneScene
+from src.engine.scenes.story_scenes import BylineScene, LogoSlideScene, SplashScene
 from src.engine.scenes.title_scene import TitleScene
 from src.engine.shutter import Shutter
 
@@ -36,11 +36,13 @@ class ShutterModelTests(unittest.TestCase):
         s.draw(screen)
         self.assertEqual(pygame.image.tobytes(screen, "RGB"), bytes(256 * 208 * 3))
 
-    def test_solo_algunas_escenas_llevan_persiana(self):
+    def test_solo_las_pantallas_del_arranque_llevan_persiana(self):
         s = shutter()
+        self.assertEqual(set(CFG["to"]), {"LOGO_SLIDE", "BYLINE", "TITLE"})
         for name in CFG["to"]:
             self.assertTrue(s.wants(name))
-        for name in ("TITLE", "INSTRUCTIONS", "CREDITS", "VICTORY", "DEFEAT", "EDITOR"):
+        # El verde es el fondo del título, no la entrada al juego: ni la cinemática ni el nivel la usan.
+        for name in ("CUTSCENE", "PLAY", "SPLASH", "INSTRUCTIONS", "CREDITS", "VICTORY", "DEFEAT", "EDITOR"):
             self.assertFalse(s.wants(name), name)
 
     def test_al_cerrarse_cubre_de_a_poco_hasta_cerrar_del_todo(self):
@@ -119,60 +121,64 @@ class ShutterModelTests(unittest.TestCase):
 
 
 class EngineShutterTests(unittest.TestCase):
+    """Entre las pantallas del arranque (SPLASH, LOGO_SLIDE, BYLINE, TITLE) hay persiana."""
+
     def setUp(self):
         self.engine = GameEngine()
         self.engine.delta_time = DT
-        self.engine._apply_scene_change("TITLE")
-        self.title = self.engine._current_scene
+        self.engine._apply_scene_change("SPLASH")
+        self.splash = self.engine._current_scene
 
     def frames(self, seconds):
         for _ in range(round(seconds / DT)):
             self.engine._frame()
 
-    def test_jugar_cierra_la_persiana_y_la_escena_sigue_siendo_el_titulo_hasta_cubrir(self):
-        self.engine.switch_scene("CUTSCENE")
+    def test_al_pasar_al_verde_se_cierra_la_persiana_y_la_escena_sigue_hasta_cubrir(self):
+        self.engine.switch_scene("LOGO_SLIDE")
         self.engine._frame()
-        self.assertIsInstance(self.engine._current_scene, TitleScene)
+        self.assertIsInstance(self.engine._current_scene, SplashScene)
         self.assertTrue(self.engine.shutter.closing)
         self.assertIsNone(self.engine._next_scene)  # el pedido quedó en la persiana
 
     def test_con_el_campo_cubierto_se_cambia_de_escena_y_luego_se_abre(self):
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("LOGO_SLIDE")
         self.frames(CFG["close_seconds"] + 3 * DT)
-        self.assertIsInstance(self.engine._current_scene, CutsceneScene)
+        self.assertIsInstance(self.engine._current_scene, LogoSlideScene)
         self.assertEqual(self.engine.shutter.state, "opening")
         self.frames(CFG["open_seconds"] + 3 * DT)
         self.assertFalse(self.engine.shutter.busy)
 
     def test_en_el_momento_del_cambio_el_campo_esta_todo_cubierto(self):
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("LOGO_SLIDE")
         for _ in range(round(CFG["close_seconds"] / DT) + 5):
             self.engine._frame()
-            if isinstance(self.engine._current_scene, CutsceneScene):
+            if isinstance(self.engine._current_scene, LogoSlideScene):
                 break
         stage = self.engine.screen.subsurface(self.engine.viewport)
         self.assertEqual({tuple(stage.get_at((x, y)))[:3] for x in (0, 95, 191) for y in (0, 104, 207)}, {MINT})
 
     def test_la_escena_se_congela_mientras_la_persiana_se_cierra(self):
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("LOGO_SLIDE")
         self.engine._frame()
-        idle = self.title.idle
+        elapsed = self.splash.elapsed
         self.frames(CFG["close_seconds"] / 2)
-        self.assertEqual(self.title.idle, idle)
+        self.assertEqual(self.splash.elapsed, elapsed)
 
     def test_no_se_aceptan_teclas_mientras_se_cierra(self):
-        self.engine.switch_scene("CUTSCENE")
+        self.splash.elapsed = 5.0  # pasada la gracia: una tecla la saltaría
+        self.engine.switch_scene("LOGO_SLIDE")
         self.engine._frame()
-        selected = self.title.menu.selected
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
         self.engine._frame()
-        self.assertEqual(self.title.menu.selected, selected)
+        self.assertIsNone(self.engine._next_scene)  # la tecla se descartó
 
     def test_la_barra_lateral_no_se_mueve_durante_la_persiana(self):
+        """BYLINE y TITLE muestran los mismos valores: la barra no debe cambiar en ningún fotograma."""
+        self.engine._apply_scene_change("BYLINE")
         self.engine._draw()
         panel = self.engine.hud.panel
         before = pygame.image.tobytes(self.engine.screen.subsurface(panel), "RGB")
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("TITLE")
         for _ in range(round((CFG["close_seconds"] + CFG["open_seconds"]) / DT)):
             self.engine._frame()
             self.assertEqual(pygame.image.tobytes(self.engine.screen.subsurface(panel), "RGB"), before)
@@ -184,31 +190,33 @@ class EngineShutterTests(unittest.TestCase):
         self.assertFalse(self.engine.shutter.busy)
 
     def test_un_pedido_durante_la_apertura_se_aplica_sin_apilar_persianas(self):
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("LOGO_SLIDE")
         self.frames(CFG["close_seconds"] + 3 * DT)
         self.assertEqual(self.engine.shutter.state, "opening")
-        self.engine.switch_scene("PLAY")
+        self.engine.switch_scene("BYLINE")
         self.engine._frame()
-        self.assertEqual(type(self.engine._current_scene).__name__, "PlayScene")
+        self.assertIsInstance(self.engine._current_scene, BylineScene)
         self.assertNotEqual(self.engine.shutter.state, "closing")
 
-    def test_cada_nivel_y_cada_vida_llevan_persiana_al_volver_al_juego(self):
-        self.engine._apply_scene_change("PLAY")
-        self.engine.switch_scene("PLAY")  # morir o pasar de nivel
-        self.engine._frame()
-        self.assertTrue(self.engine.shutter.closing)
+    def test_entrar_al_juego_no_usa_persiana(self):
+        """El verde ya no es la entrada al nivel: ni la cinemática, ni el nivel, ni cada vida."""
+        for origin, target in (("TITLE", "CUTSCENE"), ("CUTSCENE", "PLAY"), ("PLAY", "PLAY"),
+                               ("EDITOR", "PLAY"), ("DEFEAT", "PLAY")):
+            self.engine._apply_scene_change(origin)
+            self.engine.switch_scene(target)
+            self.engine._frame()
+            self.assertEqual(type(self.engine._current_scene).__name__, self.engine.SCENES[target].__name__, (origin, target))
+            self.assertFalse(self.engine.shutter.busy, (origin, target))
 
-    def test_el_editor_no_usa_persiana_al_entrar_pero_si_al_volver_al_juego(self):
-        self.engine.switch_scene("EDITOR")
-        self.engine._frame()
-        self.assertEqual(type(self.engine._current_scene).__name__, "EditorScene")
-        self.engine.switch_scene("PLAY")
+    def test_volver_al_titulo_desde_otras_pantallas_si_lleva_persiana(self):
+        self.engine._apply_scene_change("VICTORY")
+        self.engine.switch_scene("TITLE")
         self.engine._frame()
         self.assertTrue(self.engine.shutter.closing)
 
     def test_cerrar_la_ventana_funciona_aunque_haya_persiana(self):
         self.engine.is_running = True
-        self.engine.switch_scene("CUTSCENE")
+        self.engine.switch_scene("LOGO_SLIDE")
         self.engine._frame()
         pygame.event.post(pygame.event.Event(pygame.QUIT))
         self.engine._frame()
@@ -216,24 +224,40 @@ class EngineShutterTests(unittest.TestCase):
 
 
 class TitleFireTests(unittest.TestCase):
+    """Disparar (Z) hace lo mismo que Enter: abre el menú desde «PUSH BUTTON TO START» y elige en él."""
+
     def setUp(self):
         self.engine = GameEngine()
         self.engine._apply_scene_change("TITLE")
         self.title = self.engine._current_scene
+        self.title.elapsed = 1.0
 
-    def test_disparar_en_el_titulo_empieza_la_partida_como_enter(self):
+    def open_menu(self):
+        self.title.do_any_key()
+        self.title.do_update(DT)
+
+    def test_disparar_en_el_push_button_abre_el_menu_y_no_empieza_la_partida(self):
+        self.title.do_any_key()
+        self.title.do_action("FIRE", Phase.START)
+        self.assertEqual(self.title.mode, "menu")
+        self.assertIsNone(self.engine._next_scene)
+
+    def test_disparar_en_el_menu_sobre_jugar_empieza_la_partida_como_enter(self):
         self.engine.state.add_score(500)
+        self.open_menu()
         self.title.do_action("FIRE", Phase.START)
         self.assertEqual(self.engine._next_scene, "CUTSCENE")
         self.assertEqual(self.engine.state.score, 0)  # start_game reinició la partida
 
     def test_disparar_sobre_otra_opcion_hace_lo_que_haria_enter(self):
+        self.open_menu()
         self.title.do_action("DOWN", Phase.START)
         self.title.do_action("DOWN", Phase.START)
         self.title.do_action("FIRE", Phase.START)
         self.assertEqual(self.engine._next_scene, "INSTRUCTIONS")
 
     def test_soltar_la_tecla_de_disparo_no_hace_nada(self):
+        self.open_menu()
         self.title.do_action("FIRE", Phase.END)
         self.assertIsNone(self.engine._next_scene)
 
