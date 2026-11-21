@@ -5,7 +5,6 @@ from src.create.prefab_creator import (
     create_player,
     create_special_shot_message,
     create_stars,
-    create_text,
 )
 from src.ecs.components.c_player_ship import CPlayerShip
 from src.ecs.components.c_weapon import CWeapon
@@ -64,12 +63,6 @@ class PlayScene(Scene):
         self.difficulty = difficulty_params(level)  # lo consumen spawn, steering y alertas
         self.hud = Hud(ServiceLocator.fonts.get("main"), eng.state.cfg["life_icons_max"])
         self.level_total_bases = len(level["bases"])
-        create_text(
-            self.world,
-            f"ROUND {level['round']}",
-            pygame.Color(255, 255, 255),
-            pygame.Vector2(216, 190),
-        )
         self.camera.follow(pygame.Vector2(start["x"], start["y"]))
         self.camera.delta = pygame.Vector2()
         # Pausa: el mundo queda intacto y solo se congela; no se destruye nada.
@@ -101,7 +94,7 @@ class PlayScene(Scene):
             # Como las direcciones, se registra también en pausa para no perder el soltar la tecla.
             weapon = self.world.component_for_entity(self.player, CWeapon)
             weapon.held = phase == Phase.START
-            if weapon.held and not self.paused:
+            if weapon.held and not self.paused and self.blast_left <= 0:
                 weapon.trigger = True
             return
         if phase != Phase.START:
@@ -111,8 +104,7 @@ class PlayScene(Scene):
             return
         if self.paused and action == "SELECT":
             # Acceso al menú del título desde la pausa (#27 lo convertirá en el menú de opciones).
-            if action == "SELECT":
-                self.engine.switch_scene("TITLE")
+            self.engine.switch_scene("TITLE")
             return
 
     def bases_remaining(self) -> int:

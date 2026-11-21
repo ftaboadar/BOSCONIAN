@@ -61,6 +61,7 @@ def load_level(number: int) -> dict:
             raise ConfigError(
                 f"{where}: orientation debe ser {' o '.join(ORIENTATIONS)}"
             )
+    level.setdefault("special_shot", False)
     return level
 
 
