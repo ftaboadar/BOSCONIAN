@@ -3,7 +3,7 @@
         "player": {
             "size": { "w": 10, "h": 10 },
             "layer": "PLAYER",
-            "mask": ["ENEMY", "ENEMY_BULLET", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST"]
+            "mask": ["ENEMY", "ENEMY_BULLET", "BASE", "ROCK", "MINE", "ROCK_SOLID", "MINE_BLAST", "PICKUP"]
         },
         "base": {
             "layer": "BASE",
@@ -62,6 +62,11 @@
             "layer": "BASE_TURRET",
             "mask": []
         },
+        "ability_item": {
+            "size": { "w": 10, "h": 10 },
+            "layer": "PICKUP",
+            "mask": []
+        },
         "base_core": {
             "size": { "w": 18, "h": 18 },
             "layer": "BASE_CORE",
@@ -69,6 +74,7 @@
         }
     },
     "rules": [
+        { "a": "PLAYER", "b": "PICKUP", "result": "COLLECT" },
         { "a": "ENEMY", "b": "ENEMY", "result": "BOUNCE" },
         { "a": "ENEMY", "b": "BASE", "result": "BOUNCE_A" },
         { "a": "PLAYER", "b": "ENEMY", "result": "DESTROY_BOTH" },

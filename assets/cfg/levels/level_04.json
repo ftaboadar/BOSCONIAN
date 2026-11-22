@@ -12,5 +12,6 @@
     ],
     "obstacles": { "rock": 14, "mine": 6, "solid_rock": 3 },
     "special_shot": false,
+    "ability_item_chance": 0.35,
     "music": "intense_moment"
 }

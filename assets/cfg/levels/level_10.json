@@ -14,5 +14,6 @@
     ],
     "obstacles": { "rock": 20, "mine": 10, "solid_rock": 6 },
     "special_shot": false,
+    "ability_item_chance": 0.2,
     "music": "exploring_the_cosmos"
 }

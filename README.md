@@ -48,7 +48,9 @@ python main.py
 
 Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. El gamepad es un bono y aún no está implementado.
 
-La habilidad especial no tiene tecla propia: la define el nivel (`"special_shot"`) y, cuando está activa, Z dispara tres balas al frente y una atrás. Un aviso al empezar el nivel dice si está activa. La tecla X solo se usa en el editor.
+La habilidad especial no tiene tecla propia: la define el nivel (`"special_shot"`) y, cuando está activa, Z dispara tres balas al frente y una atrás. Un aviso al empezar el nivel dice si está activa. 
+
+**Segunda habilidad especial: escudo de energía (tecla X).** No es un arma: durante `duration` segundos las colisiones de la nave no destruyen nada (ni a ella ni a lo que toca). Está limitada: se gasta un uso por activación y se acumulan hasta `max_charges`. Cada uso se consigue recogiendo un ítem (disco azul) que aparece cerca de la nave cada cierto tiempo, se ve en el minimapa y caduca si no se recoge. Todo (duración, usos, intervalo, distancia, colores, sonidos) está en `assets/cfg/ability.json`; la probabilidad de que aparezca el ítem en cada intervalo la define cada nivel con `"ability_item_chance"` (0 a 1). En el editor la tecla X sigue siendo "girar base".
 
 La pausa muestra el mismo menú del título: JUGAR reanuda (o, si se cambió NIVEL, empieza una partida nueva en ese nivel), INSTRUCCIONES y CREDITOS se leen sin salir de la pausa, y SALIR AL TITULO pide confirmación.
 

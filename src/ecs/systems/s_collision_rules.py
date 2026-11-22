@@ -2,6 +2,7 @@ import esper
 import pygame
 
 from src.create.prefab_creator import create_score_popup
+from src.ecs.components.c_ability import CShield
 from src.ecs.components.c_base_part import CBasePart
 from src.ecs.components.c_destroy import CDestroy
 from src.ecs.components.c_explosive import CExplosive
@@ -10,6 +11,7 @@ from src.ecs.components.c_points import CPoints
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_transform import CTransform
 from src.ecs.components.c_velocity import CVelocity
+from src.ecs.systems.s_ability import collect_item
 from src.ecs.systems.s_base_damage import damage_base_part
 from src.ecs.systems.s_collision import center_delta, hitbox_center
 
@@ -28,7 +30,7 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
     BOUNCE: ambas rebotan. BOUNCE_A: solo rebota la entidad de la capa "a"
     (la "b" es fija). DESTROY_BOTH: ambas se marcan con CDestroy, salvo las
     entidades con CInvulnerable. DESTROY_A: solo se marca la entidad de la capa "a"
-    (con la misma excepción); si la regla trae "explosion", esa entidad explota con ese
+    (con la misma excepción); COLLECT: la nave (capa "a") recoge el ítem de la capa "b" (ver s_ability); si la regla trae "explosion", esa entidad explota con ese
     tipo de explosions.json aunque no sea explosiva (una bala contra una roca indestructible:
     toda colisión deja una explosión). DAMAGE_BASE: la bala de la capa "a" golpea una torreta o el
     núcleo de una base (capa "b"): daña esa parte según la dirección del disparo, da los
@@ -52,6 +54,9 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
             ent_a, ent_b = ent_b, ent_a  # ent_a queda siempre en la capa "a" de la regla
         if rule is None:
             continue
+        if rule["result"] != "COLLECT" and (world.has_component(ent_a, CShield)
+                                            or world.has_component(ent_b, CShield)):
+            continue  # con el escudo activo el choque no destruye ni puntúa nada
 
         scored = {"a": ent_a, "b": ent_b}.get(rule.get("score"))
         if scored is not None:
@@ -62,7 +67,9 @@ def system_collision_rules(world: esper.World, collisions: list[tuple[int, int]]
                                    gained, popup_cfg)
 
         result = rule["result"]
-        if result == "BOUNCE":
+        if result == "COLLECT":
+            collect_item(world, ent_a, ent_b)  # ent_a es la nave; el ítem se queda si ya tiene el máximo
+        elif result == "BOUNCE":
             _bounce(world, ent_a, ent_b, True, world_size)
         elif result == "BOUNCE_A":
             _bounce(world, ent_a, ent_b, False, world_size)

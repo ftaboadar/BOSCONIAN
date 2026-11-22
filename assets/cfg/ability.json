@@ -1,0 +1,31 @@
+{
+    "shield": {
+        "name": "ESCUDO",
+        "duration": 4.0,
+        "max_charges": 2,
+        "start_charges": 0,
+        "radius": 12,
+        "color": { "r": 90, "g": 200, "b": 255 },
+        "blink_seconds": 1.0,
+        "blink_rate": 8,
+        "activate_sound": "menu_select",
+        "collect_sound": "extra_life"
+    },
+    "item": {
+        "interval_seconds": 12,
+        "default_chance": 0.3,
+        "lifetime_seconds": 25,
+        "min_distance": 70,
+        "max_distance": 140,
+        "size": 9,
+        "color": { "r": 90, "g": 200, "b": 255 },
+        "core_color": { "r": 255, "g": 255, "b": 255 }
+    },
+    "hud": {
+        "x": 3,
+        "bottom": 3,
+        "text_color": { "r": 255, "g": 255, "b": 255 },
+        "active_color": { "r": 90, "g": 200, "b": 255 },
+        "bar_h": 2
+    }
+}
