@@ -42,7 +42,10 @@ class GameEngine:
         pygame.display.set_caption(cfg_window["title"])
 
         ServiceLocator.init(load_resources())
-        self.commands = CommandMap(load_json("assets/cfg/input.json")["keyboard"])
+        cfg_input = load_json("assets/cfg/input.json")
+        self.commands = CommandMap(cfg_input["keyboard"], cfg_input.get("gamepad"))
+        self._gamepads: dict[int, pygame.joystick.JoystickType] = {}
+        self._open_connected_gamepads()
         self.cfg_scenes = load_json("assets/cfg/scenes.json")
         self.cfg_world = load_json("assets/cfg/world.json")
         self.cfg_menu = load_json("assets/cfg/menu.json")
@@ -131,17 +134,34 @@ class GameEngine:
         self.clock.tick(self.framerate)
         self.delta_time = self.clock.get_time() / 1000.0
 
+    def _open_connected_gamepads(self) -> None:
+        for index in range(pygame.joystick.get_count()):
+            self._open_gamepad(index)
+
+    def _open_gamepad(self, device_index: int) -> None:
+        """pygame solo emite eventos de un gamepad después de abrirlo y de guardar la referencia."""
+        try:
+            pad = pygame.joystick.Joystick(device_index)
+        except pygame.error:
+            return
+        self._gamepads[pad.get_instance_id()] = pad
+
     def _process_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
                 continue
+            if event.type == pygame.JOYDEVICEADDED:
+                self._open_gamepad(event.device_index)  # conectar en caliente
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                self._gamepads.pop(event.instance_id, None)
             if self.shutter.state == ShutterState.CLOSING:
+                if event.type == pygame.JOYDEVICEREMOVED:
+                    self.commands.translate(event)  # suelta direcciones aunque la persiana cierre
                 continue  # sin teclas mientras la persiana se cierra
-            if event.type == pygame.KEYDOWN:
+            if event.type in (pygame.KEYDOWN, pygame.JOYBUTTONDOWN):
                 self._current_scene.do_any_key()
-            command = self.commands.translate(event)
-            if command is not None:
+            for command in self.commands.translate(event):
                 self._current_scene.do_action(*command)
 
     def _update(self) -> None:

@@ -46,7 +46,20 @@ python main.py
 | F1 | Modo trampa |
 | F2 | Entrar o salir del editor de niveles (desde el nivel) |
 
-Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. El gamepad es un bono y aún no está implementado.
+Las teclas se definen en `assets/cfg/input.json`; no hace falta tocar el código para cambiarlas. 
+
+### Gamepad (bono)
+
+Se detecta al conectarlo (también con el juego abierto) y se puede alternar con el teclado en cualquier momento: ambos producen las mismas acciones lógicas (patrón Command).
+
+| Control | Acción |
+|---|---|
+| Stick izquierdo (o cruceta) | Cambiar la dirección de la nave; navegar el menú |
+| A / X | Disparar; elegir una opción del menú |
+| B / círculo | Habilidad especial; volver / cancelar |
+| Start | Pausar / reanudar |
+
+Los botones, los ejes y la zona muerta del stick están en la sección `gamepad` de `input.json`.
 
 La habilidad especial no tiene tecla propia: la define el nivel (`"special_shot"`) y, cuando está activa, Z dispara tres balas al frente y una atrás. Un aviso al empezar el nivel dice si está activa. 
 

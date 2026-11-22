@@ -20,5 +20,26 @@
         "EDIT_SPECIAL": "K_t",
         "EDIT_CORE": "K_c",
         "EDIT_HELP": "K_h"
+    },
+    "gamepad": {
+        "deadzone": 0.5,
+        "axis_x": 0,
+        "axis_y": 1,
+        "buttons": {
+            "0": [
+                "FIRE",
+                "SELECT"
+            ],
+            "1": [
+                "SPECIAL",
+                "BACK"
+            ],
+            "7": [
+                "PAUSE"
+            ],
+            "6": [
+                "BACK"
+            ]
+        }
     }
 }
