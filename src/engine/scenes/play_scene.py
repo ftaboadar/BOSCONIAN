@@ -1,20 +1,30 @@
 import pygame
 
 from src.create.prefab_creator import (
+    create_ability_item_spawner,
     create_alert,
     create_base,
     create_enemy_spawner,
     create_level_clock,
     create_player,
+    equip_ability,
     create_special_shot_message,
     create_stars,
 )
 from src.create.prefab_obstacles import create_obstacles
+from src.ecs.components.c_ability import CAbility
 from src.ecs.components.c_alert import CAlert
 from src.ecs.components.c_base import CBase
 from src.ecs.components.c_invulnerable import CInvulnerable
 from src.ecs.components.c_level_clock import CLevelClock
 from src.ecs.components.c_transform import CTransform
+from src.ecs.systems.s_ability import (
+    system_ability,
+    system_ability_hud,
+    system_ability_input,
+    system_ability_item_spawner,
+    system_shield_aura,
+)
 from src.ecs.systems.s_alert import system_alert
 from src.ecs.systems.s_animation import system_animation
 from src.ecs.systems.s_base_behavior import system_base_cores, system_turrets
@@ -47,6 +57,7 @@ from src.ecs.systems.s_wraparound import system_wraparound
 from src.engine.camera import Camera
 from src.engine.data_loader import (
     level_numbers,
+    load_ability,
     load_bases,
     load_enemies,
     load_entity_cfg,
@@ -94,6 +105,11 @@ class PlayScene(Scene):
             self.player_cfg,
             level["special_shot"],
         )
+        # Segunda habilidad (X): escudo con usos limitados; el ítem que la da sale con la probabilidad del nivel.
+        self.ability_cfg = load_ability()
+        equip_ability(self.world, self.player, self.ability_cfg)
+        create_ability_item_spawner(self.world, self.ability_cfg, level.get(
+            "ability_item_chance", self.ability_cfg["item"]["default_chance"]))
         create_special_shot_message(
             self.world, self.player_cfg, level["special_shot"], eng.viewport.centerx
         )
@@ -160,6 +176,7 @@ class PlayScene(Scene):
         # Dirección y disparo llegan siempre a la nave (también en pausa: ahí solo se sueltan teclas).
         started = self.clock.blast_left <= 0
         system_player_input(self.world, action, phase, started, started and not self.paused)
+        system_ability_input(self.world, action, phase, started and not self.paused and not self.confirm_exit)
         if phase != Phase.START:
             return
         if action == "EDITOR":
@@ -243,6 +260,11 @@ class PlayScene(Scene):
         elif has and not want:
             self.world.remove_component(self.player, CInvulnerable)
 
+    def _charges(self) -> int:
+        """Usos de la habilidad que tiene el jugador (0 si no existe)."""
+        c_a = self.world.try_component(self.player, CAbility) if self.world.entity_exists(self.player) else None
+        return c_a.charges if c_a is not None else 0
+
     def bases_remaining(self) -> int:
         return len(self.world.get_component(CBase))
 
@@ -278,12 +300,16 @@ class PlayScene(Scene):
         system_player_movement(self.world, delta_time)
         system_player_sprite(self.world)
         system_player_fire(self.world, delta_time)
+        if system_ability(self.world, delta_time, self.ability_cfg["shield"]):
+            play_sound(self.ability_cfg["shield"]["activate_sound"])
         # Con el jugador muerto (esperando su explosión) no hay posición que perseguir ni
         # a la que apuntar: el resto del mundo sigue, pero sin IA de enemigos ni torretas.
         player_alive = self.world.entity_exists(self.player)
         player_pos = None
         if player_alive:
             player_pos = self.world.component_for_entity(self.player, CTransform).pos
+            system_ability_item_spawner(self.world, player_pos, self.engine.world_size,
+                                        self.ability_cfg["item"], delta_time)
             system_enemy_spawner(self.world, player_pos, self.engine.world_size, self.cfg_enemies,
                                  self.player_speed, delta_time)
             system_enemy_state(self.world, player_pos, self.engine.world_size, delta_time)
@@ -293,10 +319,14 @@ class PlayScene(Scene):
                               self.player_speed, delta_time)
         system_movement(self.world, delta_time)
         system_wraparound(self.world, self.engine.world_size)
+        system_shield_aura(self.world)  # tras mover la nave: el anillo la acompaña
+        charges = self._charges()
         collisions = system_collision(self.world, self.engine.world_size)
         points = system_collision_rules(self.world, collisions, self.collision_rules,
                                         self.engine.world_size,
                                         self.engine.cfg_world["score_popup"])
+        if self._charges() > charges:
+            play_sound(self.ability_cfg["shield"]["collect_sound"])  # recogió el ítem
         if points:
             lives = self.engine.state.lives
             self.engine.state.add_score(points)
@@ -368,6 +398,8 @@ class PlayScene(Scene):
             return
         system_world_rendering(self.world, screen, self.camera)
         system_rendering(self.world, screen)
+        system_ability_hud(self.world, screen, self.ability_cfg["shield"], self.ability_cfg["hud"],
+                           self.engine.viewport)
         if self.clock.blast_left > 0:
             screen.blit(
                 self.blast_text,

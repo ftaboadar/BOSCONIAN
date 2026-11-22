@@ -26,7 +26,7 @@
     ],
     "instructions": {
         "title": "INSTRUCCIONES",
-        "lines": ["FLECHAS: DIRECCION", "Z: DISPARO DOBLE", "ESPECIAL: SEGUN NIVEL", "P: PAUSA", "", "DESTRUYE LAS BASES", "PARA PASAR DE NIVEL.", "EVITA ENEMIGOS", "Y OBSTACULOS."]
+        "lines": ["FLECHAS: DIRECCION", "Z: DISPARO DOBLE", "ESPECIAL: SEGUN NIVEL", "X: ESCUDO (ITEM)", "P: PAUSA", "", "DESTRUYE LAS BASES", "PARA PASAR DE NIVEL.", "EVITA ENEMIGOS", "Y OBSTACULOS."]
     },
     "credits": {
         "title": "CREDITOS",

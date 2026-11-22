@@ -13,5 +13,6 @@
     ],
     "obstacles": { "rock": 16, "mine": 7, "solid_rock": 4 },
     "special_shot": true,
+    "ability_item_chance": 0.3,
     "music": "starshooter"
 }

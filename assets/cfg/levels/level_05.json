@@ -13,5 +13,6 @@
     ],
     "obstacles": { "rock": 14, "mine": 6, "solid_rock": 4 },
     "special_shot": false,
+    "ability_item_chance": 0.3,
     "music": "night_tune"
 }

@@ -11,5 +11,6 @@
     ],
     "obstacles": { "rock": 12, "mine": 4, "solid_rock": 2 },
     "special_shot": false,
+    "ability_item_chance": 0.45,
     "music": "delayed_chips"
 }

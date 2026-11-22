@@ -7,6 +7,7 @@ import random
 import esper
 import pygame
 
+from src.ecs.components.c_ability import CAbility, CAbilityItem, CItemSpawner, CShieldAura
 from src.ecs.components.c_alert import CAlert
 from src.ecs.components.c_angle_sprites import CAngleSprites
 from src.ecs.components.c_animation import CAnimation
@@ -359,3 +360,39 @@ def create_explosion(world: esper.World, pos: pygame.Vector2, vel: pygame.Vector
     if "hitbox" in cfg:  # explosión letal (por ejemplo, la de las minas)
         world.add_component(ent, create_hitbox(cfg["hitbox"]))
     return ent
+
+
+def equip_ability(world: esper.World, player: int, cfg: dict) -> None:
+    """Da a la nave la segunda habilidad (escudo, ability.json) con los usos con que empieza."""
+    shield = cfg["shield"]
+    world.add_component(player, CAbility(shield["max_charges"], shield["duration"], shield["start_charges"]))
+
+
+def create_ability_item_spawner(world: esper.World, cfg: dict, chance: float) -> int:
+    """Generador de ítems de la habilidad: `chance` (0..1) es la probabilidad por intervalo y la fija el nivel."""
+    return world.create_entity(CItemSpawner(cfg["item"]["interval_seconds"], chance))
+
+
+def create_ability_item(world: esper.World, pos: pygame.Vector2, item_cfg: dict) -> int:
+    """Ítem del escudo: un disco con borde, con vida limitada; aparece en el minimapa como `item`."""
+    size = item_cfg["size"]
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    center = (size // 2, size // 2)
+    pygame.draw.circle(surf, color_from_cfg(item_cfg["color"]), center, size // 2)
+    pygame.draw.circle(surf, color_from_cfg(item_cfg["core_color"]), center, size // 2, 1)
+    return world.create_entity(
+        CTransform(pygame.Vector2(pos)), CSurface(surf), CWorld(), CAbilityItem(),
+        CMinimapTrack("item"), create_hitbox("ability_item"), CLifetime(item_cfg["lifetime_seconds"]),
+    )
+
+
+def create_shield_aura(world: esper.World, owner: int, shield_cfg: dict) -> int:
+    """Anillo alrededor de la nave mientras dura el escudo (entidad del mundo, sigue a `owner`)."""
+    r = shield_cfg["radius"]
+    ring = pygame.Surface((2 * r + 1, 2 * r + 1), pygame.SRCALPHA)
+    pygame.draw.circle(ring, color_from_cfg(shield_cfg["color"]), (r, r), r, 1)
+    blank = pygame.Surface(ring.get_size(), pygame.SRCALPHA)
+    return world.create_entity(
+        CTransform(pygame.Vector2(world.component_for_entity(owner, CTransform).pos)), CSurface(ring),
+        CWorld(), CShieldAura(owner, ring, blank, shield_cfg["blink_seconds"], shield_cfg["blink_rate"]),
+    )

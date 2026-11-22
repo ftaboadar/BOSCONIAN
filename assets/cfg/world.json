@@ -19,8 +19,9 @@
         "dot_colors": {
             "player": { "r": 255, "g": 255, "b": 255 },
             "base": { "r": 128, "g": 255, "b": 160 },
-            "formation": { "r": 255, "g": 220, "b": 0 }
+            "formation": { "r": 255, "g": 220, "b": 0 },
+            "item": { "r": 90, "g": 200, "b": 255 }
         },
-        "dot_sizes": { "player": 2, "base": 2, "formation": 2 }
+        "dot_sizes": { "player": 2, "base": 2, "formation": 2, "item": 3 }
     }
 }

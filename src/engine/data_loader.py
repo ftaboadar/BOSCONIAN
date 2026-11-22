@@ -84,6 +84,9 @@ def validate_level(level: dict, path: str) -> dict:
             raise ConfigError(f"{path} obstacles: tipo desconocido {kind}")
         if not isinstance(count, int) or count < 0:
             raise ConfigError(f"{path} obstacles.{kind}: debe ser un entero >= 0")
+    chance = level.get("ability_item_chance", 0)
+    if isinstance(chance, bool) or not isinstance(chance, (int, float)) or not 0 <= chance <= 1:
+        raise ConfigError(f"{path}: ability_item_chance debe ser un número entre 0 y 1")
     level.setdefault("special_shot", False)
     # Núcleo de las bases del nivel: siempre abierto, o con ciclo y lanzando enemigos E.
     level.setdefault("core_mode", "open")
@@ -93,7 +96,7 @@ def validate_level(level: dict, path: str) -> dict:
 
 
 LEVEL_KEY_ORDER = ("round", "subtitle", "difficulty", "core_mode", "player_start", "bases", "obstacles",
-                   "special_shot", "music")
+                   "special_shot", "ability_item_chance", "music")
 
 
 def _point(p: dict) -> str:
@@ -236,6 +239,32 @@ def load_bases() -> dict:
         raise ConfigError(f"{path} core: frame_seconds y open_seconds deben ser mayores que 0")
     if min(core["closed_seconds"]["easy"], core["closed_seconds"]["hard"]) < 0:
         raise ConfigError(f"{path} core: closed_seconds no puede ser negativo")
+    return cfg
+
+
+def load_ability() -> dict:
+    """Carga ability.json: la segunda habilidad especial (escudo), el ítem que la da y su indicador."""
+    path = os.path.join(CFG_DIR, "ability.json")
+    cfg = load_entity_cfg("ability", ("shield", "item", "hud"))
+    require_keys(cfg["shield"], ("name", "duration", "max_charges", "start_charges", "radius", "color",
+                                 "blink_seconds", "blink_rate", "activate_sound", "collect_sound"),
+                 f"{path} shield")
+    require_keys(cfg["item"], ("interval_seconds", "default_chance", "lifetime_seconds", "min_distance",
+                               "max_distance", "size", "color", "core_color"), f"{path} item")
+    require_keys(cfg["hud"], ("x", "bottom", "text_color", "active_color", "bar_h"), f"{path} hud")
+    shield, item = cfg["shield"], cfg["item"]
+    if shield["duration"] <= 0:
+        raise ConfigError(f"{path} shield: duration debe ser mayor que 0")
+    if not isinstance(shield["max_charges"], int) or shield["max_charges"] < 1:
+        raise ConfigError(f"{path} shield: max_charges debe ser un entero >= 1")
+    if not isinstance(shield["start_charges"], int) or not 0 <= shield["start_charges"] <= shield["max_charges"]:
+        raise ConfigError(f"{path} shield: start_charges debe estar entre 0 y max_charges")
+    if min(item["interval_seconds"], item["lifetime_seconds"]) <= 0:
+        raise ConfigError(f"{path} item: interval_seconds y lifetime_seconds deben ser mayores que 0")
+    if not 0 <= item["default_chance"] <= 1:
+        raise ConfigError(f"{path} item: default_chance debe estar entre 0 y 1")
+    if not 0 < item["min_distance"] <= item["max_distance"]:
+        raise ConfigError(f"{path} item: debe cumplirse 0 < min_distance <= max_distance")
     return cfg
 
 
