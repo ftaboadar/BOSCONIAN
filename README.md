@@ -15,7 +15,7 @@ El proyecto avanza por hitos (ver el tablero del repositorio).
 | 3 Jugador | Aceleración, disparo, colisiones, vidas, puntaje | Hecho |
 | 4 Enemigos y bases | IA, bases, obstáculos, alertas | Hecho |
 | 5 Flujo completo | Menús, 10 niveles, sonidos, victoria y derrota, modo trampa | Hecho |
-| 6 Bonos | Intro, atractor, cutscene, felicitación por récord y editor hechos; faltan gamepad, jefe, segunda habilidad, formaciones y espía | En curso |
+| 6 Bonos | Intro, atractor, cutscene, felicitación por récord, editor, gamepad y segunda habilidad (escudo) hechos; faltan jefe, formaciones y espía | En curso |
 | 7 Entrega | Versión web lista para itch.io (ver "Versión web"); faltan la publicación, los documentos y el video | En curso |
 
 El juego completo: intro animado y título con menú (jugar, elegir nivel, instrucciones, créditos), modo atractor tras 15 s sin tocar nada, cinemática y "BLAST OFF!" antes de cada uno de los 10 niveles, y escenas de victoria, derrota (con continuar) y felicitación por récord, cada una con su música. En el nivel, la nave acelera sola y dispara adelante y atrás sobre un mundo toroidal con cámara, estrellas con parallax y minimapa; hay rocas, minas (su explosión es letal) y rocas indestructibles, enemigos I, P y E que salen alrededor del jugador según la alerta, y bases de seis torretas y núcleo, horizontales o verticales.
