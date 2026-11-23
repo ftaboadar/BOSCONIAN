@@ -31,7 +31,7 @@ class AbilityConfigTests(unittest.TestCase):
         keyboard = load_json("assets/cfg/input.json")["keyboard"]
         self.assertEqual(keyboard["SPECIAL"], "K_x")
         event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x)
-        self.assertEqual(CommandMap(keyboard).translate(event), ("SPECIAL", Phase.START))
+        self.assertEqual(CommandMap(keyboard).translate(event), [("SPECIAL", Phase.START)])
 
     def test_la_habilidad_tiene_limite_y_duracion_en_configuracion(self):
         self.assertGreater(CFG["shield"]["duration"], 0)
